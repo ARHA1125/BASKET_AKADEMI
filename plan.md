@@ -10,7 +10,6 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 * **Database:** PostgreSQL (Relational Data) + Prisma ORM.
 * **AI/ML:**
     * LLM Integration: OpenAI/LangChain (AI Coach Chatbot & Auto-Feedback).
-    * Computer Vision: face-api.js (Absensi Wajah) & Video Analysis (Future implementation).
 * **Storage:** AWS S3 / Google Cloud Storage (Video Drills, Bukti Bayar, Foto Event).
 * **Infrastructure:** Docker, CI/CD Pipelines (GitHub Actions).
 
@@ -21,8 +20,6 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 #### A. Modul Akademik & Pelatihan (LMS Core)
 
 **1. Smart Attendance System**
-* **Multiple Methods:** QR Code (Siswa scan di lokasi), Face Recognition (Coach scan wajah siswa), dan Manual Input.
-* **Geo-Fencing:** Validasi lokasi saat absen untuk mencegah kecurangan.
 * **Real-time Reporting:** Notifikasi otomatis ke WhatsApp Orang Tua saat siswa Check-in dan Check-out.
 * **Attendance Analytics:** Grafik kehadiran per kelas, per siswa, dan tren bulanan.
 
@@ -168,7 +165,6 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 * Parent Portal Dashboard.
 
 **Phase 4: AI & Advanced Features (Minggu 10-12)**
-* Face Recognition Attendance Implementation.
 * Event & Squad Management (Drafting System).
 * AI Chatbot Integration.
 * Final Polish & Performance Tuning.
