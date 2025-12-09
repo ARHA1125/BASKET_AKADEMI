@@ -60,11 +60,11 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 * **Coach Payroll:** Perhitungan gaji pelatih otomatis berdasarkan jumlah sesi kehadiran melatih.
 * **Financial Reports:** Laporan Arus Kas (Cash Flow), Pemasukan per Kategori, dan Tunggakan (Aging AR).
 
-**2. Inventory & E-Commerce (Hoops Store)**
+**2. Inventory & E-Commerce (Hoops Merch Store)**
 * **Product Catalog:** Manajemen stok Jersey, Bola, Aksesoris, dan Digital Products (Tiket Event).
 * **Variant Management:** Dukungan untuk varian ukuran (S, M, L, XL) dan warna.
 * **Stock Alerts:** Notifikasi otomatis saat stok menipis.
-* **Purchase Flow:** Siswa beli di app -> Bayar -> Dapat QR Code Pickup -> Scan di Gudang -> Stok Berkurang.
+* **Purchase Flow:** Siswa/guest beli di app/website -> Bayar -> Dapat QR Code Pickup -> Scan di Gudang -> Stok Berkurang.
 * **Order History:** Riwayat pembelian lengkap untuk siswa dan admin.
 
 **3. Facility & Schedule Management**
