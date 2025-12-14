@@ -9,7 +9,7 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 * **Backend:** NestJS (Modular Architecture), Socket.io (Real-time), Redis (Caching/Queues).
 * **Database:** PostgreSQL (Relational Data) + Prisma ORM.
 * **AI/ML:**
-    * LLM Integration: OpenAI/LangChain (AI Coach Chatbot & Auto-Feedback).
+    * LLM Integration: OpenAI/LangChain (AI Processing Analysis).
 * **Storage:** AWS S3 / Google Cloud Storage (Video Drills, Bukti Bayar, Foto Event).
 * **Infrastructure:** Docker, CI/CD Pipelines (GitHub Actions).
 
