@@ -190,3 +190,31 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 | **CRM** | Student Registration | Parent / Admin | Managed |
 | | WhatsApp Notifications | System | **Automated** (Trigger-based) |
 | | Financial Reporting | System | **Automated** |
+
+---
+
+### 7. Algorithms & Logic (Academic-Backed)
+
+**1. Player Assessment (FUT Card) - Based on Weighted Scoring Models**
+*   **Concept:** Adapted from **Weighted Sum Model (WSM)** common in multi-criteria decision analysis and official FIFA ratings (Correction Factors). Star players with exceptional stats disproportionately boost the team rating.
+*   **Formula:** `OVR = ( WeightedSum(Stats) * 0.8 ) + ( ConsistencyFactor * 0.2 )`
+    *   **Stats Weighting:** Coach inputs raw rating (1-99). System calculates weighted average based on position (e.g., Shooting weighs more for Guards).
+    *   **ConsistencyFactor:** Derived from Attendance Trend (Aligns with *SDT Competence/Consistency*).
+*   **Coach Role:** Responsible for manual observation and input of the 6 Key Stats (SPD, SHO, PAS, DRI, DEF, PHY).
+
+**2. Gamification Framework (Self-Determination Theory)**
+*   **Concept:** Strategies align with **Self-Determination Theory (Ryan & Deci)** to satisfy:
+    *   **Competence:** Gaining XP and Leveling up for mastering drills.
+    *   **Autonomy:** Students choosing specific "Home Drills" to improve weak stats.
+    *   **Relatedness:** Leaderboards and Squad Drafting foster community connection.
+*   **XP Algorithm (Linear-Log Hybrid):**
+    *   `Level = Constant * log(TotalXP + 1)`
+    *   *Purpose:* Prevents "infinite easy leveling" (Diminishing Returns) typical in RPGs.
+*   **Streak Multiplier:**
+    *   `XP = BaseXP * (1 + (StreakDays * 0.1))`
+    *   *Purpose:* Encourages habit formation and consistent attendance.
+
+**3. Match Ratings (Modified ELO)**
+*   **Concept:** Uses a simplified **ELO Rating System** (standard in competitive sports like Chess/e-sports) for:
+    *   **Squad Matchmaking:** Balancing internal tournament teams.
+    *   **Match Performance:** Adjusting player internal ratings based on match results against stronger/weaker opponents.
