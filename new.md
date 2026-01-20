@@ -97,7 +97,7 @@ Platform manajemen akademi basket end-to-end yang mengintegrasikan pelatihan atl
 * **Lead Management:** Formulir pendaftaran calon siswa (Trial Class) dan funnel konversi ke siswa aktif.
 
 **2. Communication Channels**
-* **Broadcast System:** Kirim pengumuman massal (Libur, Event, Promo) via Notifikasi Aplikasi & WhatsApp.
+* **Broadcast System:** Kirim pengumuman massal (Libur, Event, Promo) via Notifikasi Aplikasi & WhatsApp (WAHA).
 * **1-on-1 Chat:** Fitur chat aman antara Wali Murid dan Admin/Coach (tanpa tukar nomor pribadi jika diinginkan).
 * **Highlight Gallery:** Feed sosial internal untuk berbagi foto/video kegiatan akademi (Instagram-style).
 
