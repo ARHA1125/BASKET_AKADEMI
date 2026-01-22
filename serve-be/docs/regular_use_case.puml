@@ -1,0 +1,103 @@
+@startuml UseCase_WirabhaktiAcademy
+
+left to right direction
+skinparam packageStyle rectangle
+
+' Actors
+actor "Student (Siswa)" as Student
+actor "Parent (Wali Murid)" as Parent
+actor "Coach (Pelatih)" as Coach
+actor "Administrator" as Admin
+
+rectangle "Wirabhakti Academy System" {
+
+    ' Auth & CRM use cases
+    usecase "Login / Logout" as UC_Login
+    usecase "Manage Family Account" as UC_ManageFamily
+    usecase "Register Candidate" as UC_Register
+    usecase "Approve Student Registration" as UC_ApproveRegister
+    usecase "1-on-1 Chat" as UC_Chat
+    usecase "Broadcast Announcements" as UC_Broadcast
+
+    ' Academic use cases
+    usecase "Take Attendance" as UC_Attendance
+    usecase "View Attendance" as UC_ViewAttendance
+    usecase "Create Lesson Plan" as UC_LessonPlan
+    usecase "Manage Video Drills" as UC_ManageDrills
+    usecase "Watch Drills" as UC_WatchDrills
+    usecase "Submit Home Drill" as UC_SubmitDrill
+    usecase "Review & Rate Video" as UC_ReviewDrill
+    usecase "Approve Coach Leave" as UC_ApproveLeave
+
+    ' Assessment use cases
+    usecase "Input Player Stats" as UC_InputStats
+    usecase "View FUT Card" as UC_ViewCard
+
+    ' Gamification use cases
+    usecase "View Leaderboard" as UC_Leaderboard
+    usecase "View Badges" as UC_Badges
+
+    ' Business use cases
+    usecase "Pay Tuition" as UC_PayTuition
+    usecase "Verify Manual Payment" as UC_VerifyPayment
+    usecase "Shop Merchandise" as UC_Shop
+    usecase "Process Pickup" as UC_Pickup
+    usecase "View Reports" as UC_Reports
+    usecase "Manage Inventory" as UC_Inventory
+
+    ' Event use cases
+    usecase "Create Event" as UC_CreateEvent
+    usecase "Draft Squad" as UC_DraftSquad
+    usecase "Respond to Invite" as UC_RespondInvite
+    usecase "Input Match Stats" as UC_MatchStats
+
+}
+
+' Relationships with labeled arrows
+
+' Coach interactions
+Coach --> UC_Login : logs in
+Coach --> UC_Attendance : takes
+Coach --> UC_LessonPlan : prepares
+Coach --> UC_ManageDrills : uploads
+Coach --> UC_ReviewDrill : rates
+Coach --> UC_InputStats : updates
+Coach --> UC_DraftSquad : selects
+Coach --> UC_MatchStats : records
+Coach --> UC_Chat : messages
+
+' Student interactions
+Student --> UC_Login : logs in
+Student --> UC_Register : applies
+Student --> UC_WatchDrills : learns
+Student --> UC_SubmitDrill : uploads
+Student --> UC_ViewCard : checks
+Student --> UC_Leaderboard : views
+Student --> UC_Badges : views
+Student --> UC_Shop : buys
+Student --> UC_RespondInvite : accepts/declines
+Student --> UC_ViewAttendance : checks
+
+' Parent interactions
+Parent --> UC_Login : logs in
+Parent --> UC_Register : applies for child
+Parent --> UC_ManageFamily : manages
+Parent --> UC_Chat : messages
+Parent --> UC_ViewAttendance : monitors
+Parent --> UC_ViewCard : monitors
+Parent --> UC_PayTuition : pays
+Parent --> UC_Shop : buys
+
+' Admin interactions
+Admin --> UC_Login : logs in
+Admin --> UC_Broadcast : sends
+Admin --> UC_Inventory : manages
+Admin --> UC_Pickup : scans QR
+Admin --> UC_Reports : analyzes
+Admin --> UC_CreateEvent : organizes
+Admin --> UC_Chat : messages
+Admin --> UC_ApproveRegister : approves
+Admin --> UC_VerifyPayment : verifies
+Admin --> UC_ApproveLeave : approves
+
+@enduml

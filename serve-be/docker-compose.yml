@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: serve-be-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: always
+
+  waha:
+    image: devlikeapro/waha
+    container_name: serve-be-waha
+    ports:
+      - '3000:3000'
+    environment:
+      - WAHA_API_KEY=36a332eeb7524536a372c75709cab27e
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=1d2e7b094a284295aff0aed95e8a6f8d
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=1d2e7b094a284295aff0aed95e8a6f8d
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_RESTART_ON_FAIL=True
+      - WHATSAPP_FILES_LIFETIME=180
+    volumes:
+      - waha_sessions:/app/.sessions
+      - waha_files:/app/files
+    restart: always
+
+volumes:
+  redis_data:
+  waha_sessions:
+  waha_files:
