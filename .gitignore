@@ -2,7 +2,8 @@
 /dist
 /node_modules
 /build
-dashboard.code-workspace
+/docs
+.dashboard.code-workspace
 # Logs
 logs
 *.log
