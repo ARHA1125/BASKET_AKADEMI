@@ -17,7 +17,7 @@ const CASH_FLOW_DATA = [
 export default function OverviewView() {
   return (
     <div className="space-y-6">
-      {/* KPI Grid */}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card decoration="indigo" decorationColor="indigo">
           <Text>Total Revenue (October)</Text>
@@ -60,7 +60,7 @@ export default function OverviewView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cash Flow Chart */}
+
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between mb-6">
               <div>
@@ -79,11 +79,11 @@ export default function OverviewView() {
               </div>
           </div>
           
-          {/* Simple CSS Bar Chart mimicking Tremor */}
+
           <div className="h-72 flex items-end justify-between gap-2 sm:gap-4 mt-4">
             {CASH_FLOW_DATA.map((item, idx) => (
               <div key={idx} className="w-full flex flex-col items-center gap-2 group relative">
-                 {/* Tooltip */}
+
                  <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 dark:bg-slate-800 text-white text-xs p-2 rounded pointer-events-none z-10 whitespace-nowrap shadow-lg">
                     <p>In: {formatIDR(item.income)}</p>
                     <p className="opacity-80">Out: {formatIDR(item.expense)}</p>
@@ -99,7 +99,7 @@ export default function OverviewView() {
           </div>
         </Card>
 
-        {/* Recent Transactions / Quick Feed */}
+
         <Card>
           <Title className="mb-4">Recent Transactions</Title>
           <div className="space-y-0 divide-y divide-slate-100 dark:divide-slate-800">

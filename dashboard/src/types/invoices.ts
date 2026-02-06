@@ -36,4 +36,10 @@ export interface Invoice {
     };
     photoUrl?: string;
     photo_url?: string;
+    isVerified?: boolean;
+    verifiedAt?: string;
+    verifiedBy?: string;
+    uniqueCode?: number;
+    uniqueAmount?: number;
+    paymentMethod?: 'TRANSFER' | 'CASH';
 }

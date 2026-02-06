@@ -166,7 +166,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
         data-state={state}
         data-collapsible={state === "collapsed" ? true : false}
       >
-        {/* This is what handles the sidebar gap on desktop */}
+
         <div
           className={cx(
             "relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-150 ease-in-out will-change-transform",

@@ -58,24 +58,24 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
       : null;
 
   return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg shadow-indigo-100 dark:shadow-none ring-1 ring-slate-200 dark:ring-slate-800 overflow-hidden transition-colors duration-300">
-         <div className="p-6 bg-gradient-to-br from-indigo-600 to-violet-700 text-white">
+      <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
+         <div className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
             <h3 className="font-semibold text-lg">Payment Details</h3>
-            <p className="text-indigo-100 text-sm mt-1">Select your preferred payment method.</p>
+            <p className="text-blue-50 text-sm mt-1">Select your preferred payment method.</p>
          </div>
          
          <div className="p-6 space-y-4">
 
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-lg">
                <button 
                   onClick={() => setPaymentMethod('qris')}
-                  className={`py-2 text-xs font-medium rounded-md transition-all ${paymentMethod === 'qris' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  className={`py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${paymentMethod === 'qris' ? 'bg-white text-blue-600 shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
                >
                   QRIS / VA
                </button>
                <button 
                   onClick={() => setPaymentMethod('manual')}
-                  className={`py-2 text-xs font-medium rounded-md transition-all ${paymentMethod === 'manual' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  className={`py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${paymentMethod === 'manual' ? 'bg-white text-blue-600 shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
                >
                   Upload Bukti Transfer
                </button>
@@ -97,20 +97,20 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
 
                {paymentMethod === 'manual' && (
                   <div className="space-y-4 animate-in fade-in duration-300">
-                     <div className="p-4 border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-2">Upload Bukti Transfer</p>
+                     <div className="p-4 border border-blue-100 bg-blue-50/50 rounded-xl">
+                        <p className="text-sm font-semibold text-slate-900 mb-3">Upload Bukti Transfer</p>
                         
-                        <div className="mb-4 bg-white dark:bg-slate-800 p-3 rounded border border-indigo-100 dark:border-slate-700">
-                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Transfer ke Rekening:</p>
+                        <div className="mb-4 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                           <p className="text-xs text-slate-500 mb-2">Transfer ke Rekening:</p>
                            <div className="flex justify-between items-center">
                               <div>
-                                 <p className="font-bold text-slate-800 dark:text-slate-200">BCA</p>
+                                 <p className="font-bold text-slate-800">BCA</p>
                                  <p className="text-xs text-slate-500">a.n. Faizal</p>
                               </div>
                               <div className="text-right">
-                                 <p className="font-mono font-bold text-lg text-indigo-600 dark:text-indigo-400">1234 5678 90</p>
-                                 <button onClick={() => { navigator.clipboard.writeText('1234567890'); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="text-[10px] text-blue-500 hover:underline">
-                                    {copied ? 'Copied!' : 'Copy No. Rek'}
+                                 <p className="font-mono font-bold text-lg text-blue-600">1234 5678 90</p>
+                                 <button onClick={() => { navigator.clipboard.writeText('1234567890'); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-colors">
+                                    {copied ? '✓ Copied!' : 'Copy No. Rek'}
                                  </button>
                               </div>
                            </div>
@@ -154,9 +154,9 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
             </div>
             
             {paymentMethod === 'qris' && (
-                <Button className="w-full py-3 text-base shadow-indigo-200 shadow-md">
+                <button className="w-full py-3 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all duration-300 active:scale-95">
                    I Have Paid
-                </Button>
+                </button>
             )}
             
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-slate-500 mt-4">

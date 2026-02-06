@@ -52,6 +52,16 @@ export class PaymentModuleController {
     return this.paymentModuleService.findOne(id);
   }
 
+  @Patch('verify/:id')
+  verifyPayment(
+    @Param('id') id: string, 
+    @Body('adminId') adminId: string,
+    @Body('paymentMethod') paymentMethod: 'TRANSFER' | 'CASH',
+    @Body('paidAmount') paidAmount?: number
+  ) {
+    return this.paymentModuleService.verifyInvoice(id, adminId, paymentMethod, paidAmount);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePaymentModuleDto: UpdatePaymentModuleDto) {
     return this.paymentModuleService.update(id, updatePaymentModuleDto);
@@ -67,7 +77,8 @@ export class PaymentModuleController {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './img/invoice/transfer';
+        const uploadDir = process.env.UPLOAD_DIR || './img';
+        const uploadPath = `${uploadDir}/invoice/transfer`;
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }

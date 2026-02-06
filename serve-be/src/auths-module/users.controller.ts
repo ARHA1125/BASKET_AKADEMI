@@ -43,13 +43,16 @@ export class UsersController {
     storage: diskStorage({
       destination: (req, file, cb) => {
         const type = req.query.type as string;
-        let folder = './img/profile/student'; // Default
+        const uploadDir = process.env.UPLOAD_DIR || './img';
+        let folderName = 'student'; // Default
         
         if (type === 'parent') {
-           folder = './img/profile/parent';
+           folderName = 'parent';
         } else if (type === 'coach') {
-           folder = './img/profile/coach'; // Assuming coach folder exists or falls back
+           folderName = 'coach';
         }
+
+        const folder = `${uploadDir}/profile/${folderName}`;
 
         // Ensure directory exists
         fs.mkdirSync(folder, { recursive: true });

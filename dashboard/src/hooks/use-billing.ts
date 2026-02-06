@@ -95,7 +95,7 @@ export function useBilling(activeTab: 'current' | 'history') {
                  throw new Error(`Error ${res.status}: ${res.statusText} - ${text}`);
             }
             
-            // Refresh list
+           
             fetchInvoices();
         } catch (error) {
             console.error("Failed to manual generate", error);
@@ -112,7 +112,7 @@ export function useBilling(activeTab: 'current' | 'history') {
 
              if (!res.ok) throw new Error("Failed to delete");
              
-             // Refresh
+            
              setInvoices(prev => prev.filter(inv => inv.id !== id));
         } catch (error) {
             console.error("Failed to delete invoice", error);

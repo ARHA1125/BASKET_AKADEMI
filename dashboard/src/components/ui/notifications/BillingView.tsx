@@ -1,17 +1,26 @@
+import { InvoiceStatusBadge } from '@/components/ui/admin/InvoiceStatusBadge';
+import { ProofViewerModal } from '@/components/ui/admin/ProofViewerModal';
+import { SwipeableVerificationModal } from '@/components/ui/admin/SwipeableVerificationModal';
 import { useBilling } from '@/hooks/use-billing';
+import { UniqueAmountDisplay } from '@/utils/formatUniqueAmount';
+import Cookies from 'js-cookie';
 import {
+    Banknote,
+    CheckCircle,
+    CreditCard,
     Eye,
     Filter,
     Loader2,
     MoreHorizontal,
     Search,
     Trash2,
+    XCircle,
     Zap
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { Badge, Card, formatIDR, Title } from './Common';
-
 
 import {
     DropdownMenu,
@@ -25,17 +34,27 @@ import {
 export default function BillingView() {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [swipeableModalOpen, setSwipeableModalOpen] = useState(false);
+  const [verificationStartIndex, setVerificationStartIndex] = useState(0);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'unpaid' | 'pending' | 'verified'>('all');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
 
-  const { invoices, loading, scheduleDay, scheduleTime, saveSchedule, manualGenerate, deleteInvoice, sendManualReminders } = useBilling(activeTab);
+  const { invoices, loading, scheduleDay, scheduleTime, saveSchedule, manualGenerate, deleteInvoice, sendManualReminders, refreshInvoices } = useBilling(activeTab);
   const [selectedTime, setSelectedTime] = useState(scheduleTime);
   const [selectedDay, setSelectedDay] = useState(scheduleDay);
   
 
-  useState(() => { 
-      setSelectedTime(scheduleTime);
-      setSelectedDay(scheduleDay);
-  }); 
+  useEffect(() => {
+    if (scheduleTime) setSelectedTime(scheduleTime);
+    if (scheduleDay) setSelectedDay(scheduleDay);
+  }, [scheduleTime, scheduleDay]); 
   
   const handleSaveSchedule = async () => {
       await saveSchedule(selectedDay, selectedTime);
@@ -111,10 +130,58 @@ export default function BillingView() {
       });
   };
 
+  const handleVerify = async (
+    invoiceId: string,
+    paymentMethod: 'TRANSFER' | 'CASH',
+    paidAmount?: number
+  ) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
+      const adminId = localStorage.getItem('userId') || 'admin';
+      const token = Cookies.get('auth_token');
+      
+      if (!token) {
+        toast.error('Unauthorized: Please login again');
+        return;
+      }
+      
+      const response = await fetch(`${apiUrl}/payment-module/verify/${invoiceId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ adminId, paymentMethod, paidAmount }),
+      });
+
+      if (response.ok) {
+        toast.success('Pembayaran berhasil diverifikasi!');
+        refreshInvoices();
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('Verification failed:', response.status, errorData);
+        throw new Error(`Verification failed: ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast.error(error instanceof Error ? error.message : 'Gagal memverifikasi pembayaran');
+    }
+  };
+
+  const handleViewProof = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setModalOpen(true);
+  };
+
+  const handleOpenSwipeableModal = (startIndex: number) => {
+    setVerificationStartIndex(startIndex);
+    setSwipeableModalOpen(true);
+  };
+
 
   const today = new Date();
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const startDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay(); // 0 is Sunday
+  const startDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay(); 
   
   const monthName = today.toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -205,9 +272,44 @@ export default function BillingView() {
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
                     <input type="text" placeholder="Search student..." className="pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64 bg-white dark:bg-slate-900 dark:text-slate-50"/>
                  </div>
-                 <button className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <Filter size={18}/>
-                 </button>
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                     <button className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 relative">
+                       <Filter size={18}/>
+                       {filterStatus !== 'all' && (
+                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full" />
+                       )}
+                     </button>
+                   </DropdownMenuTrigger>
+                   <DropdownMenuContent align="end" className="w-56">
+                     <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                     <DropdownMenuSeparator />
+                     <DropdownMenuItem onClick={() => setFilterStatus('all')}>
+                       <div className="flex items-center justify-between w-full">
+                         <span>All Invoices</span>
+                         {filterStatus === 'all' && <CheckCircle size={16} className="text-indigo-600" />}
+                       </div>
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setFilterStatus('unpaid')}>
+                       <div className="flex items-center justify-between w-full">
+                         <span>Belum Bayar</span>
+                         {filterStatus === 'unpaid' && <CheckCircle size={16} className="text-indigo-600" />}
+                       </div>
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setFilterStatus('pending')}>
+                       <div className="flex items-center justify-between w-full">
+                         <span>Menunggu Verifikasi</span>
+                         {filterStatus === 'pending' && <CheckCircle size={16} className="text-indigo-600" />}
+                       </div>
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setFilterStatus('verified')}>
+                       <div className="flex items-center justify-between w-full">
+                         <span>Terverifikasi</span>
+                         {filterStatus === 'verified' && <CheckCircle size={16} className="text-indigo-600" />}
+                       </div>
+                     </DropdownMenuItem>
+                   </DropdownMenuContent>
+                 </DropdownMenu>
               </div>
           </div>
           
@@ -229,20 +331,64 @@ export default function BillingView() {
                             <th className="px-6 py-3">Category</th>
                             <th className="px-6 py-3">Date</th>
                             <th className="px-6 py-3">Amount</th>
+                            <th className="px-6 py-3">Bukti</th>
                             <th className="px-6 py-3">Status</th>
                             <th className="px-6 py-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {invoices.map((inv) => (
+                        {invoices
+                          .filter((inv) => {
+                            if (filterStatus === 'all') return true;
+                            if (filterStatus === 'verified') return inv.isVerified;
+                            if (filterStatus === 'pending') return inv.photoUrl && !inv.isVerified;
+                            if (filterStatus === 'unpaid') return !inv.photoUrl && !inv.isVerified;
+                            return true;
+                          })
+                          .map((inv) => (
                             <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                 <td className="px-6 py-3 text-sm font-mono text-slate-500 dark:text-slate-400">#{inv.id.substring(0, 8)}...</td>
                                 <td className="px-6 py-3 text-sm font-medium text-slate-900 dark:text-slate-50">{inv.student}</td>
                                 <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">{inv.category}</td>
                                 <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400">{inv.date}</td>
-                                <td className="px-6 py-3 text-sm font-medium text-slate-900 dark:text-slate-50">{formatIDR(inv.amount)}</td>
                                 <td className="px-6 py-3">
-                                    <Badge status={inv.status} />
+                                    <div className="space-y-1">
+                                        {inv.uniqueCode ? (
+                                            <>
+                                                <UniqueAmountDisplay 
+                                                    baseAmount={inv.amount} 
+                                                    uniqueCode={inv.uniqueCode}
+                                                    size="sm"
+                                                />
+                                                {inv.paymentMethod && (
+                                                    <div className="flex items-center gap-1">
+                                                        {inv.paymentMethod === 'CASH' ? (
+                                                            <Banknote size={12} className="text-emerald-600" />
+                                                        ) : (
+                                                            <CreditCard size={12} className="text-indigo-600" />
+                                                        )}
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">
+                                                            {inv.paymentMethod}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <span className="text-sm font-medium text-slate-900 dark:text-slate-50">
+                                                {formatIDR(inv.amount)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-3">
+                                    {inv.photoUrl ? (
+                                        <CheckCircle className="text-emerald-500" size={20} />
+                                    ) : (
+                                        <XCircle className="text-slate-300" size={20} />
+                                    )}
+                                </td>
+                                <td className="px-6 py-3">
+                                    <InvoiceStatusBadge invoice={inv} />
                                 </td>
                                 <td className="px-6 py-3 text-right">
                                     <DropdownMenu>
@@ -262,16 +408,27 @@ export default function BillingView() {
                                             </DropdownMenuItem>
                                             
                                             {inv.photoUrl && (
-                                                <DropdownMenuItem 
-                                                    className="cursor-pointer text-blue-600 dark:text-blue-400"
-                                                    onClick={() => {
-                                                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                                                        window.open(`${apiUrl}/${inv.photoUrl}`, '_blank');
-                                                    }} 
-                                                >
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View Bukti Transfer
-                                                </DropdownMenuItem>
+                                                <>
+                                                    <DropdownMenuItem 
+                                                        className="cursor-pointer text-blue-600 dark:text-blue-400"
+                                                        onClick={() => handleViewProof(inv)} 
+                                                    >
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        View Bukti Transfer
+                                                    </DropdownMenuItem>
+                                                    {!inv.isVerified && (
+                                                        <DropdownMenuItem 
+                                                            className="cursor-pointer text-emerald-600 dark:text-emerald-400"
+                                                            onClick={() => {
+                                                                const invoiceIndex = invoices.findIndex(i => i.id === inv.id);
+                                                                handleOpenSwipeableModal(invoiceIndex);
+                                                            }} 
+                                                        >
+                                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                                            Quick Verify (Swipe Mode)
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </>
                                             )}
 
                                             <DropdownMenuSeparator />
@@ -294,8 +451,8 @@ export default function BillingView() {
       </Card>
 
 
-      {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {showScheduleModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
                 <div className="flex justify-between items-center mb-4">
                     <Title>Schedule Config</Title>
@@ -375,8 +532,28 @@ export default function BillingView() {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {selectedInvoice && (
+        <ProofViewerModal
+          invoice={selectedInvoice}
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onVerify={handleVerify}
+          apiUrl={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}
+        />
+      )}
+
+      <SwipeableVerificationModal
+        invoices={invoices}
+        startIndex={verificationStartIndex}
+        isOpen={swipeableModalOpen}
+        onClose={() => setSwipeableModalOpen(false)}
+        onVerify={handleVerify}
+        apiUrl={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}
+      />
     </div>
   );
 }

@@ -63,7 +63,7 @@ export function useUsers() {
             const formData = new FormData();
             formData.append('file', file);
 
-            // Determine type parameter based on role
+            
             let type = 'student';
             if (role === 'PARENT') type = 'parent';
             if (role === 'COACH') type = 'coach';
@@ -79,7 +79,7 @@ export function useUsers() {
             if (!res.ok) throw new Error('Upload failed');
             
             toast.success("Photo uploaded successfully");
-            await fetchData(1, ''); // Refresh to see new photo
+            await fetchData(1, ''); 
             return true;
         } catch (error) {
             console.error(error);

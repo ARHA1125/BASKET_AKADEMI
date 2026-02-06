@@ -24,12 +24,12 @@ export async function login(email: string, password: string): Promise<LoginRespo
 
   const data = await response.json();
   
-  // Save credentials
+ 
   if (data.accessToken) {
       console.log("Login successful. Data:", data);
       setToken(data.accessToken);
 
-      // Try to get user from response, or decode token if missing
+      
       let role = data.user?.role;
       
       if (!role && data.accessToken) {
@@ -75,7 +75,7 @@ export function logout() {
 }
 
 export function setToken(token: string) {
-  Cookies.set(TOKEN_KEY, token, { expires: 7, path: '/' }); // 7 days
+  Cookies.set(TOKEN_KEY, token, { expires: 1, path: '/' }); 
 }
 
 export function getToken(): string | undefined {

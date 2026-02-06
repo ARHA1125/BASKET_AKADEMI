@@ -131,7 +131,7 @@ export default function WahaPage() {
                       </div>
                   </div>
               ) : status === 'WORKING' ? (
-                  // CONNECTED STATE
+                 
                   <div className="grid lg:grid-cols-3 gap-8">
                       <div className="lg:col-span-2 space-y-6">
                            <div className="grid sm:grid-cols-3 gap-4">
@@ -255,7 +255,7 @@ export default function WahaPage() {
                       </div>
                   </div>
               ) : (
-                  // DISCONNECTED STATE
+                
                   <div className="text-center py-12">
                       <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
                           <QrCode size={40} className="text-gray-400" />

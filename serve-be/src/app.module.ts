@@ -49,9 +49,13 @@ import { ValidationPipe } from '@nestjs/common';
       }),
       inject: [ConfigService],
     }),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'img'),
-      serveRoot: '/img',
+    ServeStaticModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ([{
+        rootPath: configService.get('UPLOAD_DIR') || join(__dirname, '..', 'img'),
+        serveRoot: '/img',
+      }]),
+      inject: [ConfigService],
     }),
     AuthsModuleModule,
     MarketplaceModuleModule,

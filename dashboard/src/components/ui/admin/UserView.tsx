@@ -1,3 +1,4 @@
+import { StatsCardSkeleton, TableRowSkeleton } from '@/components/LoadingSkeletons';
 import { Badge } from '@/components/ui/notifications/Common';
 import { User, useUsers } from '@/hooks/use-users';
 import {
@@ -8,6 +9,7 @@ import {
     X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
@@ -23,6 +25,11 @@ export default function UserView() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
 
     const [formData, setFormData] = useState({
@@ -81,10 +88,10 @@ export default function UserView() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!editingUser) return; // Only edit supported for now
+        if (!editingUser) return; 
 
         const payload: any = { ...formData };
-        if (!payload.password) delete payload.password; // Don't send empty password
+        if (!payload.password) delete payload.password; 
 
 
         const success = await updateUser(editingUser.id, payload);
@@ -112,17 +119,21 @@ export default function UserView() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="p-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg dark:bg-indigo-900/20 dark:text-indigo-400">
-                            <UserIcon className="w-6 h-6" />
+                {loading ? (
+                    <StatsCardSkeleton />
+                ) : (
+                    <Card className="p-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg dark:bg-indigo-900/20 dark:text-indigo-400">
+                                <UserIcon className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Users</p>
+                                <p className="text-2xl font-semibold text-slate-900 dark:text-white">{total}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Users</p>
-                            <p className="text-2xl font-semibold text-slate-900 dark:text-white">{total}</p>
-                        </div>
-                    </div>
-                </Card>
+                    </Card>
+                )}
             </div>
 
             <div className="flex items-center gap-4">
@@ -151,9 +162,7 @@ export default function UserView() {
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                             {loading ? (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">Loading...</td>
-                                </tr>
+                                <TableRowSkeleton columns={4} rows={5} />
                             ) : data.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-8 text-center text-slate-500">No users found.</td>
@@ -220,8 +229,8 @@ export default function UserView() {
             </Card>
 
 
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+            {isModalOpen && mounted && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col dark:bg-slate-900">
                         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800">
                             <div>
@@ -304,7 +313,8 @@ export default function UserView() {
                              </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
