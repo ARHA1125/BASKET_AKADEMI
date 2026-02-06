@@ -47,7 +47,7 @@ export function useAcademic<T>(resource: 'students' | 'parents' | 'coaches') {
                 throw new Error(errorData.message || 'Failed to create resource');
             }
             
-            // Refresh list
+           
             await fetchData(1, '');
             return true;
         } catch (error) {
@@ -123,7 +123,7 @@ export function useStudents() {
     const { data, ...rest } = useAcademic<Student>('students');
     const [activeTab, setActiveTab] = useState<'all' | 'active' | 'pending'>('all');
 
-    // Client-side filtering
+   
     const filteredData = data.filter(student => {
         if (activeTab === 'all') return true;
         if (activeTab === 'active') return student.user.status === 'Active';

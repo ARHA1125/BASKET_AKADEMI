@@ -20,7 +20,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // 3. Root Path Redirection: Handle Role-Based Landing Pages
   if (pathname === '/') {
     const userRole = role?.toLowerCase()
     if (userRole === 'student') {
@@ -29,12 +28,15 @@ export function middleware(request: NextRequest) {
     if (userRole === 'parent') {
       return NextResponse.redirect(new URL('/parent', request.url))
     }
+    if (userRole === 'coach') {
+      return NextResponse.redirect(new URL('/coach', request.url))
+    }
   }
 
-  // 4. RBAC: Block non-admins from /admin routes
+
+
   if (pathname.startsWith('/admin')) {
     const userRole = role?.toLowerCase()
-    // If role is missing or not admin, rewrite to 404
     if (userRole !== 'admin') {
       return NextResponse.rewrite(new URL('/404', request.url))
     }
@@ -45,14 +47,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - logo.svg (logo file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|logo.svg).*)',
   ],
 }

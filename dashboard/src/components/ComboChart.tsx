@@ -1025,7 +1025,7 @@ const ComboChart = React.forwardRef<HTMLDivElement, ComboChartProps>(
                 onClick={onBarClick}
               />
             ))}
-            {/* hidden lines to increase clickable target area */}
+
             {onValueChange
               ? mergedLineSeries.categories.map((category) => (
                   <Line

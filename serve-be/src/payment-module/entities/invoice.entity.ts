@@ -19,7 +19,7 @@ export class Invoice {
   @ManyToOne(() => Student, { nullable: true })
   student: Student;
 
-  @ManyToOne(() => Parent, { nullable: true }) // Linked to parent for billing
+  @ManyToOne(() => Parent, { nullable: true }) 
   parent: Parent;
 
   @Column('decimal')
@@ -37,8 +37,27 @@ export class Invoice {
   @Column({ nullable: true })
   photo_url: string;
 
+
+  @Column({ default: false })
+  isVerified: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  verifiedAt: Date;
+
   @Column({ nullable: true })
-  month: string; // MM-YYYY
+  verifiedBy: string;
+
+  @Column({ type: 'int', nullable: true })
+  uniqueCode: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  uniqueAmount: number;
+
+  @Column({ type: 'enum', enum: ['TRANSFER', 'CASH'], nullable: true })
+  paymentMethod: 'TRANSFER' | 'CASH';
+
+  @Column({ nullable: true })
+  month: string;
 
   @Column({ type: 'enum', enum: ['SUDAH_TERKIRIM', 'BELUM_TERKIRIM'], default: 'BELUM_TERKIRIM' })
   deliveryStatus: 'SUDAH_TERKIRIM' | 'BELUM_TERKIRIM';

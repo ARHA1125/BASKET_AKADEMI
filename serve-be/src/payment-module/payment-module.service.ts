@@ -68,6 +68,11 @@ export class PaymentModuleService {
       }
 
       invoice.amount = totalAmount;
+      
+      const uniqueCode = Math.floor(Math.random() * 900) + 100;
+      invoice.uniqueCode = uniqueCode;
+      invoice.uniqueAmount = totalAmount + uniqueCode;
+      
       const savedInvoice = await this.invoiceRepository.save(invoice);
       invoices.push(savedInvoice);
     }
@@ -190,9 +195,15 @@ export class PaymentModuleService {
         category: 'SPP Monthly',
         date: inv.createdAt.toISOString().split('T')[0],
         amount: inv.amount,
+        uniqueCode: inv.uniqueCode,
+        uniqueAmount: inv.uniqueAmount,
+        paymentMethod: inv.paymentMethod,
         status: inv.status.toLowerCase(),
         method: '-',
-        photoUrl: inv.photo_url
+        photoUrl: inv.photo_url,
+        isVerified: inv.isVerified || false,
+        verifiedAt: inv.verifiedAt,
+        verifiedBy: inv.verifiedBy
       };
     });
   }
@@ -251,6 +262,39 @@ export class PaymentModuleService {
         throw new Error('Invoice not found');
     }
     invoice.photo_url = photoUrl;
+    return this.invoiceRepository.save(invoice);
+  }
+
+  async verifyInvoice(
+    id: string, 
+    adminId: string, 
+    paymentMethod: 'TRANSFER' | 'CASH',
+    paidAmount?: number
+  ) {
+    const invoice = await this.invoiceRepository.findOne({ where: { id } });
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+    
+    if (paymentMethod === 'TRANSFER') {
+      if (!invoice.photo_url) {
+        throw new Error('No payment proof uploaded for transfer');
+      }
+      if (paidAmount && invoice.uniqueAmount && paidAmount !== invoice.uniqueAmount) {
+        throw new Error(`Amount mismatch. Expected: ${invoice.uniqueAmount}, Received: ${paidAmount}`);
+      }
+    } else if (paymentMethod === 'CASH') {
+      if (paidAmount && paidAmount < invoice.amount) {
+        throw new Error(`Insufficient amount. Expected at least: ${invoice.amount}, Received: ${paidAmount}`);
+      }
+    }
+    
+    invoice.isVerified = true;
+    invoice.verifiedAt = new Date();
+    invoice.verifiedBy = adminId;
+    invoice.status = InvoiceStatus.PAID;
+    invoice.paymentMethod = paymentMethod;
+    
     return this.invoiceRepository.save(invoice);
   }
 }
