@@ -1,23 +1,22 @@
 'use client';
+import { Logo } from '@/components/Logo';
 import {
-  Calendar,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Dribbble,
-  Layout,
-  Loader2,
-  Mail,
-  Phone,
-  Ruler,
-  ShieldCheck,
-  Trophy,
-  User,
-  Weight
+    Calendar,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Layout,
+    Loader2,
+    Mail,
+    Phone,
+    Ruler,
+    ShieldCheck,
+    Trophy,
+    User,
+    Weight
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { toast, Toaster } from 'sonner';
-import { Logo } from '@/components/Logo';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -207,10 +206,6 @@ export default function PublicApplicationWizard() {
     setIsSubmitting(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-
-      /*
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/public/apply`, {
         method: 'POST',
         headers: {
@@ -230,10 +225,6 @@ export default function PublicApplicationWizard() {
         toast.error(errorData.message || 'Pendaftaran gagal. Silakan coba lagi.');
         setIsSubmitting(false);
       }
-      */
-
-
-      setStep(4);
 
     } catch (error) {
       toast.error('Kesalahan jaringan. Silakan coba lagi nanti.');
