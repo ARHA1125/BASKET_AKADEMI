@@ -12,19 +12,27 @@ export class InvoiceScheduler {
     private notificationService: NotificationService
   ) { }
 
-  @Cron('0 * * * * *') 
+  // Runs every minute, timezone-aware for Asia/Jakarta (Indonesia)
+  @Cron('0 * * * * *', {
+    timeZone: 'Asia/Jakarta'
+  }) 
   async handleMonthlyInvoices() {
+    // Get current time in Indonesia timezone
     const now = new Date();
-    const currentDay = now.getDate();
-    const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
+    const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const currentDay = jakartaTime.getDate();
+    const currentTime = jakartaTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
     
     const schedule = await this.paymentService.getSchedule();
     
+    // Log for debugging timezone issues
+    this.logger.debug(`VPS Time: Day ${now.getDate()} @ ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`);
+    this.logger.debug(`Indonesia Time: Day ${currentDay} @ ${currentTime}`);
+    this.logger.debug(`Schedule Config: Day ${schedule.day} @ ${schedule.time}`);
 
     if (currentDay !== schedule.day) {
         return;
     }
-
 
     if (currentTime !== schedule.time) {
         return;
