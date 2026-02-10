@@ -13,8 +13,7 @@ export class WahaService implements OnModuleInit {
   private readonly logger = new Logger(WahaService.name);
   private wahaUrl: string;
   private wahaApiKey: string | undefined;
-  private readonly webhookUrl =
-    'http://host.docker.internal:3005/notifications/waha/webhook';
+  private webhookUrl: string;
 
   constructor(
     private readonly httpService: HttpService,
@@ -23,7 +22,11 @@ export class WahaService implements OnModuleInit {
     this.wahaUrl =
       this.configService.get<string>('WAHA_API_URL') || 'http://localhost:3000';
     this.wahaApiKey = this.configService.get<string>('WAHA_API_KEY');
+    this.webhookUrl =
+      this.configService.get<string>('WAHA_WEBHOOK_URL') ||
+      'http://host.docker.internal:3005/notifications/waha/webhook';
     this.logger.log(`WAHA Service initialized with URL: ${this.wahaUrl}`);
+    this.logger.log(`WAHA Webhook URL: ${this.webhookUrl}`);
   }
 
   private async autoStartSession() {
