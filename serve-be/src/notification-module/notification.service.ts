@@ -50,7 +50,7 @@ export class NotificationService {
         .join('\n\n');
       const invoiceBaseUrl =
         process.env.INVOICE_BASE_URL ??
-        'https://wirabhaktibasket.com/invoice';
+        'https://app.wirabhakti.my.id/invoice';
       const message =
 `*Tagihan Online*
 Wirabhakti Basketball Club

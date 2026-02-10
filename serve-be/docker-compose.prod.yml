@@ -22,6 +22,25 @@ services:
     networks:
       - app-network
 
+  waha:
+    image: devlikeapro/waha
+    container_name: basketball-waha
+    restart: always
+    environment:
+      - WAHA_API_KEY=36a332eeb7524536a372c75709cab27e
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=1d2e7b094a284295aff0aed95e8a6f8d
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=1d2e7b094a284295aff0aed95e8a6f8d
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
+      - WHATSAPP_RESTART_ON_FAIL=True
+      - WHATSAPP_FILES_LIFETIME=180
+    volumes:
+      - waha_sessions:/app/.sessions
+      - waha_files:/app/files
+    networks:
+      - app-network
+
   serve-be:
     build:
       context: ./serve-be
@@ -35,9 +54,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-project_db}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      WAHA_API_URL: http://basketball-waha:3000
+      WAHA_API_KEY: 36a332eeb7524536a372c75709cab27e
+      WAHA_WEBHOOK_URL: http://serve-be:3005/notifications/waha/webhook
     depends_on:
       - postgres
       - redis
+      - waha
     networks:
       - app-network
 
@@ -71,3 +94,5 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  waha_sessions:
+  waha_files:
