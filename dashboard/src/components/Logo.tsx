@@ -67,15 +67,16 @@ export const Logo = (props: Partial<ComponentProps<typeof Image>>) => {
   }
   
   return (
-    <div className={`relative overflow-hidden ${props.className}`}>
-      <Image
-        src="/wirabhakti.jpg"
-        alt="Wirabhakti Basketball Academy"
-        fill
-        className="object-contain"
-        onError={() => setImageError(true)}
-        priority
-      />
-    </div>
+    <Image
+      src="/wirabhakti.jpg"
+      alt="Wirabhakti Basketball Academy"
+      width={500}
+      height={500}
+      className={`${props.className || ''}`}
+      style={{ objectFit: 'contain', ...props.style }}
+      onError={() => setImageError(true)}
+      priority
+      unoptimized
+    />
   )
 }
