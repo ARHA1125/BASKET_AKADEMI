@@ -12,19 +12,25 @@ export class InvoiceScheduler {
     private notificationService: NotificationService
   ) { }
 
-  @Cron('0 * * * * *') 
-  async handleMonthlyInvoices() {
+ 
+  @Cron('0 * * * * *', {
+    timeZone: 'Asia/Jakarta'
+  }) 
+  async handleMonthlyInvoices() {  
     const now = new Date();
-    const currentDay = now.getDate();
-    const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
+    const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const currentDay = jakartaTime.getDate();
+    const currentTime = jakartaTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
     
     const schedule = await this.paymentService.getSchedule();
     
+    // this.logger.debug(`VPS Time: Day ${now.getDate()} @ ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`);
+    // this.logger.debug(`Indonesia Time: Day ${currentDay} @ ${currentTime}`);
+    this.logger.debug(`Schedule Config: Day ${schedule.day} @ ${schedule.time}`);
 
     if (currentDay !== schedule.day) {
         return;
     }
-
 
     if (currentTime !== schedule.time) {
         return;
