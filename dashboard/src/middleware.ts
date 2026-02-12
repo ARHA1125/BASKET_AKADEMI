@@ -10,8 +10,9 @@ export function middleware(request: NextRequest) {
 
   const isLoginPage = pathname === '/login'
   const isInvoicePage = pathname.startsWith('/invoice/')
+  const isApplyPage = pathname === '/apply'
 
-  if (!token && !isLoginPage && !isInvoicePage) {
+  if (!token && !isLoginPage && !isInvoicePage && !isApplyPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -32,8 +33,6 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/coach', request.url))
     }
   }
-
-
 
   if (pathname.startsWith('/admin')) {
     const userRole = role?.toLowerCase()
