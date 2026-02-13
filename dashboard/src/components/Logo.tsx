@@ -49,34 +49,14 @@
 // )
 import Image from "next/image"
 import type { ComponentProps } from "react"
-import { useState } from "react"
 
-export const Logo = (props: Partial<ComponentProps<typeof Image>>) => {
-  const [imageError, setImageError] = useState(false)
-  
-  if (imageError) {
-    return (
-      <div className={`flex items-center justify-center font-medium text-sm ${props.className}`}>
-        <span>Wirabhakti</span>
-        <br />
-        <span>Basketball</span>
-        <br />
-        <span>Academy</span>
-      </div>
-    )
-  }
-  
-  return (
+export const Logo = (props: Partial<ComponentProps<typeof Image>>) => (
+  <div className={`relative overflow-hidden ${props.className}`}>
     <Image
       src="/wirabhakti.jpg"
       alt="Wirabhakti Basketball Academy"
-      width={500}
-      height={500}
-      className={`${props.className || ''}`}
-      style={{ objectFit: 'contain', ...props.style }}
-      onError={() => setImageError(true)}
-      priority
-      unoptimized
+      fill
+      className="object-contain"
     />
-  )
-}
+  </div>
+)
