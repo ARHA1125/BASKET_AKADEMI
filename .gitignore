@@ -3,6 +3,7 @@
 /node_modules
 /build
 /docs
+/server-be/img
 .dashboard.code-workspace
 # Logs
 logs
