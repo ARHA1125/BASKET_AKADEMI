@@ -16,30 +16,30 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://yoururl.com"),
-  title: "Planner",
+  metadataBase: new URL("https://wirabhakti.my.id"),
+  title: "Wirabhakti Basketball Academy",
   description: "The simplest dashboard template.",
   keywords: ["Dashboard", "Data Visualization", "Software"],
   authors: [
     {
-      name: "yourname",
+      name: "fazemii01",
       url: "",
     },
   ],
-  creator: "yourname",
+  creator: "fazemii01",
   openGraph: {
     type: "website",
     locale: "id_ID",
-    url: "https://planner.tremor.so",
-    title: "Planner",
+    url: "https://wirabhakti.my.id",
+    title: "Wirabhakti Basketball Academy",
     description: "The simplest dashboard template.",
-    siteName: "Planner",
+    siteName: "Wirabhakti Basketball Academy",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Planner",
+    title: "Wirabhakti Basketball Academy",
     description: "The simplest dashboard template.",
-    creator: "@yourname",
+    creator: "@fazemii01",
   },
   icons: {
     icon: "/favicon.ico",
