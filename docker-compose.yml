@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: basketball-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: Wirabhakti20#
+      POSTGRES_DB: prod_1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: basketball-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  waha:
+    image: devlikeapro/waha
+    container_name: basketball-waha
+    restart: always
+    environment:
+      - WAHA_API_KEY=36a332eeb7524536a372c75709cab27e
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=1d2e7b094a284295aff0aed95e8a6f8d
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=1d2e7b094a284295aff0aed95e8a6f8d
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
+      - WHATSAPP_RESTART_ON_FAIL=True
+      - WHATSAPP_FILES_LIFETIME=180
+    volumes:
+      - waha_sessions:/app/.sessions
+      - waha_files:/app/files
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./serve-be
+      dockerfile: Dockerfile
+    container_name: basketball-backend
+    restart: always
+    env_file:
+      - ./serve-be/.env.production
+    environment:
+      - WAHA_API_URL=http://basketball-waha:3000
+      - WAHA_API_KEY=36a332eeb7524536a372c75709cab27e
+      - WAHA_WEBHOOK_URL=http://basketball-backend:3005/notifications/waha/webhook
+    volumes:
+      - ./serve-be/img:/app/img
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      waha:
+        condition: service_started
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: basketball-frontend
+    restart: always
+    env_file:
+      - ./dashboard/.env.production
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: basketball-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/app.wirabhakti.my.id-0001/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/live/app.wirabhakti.my.id-0001/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  waha_sessions:
+  waha_files:
+
