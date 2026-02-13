@@ -51,12 +51,13 @@ import Image from "next/image"
 import type { ComponentProps } from "react"
 
 export const Logo = (props: Partial<ComponentProps<typeof Image>>) => (
-  <div className={`relative overflow-hidden ${props.className}`}>
+  <div className={`relative ${props.className || ''}`}>
     <Image
       src="/wirabhakti.jpg"
       alt="Wirabhakti Basketball Academy"
       fill
       className="object-contain"
+      sizes="(max-width: 768px) 100vw, 33vw"
     />
   </div>
 )
