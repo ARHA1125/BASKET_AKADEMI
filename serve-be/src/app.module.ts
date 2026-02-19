@@ -15,6 +15,7 @@ import { ChatModuleModule } from './chat-module/chat-module.module';
 import { AiModuleModule } from './ai-module/ai-module.module';
 import { AcademicModuleModule } from './academic-module/academic-module.module';
 import { NotificationModuleModule } from './notification-module/notification-module.module';
+import { AdministrationModuleModule } from './administration-module/administration-module.module';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { JwtAuthGuard } from './auths-module/jwt.auth-module.guard';
 import { RoleGuard } from './auths-module/auths-module.guard';
@@ -65,6 +66,7 @@ import { ValidationPipe } from '@nestjs/common';
     AiModuleModule,
     AcademicModuleModule,
     NotificationModuleModule,
+    AdministrationModuleModule,
   ],
   controllers: [AppController],
   providers: [

@@ -70,6 +70,12 @@ const navigation2 = [
         icon: BookText,
         notifications: false,
       },
+      {
+        name: "Administrasi",
+        href: "/admin/administrasi",
+        icon: BookText,
+        notifications: false,
+      }
       
     ],
   },

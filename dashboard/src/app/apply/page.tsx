@@ -1,5 +1,6 @@
 'use client';
 import { Logo } from '@/components/Logo';
+import Link from 'next/link';
 import {
     Calendar,
     CheckCircle2,
@@ -278,9 +279,12 @@ export default function PublicApplicationWizard() {
       <Background />
 
       <div className="absolute top-4 right-4 z-20">
-        <button onClick={() => toast.info("Navigasi ke halaman login...")} className="bg-white/50 backdrop-blur-sm border border-white/60 text-sm text-slate-600 hover:text-blue-600 hover:bg-white transition-all px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm font-medium">
+        <button onClick={() => toast.info("Navigasi ke halaman login...")} className="hidden bg-white/50 backdrop-blur-sm border border-white/60 text-sm text-slate-600 hover:text-blue-600 hover:bg-white transition-all px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm font-medium">
           <Layout className="w-4 h-4" /> Masuk
         </button>
+        <Link href="/login" className="bg-white/50 backdrop-blur-sm border border-white/60 text-sm text-slate-600 hover:text-blue-600 hover:bg-white transition-all px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm font-medium">
+          <Layout className="w-4 h-4" /> Masuk
+        </Link>
       </div>
 
       <div className="w-full max-w-3xl z-10">
@@ -595,7 +599,7 @@ export default function PublicApplicationWizard() {
         {/* Footer info */}
         {step < 4 && (
           <p className="text-center text-slate-400 text-xs mt-8">
-            © 2024 Wirabhakti Basketball Academy. All rights reserved.
+            © 2026 Wirabhakti Basketball Academy. All rights reserved.
           </p>
         )}
       </div>
