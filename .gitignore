@@ -4,6 +4,7 @@
 /build
 /docs
 /server-be/img
+/landing-page
 .dashboard.code-workspace
 # Logs
 logs
