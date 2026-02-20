@@ -92,6 +92,19 @@ services:
     networks:
       - app-network
 
+  landing:
+    build:
+      context: ./landing-page/landing
+      dockerfile: Dockerfile
+    container_name: basketball-landing-page
+    restart: always
+    env_file:
+      - ./landing/.env.production
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
   nginx:
     image: nginx:alpine
     container_name: basketball-nginx
