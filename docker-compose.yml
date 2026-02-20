@@ -119,6 +119,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - landing
     networks:
       - app-network
 
