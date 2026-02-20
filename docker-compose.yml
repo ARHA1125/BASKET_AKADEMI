@@ -98,8 +98,6 @@ services:
       dockerfile: Dockerfile
     container_name: basketball-landing-page
     restart: always
-    env_file:
-      - ./landing/.env.production
     depends_on:
       - backend
       - frontend
