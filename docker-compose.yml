@@ -110,8 +110,9 @@ services:
     restart: always
     environment:
       EULA: "TRUE"
+      OPS: "fazemii01"
       GAMEMODE: survival
-      DIFFICULTY: easy
+      DIFFICULTY: normal
       SERVER_NAME: "ambatukam"
     ports:
       - "19132:19132/udp"
