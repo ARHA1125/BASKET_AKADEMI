@@ -5,6 +5,7 @@
 /docs
 /server-be/img
 /landing-page
+/minecraft-data
 .dashboard.code-workspace
 # Logs
 logs
