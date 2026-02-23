@@ -106,7 +106,7 @@ services:
   
   minecraft:
     image: itzg/minecraft-server
-    container_name: basketball-minecraft
+    container_name: minecraft-server
     restart: always
     tty: true
     stdin_open: true
