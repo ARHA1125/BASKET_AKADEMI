@@ -112,7 +112,7 @@ services:
       EULA: "TRUE"
       GAMEMODE: survival
       DIFFICULTY: easy
-      SERVER_NAME: "Wirabhakti Bedrock"
+      SERVER_NAME: "ambatukam"
     ports:
       - "19132:19132/udp"
     volumes:
