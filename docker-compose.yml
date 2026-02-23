@@ -110,7 +110,7 @@ services:
     restart: always
     environment:
       EULA: "TRUE"
-      OPS: "fazemii01"
+      OPS: "2535414806783368"
       GAMEMODE: survival
       DIFFICULTY: normal
       SERVER_NAME: "ambatukam"
