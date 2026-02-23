@@ -11,9 +11,11 @@ import {
     Users,
     X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 
 const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`bg-white rounded-lg shadow-sm border border-slate-200 dark:bg-slate-900 dark:border-slate-800 ${className}`}>
@@ -77,6 +79,17 @@ export default function ParentView() {
     useEffect(() => {
         fetchData(page, search);
     }, [page, search, fetchData]);
+
+    const containerRef = useRef<HTMLTableSectionElement>(null);
+    useGSAP(() => {
+        if (!loading && data.length > 0) {
+            gsap.fromTo(
+                ".gsap-table-row",
+                { opacity: 0, y: 15 },
+                { opacity: 1, y: 0, stagger: 0.05, duration: 0.4, ease: "power2.out" }
+            );
+        }
+    }, { scope: containerRef, dependencies: [data, loading] });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -183,7 +196,7 @@ export default function ParentView() {
                                 <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-200 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                        <tbody ref={containerRef} className="divide-y divide-slate-200 dark:divide-slate-800">
                             {loading ? (
                                 <TableRowSkeleton columns={5} rows={5} />
                             ) : data.length === 0 ? (
@@ -192,7 +205,7 @@ export default function ParentView() {
                                 </tr>
                             ) : (
                                 data.map((item: Parent) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/50">
+                                    <tr key={item.id} className="gsap-table-row hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/50 hover:-translate-y-0.5 hover:shadow-sm duration-200">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-medium text-xs dark:bg-amber-900 dark:text-amber-300">

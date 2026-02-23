@@ -15,8 +15,16 @@ export default {
       },
       keyframes: {
         hide: {
-          from: { opacity: "1" },
-          to: { opacity: "0" },
+          from: { opacity: "1", transform: "scale(1)" },
+          to: { opacity: "0", transform: "scale(0.95)" },
+        },
+        dialogOverlayShow: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        dialogContentShow: {
+          from: { opacity: "0", transform: "translate(-50%, -45%) scale(0.95)" },
+          to: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
         },
         drawerSlideLeftAndFade: {
           from: { opacity: "0", transform: "translateX(-100%)" },
@@ -55,13 +63,15 @@ export default {
       },
       animation: {
         hide: "hide 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+        dialogOverlayShow: "dialogOverlayShow 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        dialogContentShow: "dialogContentShow 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2)",
         slideDownAndFade:
-          "slideDownAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+          "slideDownAndFade 400ms cubic-bezier(0.175, 0.885, 0.32, 1.2)",
         slideLeftAndFade:
-          "slideLeftAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        slideUpAndFade: "slideUpAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+          "slideLeftAndFade 400ms cubic-bezier(0.175, 0.885, 0.32, 1.2)",
+        slideUpAndFade: "slideUpAndFade 400ms cubic-bezier(0.175, 0.885, 0.32, 1.2)",
         slideRightAndFade:
-          "slideRightAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+          "slideRightAndFade 400ms cubic-bezier(0.175, 0.885, 0.32, 1.2)",
         accordionOpen: "accordionOpen 150ms cubic-bezier(0.87, 0, 0.13, 1)",
         accordionClose: "accordionClose 150ms cubic-bezier(0.87, 0, 0.13, 1)",
         drawerSlideLeftAndFade:

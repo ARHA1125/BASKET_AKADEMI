@@ -12,9 +12,22 @@ import {
   Printer
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 
 export default function InvoiceDetailView({ params }: { params: { id: string } }) {
   const { invoice, loading, error } = useInvoice(params.id);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  useGSAP(() => {
+    if (!loading && invoice) {
+      gsap.fromTo(".gsap-invoice-stagger",
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: "power3.out" }
+      );
+    }
+  }, { scope: containerRef, dependencies: [loading, invoice] });
 
   if (loading) {
     return (
@@ -69,7 +82,7 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
   };
 
   return (
-    <div className="min-h-screen font-sans text-slate-900 py-8 px-4 sm:px-6 relative">
+    <div ref={containerRef} className="min-h-screen font-sans text-slate-900 py-8 px-4 sm:px-6 relative">
       <style>{`
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
@@ -100,7 +113,7 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
         }} />
       </div>
 
-      <div className="max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+      <div className="gsap-invoice-stagger max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
         <Link href="/admin" className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition-colors self-start sm:self-auto bg-white/50 backdrop-blur-sm border border-white/60 px-4 py-2 rounded-xl shadow-sm font-medium">
           <ChevronLeft size={16} /> Back to Invoices
         </Link>
@@ -117,7 +130,7 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
         
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
+          <div className="gsap-invoice-stagger bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
             
             <InvoiceHeader data={invoiceData} />
             
@@ -138,14 +151,14 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
         <div className="lg:col-span-1">
            <div className="sticky top-6 space-y-6">
               
-              <PaymentCard invoiceId={invoiceData.id} existingProofUrl={invoiceData.photoUrl} />
+              <div className="gsap-invoice-stagger"><PaymentCard invoiceId={invoiceData.id} existingProofUrl={invoiceData.photoUrl} /></div>
 
-              <SupportCard 
+              <div className="gsap-invoice-stagger"><SupportCard 
                 email={invoiceData.school.email} 
                 phone={invoiceData.school.phone} 
-              />
+              /></div>
               
-              <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg p-4 rounded-2xl">
+              <div className="gsap-invoice-stagger bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg p-4 rounded-2xl">
                   <h3 className="text-sm font-semibold mb-2 text-slate-900">Invoice Details</h3>
                   <div className="text-xs text-slate-500 space-y-1">
                       <p>Month: <span className="font-mono text-slate-700">{invoiceData.month || '-'}</span></p>

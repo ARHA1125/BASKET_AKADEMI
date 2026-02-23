@@ -103,6 +103,29 @@ services:
       - frontend
     networks:
       - app-network
+  
+  minecraft:
+    image: itzg/minecraft-server
+    container_name: basketball-minecraft
+    restart: always
+    tty: true
+    stdin_open: true
+    ports:
+      - "25565:25565"     
+      - "19132:19132/udp" 
+    environment:
+      EULA: "TRUE"
+      TYPE: "PAPER"       
+      MEMORY: "4G"        
+      ENABLE_GEYSER: "TRUE" 
+    volumes:
+      - ./minecraft-data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 4G      
+    networks:
+      - app-network
   nginx:
     image: nginx:alpine
     container_name: basketball-nginx

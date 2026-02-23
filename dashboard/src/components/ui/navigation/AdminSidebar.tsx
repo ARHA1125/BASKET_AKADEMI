@@ -19,6 +19,8 @@ import { RiArrowDownSFill } from "@remixicon/react"
 import { BookText, House, PackageSearch } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
 import * as React from "react"
+import { useGSAP } from "@gsap/react"
+import { gsap } from "gsap"
 import { UserProfile } from "./UserProfile"
 
 const navigation = [
@@ -114,21 +116,37 @@ export function AdminSidebar({
     return false
   }
 
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      gsap.fromTo(
+        ".gsap-sidebar-item",
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, stagger: 0.1, duration: 0.6, ease: "power2.out" }
+      )
+    },
+    { scope: containerRef }
+  )
+
   return (
     <Sidebar {...props} className="bg-gray-50 dark:bg-gray-925">
-      <SidebarHeader />
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <Input
-              type="search"
-              placeholder="Search items..."
-              className="[&>input]:sm:py-1.5"
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <div ref={containerRef} className="flex h-full w-full flex-col">
+        <div className="gsap-sidebar-item">
+          <SidebarHeader />
+        </div>
+        <SidebarContent>
+          <SidebarGroup className="gsap-sidebar-item">
+            <SidebarGroupContent>
+              <Input
+                type="search"
+                placeholder="Search items..."
+                className="[&>input]:sm:py-1.5"
+              />
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        <SidebarGroup className="pt-0">
+          <SidebarGroup className="pt-0 gsap-sidebar-item">
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {navigation.map((item) => (
@@ -147,11 +165,11 @@ export function AdminSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="px-3">
+        <div className="px-3 gsap-sidebar-item">
           <Divider className="my-0 py-0" />
         </div>
 
-        <SidebarGroup>
+        <SidebarGroup className="gsap-sidebar-item">
           <SidebarGroupContent>
             <SidebarMenu className="space-y-4">
               {navigation2.map((item) => (
@@ -203,10 +221,12 @@ export function AdminSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="gsap-sidebar-item">
         <div className="border-t border-gray-200 dark:border-gray-800" />
         <UserProfile />
       </SidebarFooter>
+      </div>
     </Sidebar>
   )
 }
+

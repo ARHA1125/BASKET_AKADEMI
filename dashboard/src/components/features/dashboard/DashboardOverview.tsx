@@ -23,9 +23,9 @@ import {
   Wallet,
   Zap
 } from 'lucide-react';
-import { useState } from 'react';
-
-
+import { useState, useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 
 interface Metric {
     title: string;
@@ -56,12 +56,34 @@ const UPCOMING_TASKS = [
 
 export function DashboardOverview() {
   const [activeTab, setActiveTab] = useState('Overview');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline();
+    
+    tl.fromTo(".gsap-header-element", 
+      { opacity: 0, y: -20 },
+      { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }
+    );
+
+    tl.fromTo(".gsap-metric-card",
+      { opacity: 0, scale: 0.9, y: 20 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.5)" },
+      "-=0.2"
+    );
+
+    tl.fromTo(".gsap-dashboard-card",
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: "power3.out" },
+      "-=0.2"
+    );
+  }, { scope: containerRef });
 
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="space-y-6">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
+          <div className="gsap-header-element">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
               Dashboard Overview 
               <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded-full border border-gray-200 dark:border-gray-700">v2.1 Live</span>
@@ -69,7 +91,7 @@ export function DashboardOverview() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Selamat pagi, berikut adalah ringkasan operasional akademi hari ini.</p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 gsap-header-element">
             <div className="relative">
               <input 
                 type="text" 
@@ -92,7 +114,7 @@ export function DashboardOverview() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {METRICS.map((metric, index) => (
-            <Card key={index} className="p-5 flex items-start justify-between hover:shadow-md transition-shadow">
+            <Card key={index} className="gsap-metric-card p-5 flex items-start justify-between hover:shadow-md transition-shadow">
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{metric.title}</p>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-50">{metric.value}</h3>
@@ -118,7 +140,7 @@ export function DashboardOverview() {
 
           <div className="lg:col-span-2 space-y-8">
             
-            <Card className="overflow-hidden">
+            <Card className="gsap-dashboard-card overflow-hidden">
               <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50">
                 <h3 className="font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
                   <CheckCircle2 size={18} className="text-blue-600" />
@@ -156,7 +178,7 @@ export function DashboardOverview() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              <Card className="p-5 border-l-4 border-l-red-500">
+              <Card className="gsap-dashboard-card p-5 border-l-4 border-l-red-500">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
                     <BrainCircuit size={18} className="text-purple-600" />
@@ -187,7 +209,7 @@ export function DashboardOverview() {
                 </button>
               </Card>
 
-              <Card className="p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative border-0">
+              <Card className="gsap-dashboard-card p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative border-0">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                    <Trophy size={120} />
                 </div>
@@ -273,7 +295,7 @@ export function DashboardOverview() {
 
           <div className="space-y-8">
             
-            <Card className="p-5">
+            <Card className="gsap-dashboard-card p-5">
               <h3 className="font-bold text-gray-900 dark:text-gray-50 mb-4 flex items-center gap-2">
                 <Calendar size={18} className="text-blue-500" />
                 Upcoming Events
@@ -305,7 +327,7 @@ export function DashboardOverview() {
               </button>
             </Card>
 
-            <Card className="p-5">
+            <Card className="gsap-dashboard-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
                   <ShoppingBag size={18} className="text-gray-700 dark:text-gray-400" />
@@ -341,7 +363,7 @@ export function DashboardOverview() {
               </button>
             </Card>
 
-            <Card className="p-5 bg-slate-900 text-white border-0">
+            <Card className="gsap-dashboard-card p-5 bg-slate-900 text-white border-0">
               <h3 className="font-bold text-sm mb-4 text-slate-300">System Health</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">

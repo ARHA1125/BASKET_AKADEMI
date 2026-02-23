@@ -273,6 +273,8 @@ const SidebarHeader = React.forwardRef<
 })
 SidebarHeader.displayName = "SidebarHeader"
 
+import { animated, useSpring } from "@react-spring/web"
+
 const SidebarLink = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentProps<"a"> & {
@@ -283,9 +285,20 @@ const SidebarLink = React.forwardRef<
   }
 >(({ children, isActive, icon, notifications, className, ...props }, ref) => {
   const Icon = icon
+
+  const [hoverProps, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 20 },
+  }))
+
   return (
-    <a
+    <animated.a
       ref={ref}
+      style={hoverProps}
+      onMouseEnter={() => api.start({ scale: 1.02 })}
+      onMouseLeave={() => api.start({ scale: 1 })}
+      onMouseDown={() => api.start({ scale: 0.95 })}
+      onMouseUp={() => api.start({ scale: 1.02 })}
       aria-current={isActive ? "page" : undefined}
       data-active={isActive}
       className={cx(
@@ -293,6 +306,7 @@ const SidebarLink = React.forwardRef<
         "text-gray-900 dark:text-gray-400 hover:dark:text-gray-50",
         "data-[active=true]:text-blue-600 data-[active=true]:dark:text-blue-500",
         focusRing,
+        className
       )}
       {...props}
     >
@@ -305,7 +319,7 @@ const SidebarLink = React.forwardRef<
           {notifications}
         </span>
       )}
-    </a>
+    </animated.a>
   )
 })
 SidebarLink.displayName = "SidebarLink"
@@ -364,9 +378,19 @@ const SidebarSubLink = React.forwardRef<
     isActive?: boolean
   }
 >(({ isActive, children, className, ...props }, ref) => {
+  const [hoverProps, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 20 },
+  }))
+
   return (
-    <a
+    <animated.a
       ref={ref}
+      style={hoverProps}
+      onMouseEnter={() => api.start({ scale: 1.02 })}
+      onMouseLeave={() => api.start({ scale: 1 })}
+      onMouseDown={() => api.start({ scale: 0.95 })}
+      onMouseUp={() => api.start({ scale: 1.02 })}
       aria-current={isActive ? "page" : undefined}
       data-active={isActive}
       className={cx(
@@ -374,6 +398,7 @@ const SidebarSubLink = React.forwardRef<
         "text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50",
         "data-[active=true]:rounded data-[active=true]:bg-white data-[active=true]:text-blue-600 data-[active=true]:shadow data-[active=true]:ring-1 data-[active=true]:ring-gray-200 data-[active=true]:dark:bg-gray-900 data-[active=true]:dark:text-blue-500 data-[active=true]:dark:ring-gray-800",
         focusRing,
+        className
       )}
       {...props}
     >
@@ -384,7 +409,7 @@ const SidebarSubLink = React.forwardRef<
         />
       )}
       {children}
-    </a>
+    </animated.a>
   )
 })
 SidebarSubLink.displayName = "SidebarSubLink"

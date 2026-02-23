@@ -1,8 +1,10 @@
 // Tremor Button [v0.2.0]
+"use client"
 
 import { Slot } from "@radix-ui/react-slot"
 import { RiLoader2Fill } from "@remixicon/react"
 import React from "react"
+import { useSpring, animated } from "@react-spring/web"
 import { tv, type VariantProps } from "tailwind-variants"
 
 import { cx, focusRing } from "@/lib/utils"
@@ -128,9 +130,34 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     forwardedRef,
   ) => {
     const Component = asChild ? Slot : "button"
+    const AnimatedComponent = animated(Component as any)
+
+    const [hoverProps, api] = useSpring(() => ({
+      scale: 1,
+      y: 0,
+      config: { tension: 300, friction: 15 },
+    }))
+
     return (
-      <Component
+      <AnimatedComponent
         ref={forwardedRef}
+        style={{ ...hoverProps, ...(props.style as object) }}
+        onMouseEnter={(e: any) => {
+          if (!disabled && !isLoading) api.start({ y: -2, scale: 1.02 })
+          if (props.onMouseEnter) props.onMouseEnter(e)
+        }}
+        onMouseLeave={(e: any) => {
+          if (!disabled && !isLoading) api.start({ y: 0, scale: 1 })
+          if (props.onMouseLeave) props.onMouseLeave(e)
+        }}
+        onMouseDown={(e: any) => {
+          if (!disabled && !isLoading) api.start({ y: 1, scale: 0.95 })
+          if (props.onMouseDown) props.onMouseDown(e)
+        }}
+        onMouseUp={(e: any) => {
+          if (!disabled && !isLoading) api.start({ y: -2, scale: 1.02 })
+          if (props.onMouseUp) props.onMouseUp(e)
+        }}
         className={cx(buttonVariants({ variant }), className)}
         disabled={disabled || isLoading}
         tremor-id="tremor-raw"
@@ -150,7 +177,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           children
         )}
-      </Component>
+      </AnimatedComponent>
     )
   },
 )

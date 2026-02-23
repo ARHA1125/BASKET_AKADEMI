@@ -9,6 +9,8 @@ import {
     Trash2
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
 
 export interface Column<T> {
     header: string;
@@ -58,6 +60,17 @@ export function ResourceTable<T extends { id: string }>({
 
     const totalPages = Math.ceil(totalItems / limit);
 
+    const containerRef = React.useRef<HTMLTableSectionElement>(null);
+    useGSAP(() => {
+        if (!loading && data.length > 0) {
+            gsap.fromTo(
+                ".gsap-table-row",
+                { opacity: 0, y: 15 },
+                { opacity: 1, y: 0, stagger: 0.05, duration: 0.4, ease: "power2.out" }
+            );
+        }
+    }, { scope: containerRef, dependencies: [data, loading] });
+
     return (
         <div className="space-y-4">
 
@@ -102,9 +115,9 @@ export function ResourceTable<T extends { id: string }>({
                                     {(onEdit || onDelete) && <th className="px-6 py-4 text-right">Actions</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tbody ref={containerRef} className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {data.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <tr key={item.id} className="gsap-table-row hover:bg-slate-50/50 dark:hover:bg-slate-800/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
                                         {columns.map((col, idx) => (
                                             <td key={idx} className={`px-6 py-4 text-sm text-slate-600 dark:text-slate-300 ${col.className || ''}`}>
                                                 {col.cell ? col.cell(item) : (col.accessorKey ? String(item[col.accessorKey]) : '-')}

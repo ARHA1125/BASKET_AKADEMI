@@ -1,7 +1,12 @@
 'use client';
 
 import { useCoaches, useParents, useStudents } from '@/hooks/use-academic';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 type Category = "red" | "orange" | "emerald" | "gray"
 type Metric = {
@@ -56,14 +61,42 @@ function Indicator({ number }: { number: number }) {
 }
 
 function MetricCard({ metric }: { metric: Metric }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const numberRef = useRef<HTMLSpanElement>(null);
+
+  useGSAP(() => {
+    if (!numberRef.current || !metric.value) {
+      if (numberRef.current && metric.value === 0) {
+        numberRef.current.innerText = "0";
+      }
+      return;
+    }
+    const obj = { val: 0 };
+    gsap.to(obj, {
+      val: metric.value,
+      duration: 1.5,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: cardRef.current,
+        start: "top 85%",
+        once: true
+      },
+      onUpdate: () => {
+        if (numberRef.current) {
+          numberRef.current.innerText = Math.floor(obj.val).toString();
+        }
+      }
+    });
+  }, { scope: cardRef, dependencies: [metric.value] });
+
   return (
-    <div className="bg-white dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+    <div ref={cardRef} className="gsap-metric-card bg-white dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
         {metric.label}
       </dt>
       <dd className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-bold text-gray-900 dark:text-gray-50">
-          {metric.displayValue}
+        <span ref={numberRef} className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+          0
         </span>
         <span className="text-sm text-gray-500 dark:text-gray-400">
            {metric.subtext}
@@ -77,9 +110,28 @@ function MetricCard({ metric }: { metric: Metric }) {
 }
 
 export function MetricsCards() {
+  const containerRef = useRef<HTMLDListElement>(null);
   const { total: totalStudents, fetchData: fetchStudents } = useStudents();
   const { total: totalParents, fetchData: fetchParents } = useParents();
   const { total: totalCoaches, fetchData: fetchCoaches } = useCoaches();
+
+  useGSAP(() => {
+    gsap.fromTo(".gsap-metric-card",
+      { opacity: 0, y: 30 },
+      {
+        opacity: 1,
+        y: 0,
+        stagger: 0.15,
+        duration: 0.6,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 85%",
+          once: true
+        }
+      }
+    );
+  }, { scope: containerRef });
 
   useEffect(() => {
     fetchStudents(1, '', 1);
@@ -113,7 +165,7 @@ export function MetricsCards() {
       <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-6">
         Overview
       </h1>
-      <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <dl ref={containerRef} className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map((metric) => (
           <MetricCard key={metric.label} metric={metric} />
         ))}

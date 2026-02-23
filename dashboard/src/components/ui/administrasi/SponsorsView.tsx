@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, Title, Text } from '@/components/ui/notifications/Common';
 import { Plus, Search, Trash2, Loader2, Save, X, UploadCloud, FileText, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import Cookies from 'js-cookie';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 
 interface Sponsor {
   id: string;
@@ -29,6 +31,8 @@ export default function SponsorsView() {
   
   const [existingLogo, setExistingLogo] = useState<string | undefined>(undefined);
   const [existingDoc, setExistingDoc] = useState<string | undefined>(undefined);
+
+  const containerRef = useRef<HTMLTableSectionElement>(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
 
@@ -57,7 +61,18 @@ export default function SponsorsView() {
 
   useEffect(() => {
     fetchSponsors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useGSAP(() => {
+    if (!loading && sponsors.length > 0) {
+      gsap.fromTo(
+        ".gsap-table-row",
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, stagger: 0.05, duration: 0.4, ease: "power2.out" }
+      );
+    }
+  }, { scope: containerRef, dependencies: [sponsors, loading] });
 
   const resetForm = () => {
       setName('');
@@ -230,9 +245,9 @@ export default function SponsorsView() {
                             <th className="px-6 py-3 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tbody ref={containerRef} className="divide-y divide-slate-100 dark:divide-slate-800">
                         {filteredSponsors.map(sponsor => (
-                            <tr key={sponsor.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                            <tr key={sponsor.id} className="gsap-table-row hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors hover:-translate-y-0.5 hover:shadow-sm duration-200">
                                 <td className="px-6 py-3">
                                     {sponsor.logoUrl ? (
                                         <img src={`${apiUrl}${sponsor.logoUrl}`} alt={sponsor.name} className="h-10 w-auto object-contain rounded-md bg-white border border-slate-100" />

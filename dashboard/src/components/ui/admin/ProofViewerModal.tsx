@@ -5,6 +5,9 @@ import { CheckCircle, Loader2, X } from 'lucide-react';
 import { FC, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useSpring, animated } from '@react-spring/web';
+import { useDrag } from '@use-gesture/react';
+
 export const ProofViewerModal: FC<ProofViewerModalProps> = ({
   invoice,
   isOpen,
@@ -13,6 +16,27 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
   apiUrl
 }) => {
   const [isVerifying, setIsVerifying] = useState(false);
+
+  const [{ y }, api] = useSpring(() => ({ y: 0 }));
+
+  const bind = useDrag(
+    ({ down, movement: [, my], velocity: [, vy], direction: [, dy], cancel }) => {
+      // Swipe down to dismiss
+      if (my > 150 && vy > 0.5 && !down) {
+        onClose();
+        // Reset immediately so next open starts fresh
+        api.start({ y: 0, immediate: true });
+        return;
+      }
+      
+      api.start({
+        y: down ? Math.max(0, my) : 0,
+        immediate: down,
+        config: { tension: 300, friction: down ? 40 : 25 }
+      });
+    },
+    { axis: 'y', filterTaps: true, rubberband: true }
+  );
 
   if (!isOpen) return null;
 
@@ -45,19 +69,23 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
   };
 
   const modal = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
       <div 
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={onClose}
       />
       
-      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex">
-        <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-8 flex items-center justify-center overflow-auto">
+      <animated.div 
+        {...bind()}
+        style={{ y, touchAction: 'none' }}
+        className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex will-change-transform cursor-grab active:cursor-grabbing"
+      >
+        <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-8 flex items-center justify-center overflow-auto pointer-events-none">
           {invoice.photoUrl ? (
             <img 
               src={`${apiUrl}/${invoice.photoUrl}`}
               alt="Payment Proof"
-              className="max-w-full h-auto rounded-lg shadow-lg"
+              className="max-w-full h-auto rounded-lg shadow-lg pointer-events-auto"
             />
           ) : (
             <p className="text-slate-500">No proof image available</p>
@@ -129,7 +157,7 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
             </button>
           )}
         </div>
-      </div>
+      </animated.div>
     </div>
   );
 

@@ -3,6 +3,12 @@
 "use client"
 
 import React from "react"
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
+
 import {
   Bar,
   CartesianGrid,
@@ -438,9 +444,30 @@ const ConditionalBarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
       setActiveBar(undefined)
     }
 
+    const internalContainerRef = React.useRef<HTMLDivElement>(null)
+    useGSAP(() => {
+      if (internalContainerRef.current) {
+        gsap.fromTo(internalContainerRef.current,
+          { opacity: 0, y: 20 },
+          { 
+            opacity: 1, 
+            y: 0, 
+            duration: 0.8, 
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: internalContainerRef.current,
+              start: "top 85%",
+              once: true
+            }
+          }
+        )
+      }
+    }, { scope: internalContainerRef })
+
     return (
-      <div
-        ref={forwardedRef}
+      <div ref={internalContainerRef} className="w-full">
+        <div
+          ref={forwardedRef}
         className={cx("h-80 w-full", className)}
         tremor-id="tremor-raw"
         {...other}
@@ -666,6 +693,7 @@ const ConditionalBarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
             ))}
           </RechartsBarChart>
         </ResponsiveContainer>
+        </div>
       </div>
     )
   },

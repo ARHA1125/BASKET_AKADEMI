@@ -13,6 +13,7 @@ export function useBilling(activeTab: 'current' | 'history') {
     useEffect(() => {
         fetchInvoices();
         fetchSchedule();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
     const getAuthHeaders = () => {
