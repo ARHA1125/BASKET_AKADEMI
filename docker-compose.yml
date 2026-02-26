@@ -103,7 +103,7 @@ services:
       - frontend
     networks:
       - app-network
-  
+
   minecraft:
     image: itzg/minecraft-bedrock-server
     container_name: minecraft-server
