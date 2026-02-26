@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 
 import { Attendance } from './entities/attendance.entity';
 import { Curriculum } from './entities/curriculum.entity';
+import { CurriculumLevel } from './entities/curriculum-level.entity';
+import { CurriculumMonth } from './entities/curriculum-month.entity';
+import { CurriculumWeekMaterial } from './entities/curriculum-week-material.entity';
 import { Parent } from './entities/parent.entity';
 import { PlayerAssessment } from './entities/player-assessment.entity';
 import { Student } from './entities/student.entity';
@@ -35,6 +38,9 @@ export class AcademicModuleService {
   constructor(
     @InjectRepository(Attendance) private attendanceRepo: Repository<Attendance>,
     @InjectRepository(Curriculum) private curriculumRepo: Repository<Curriculum>,
+    @InjectRepository(CurriculumLevel) private curriculumLevelRepo: Repository<CurriculumLevel>,
+    @InjectRepository(CurriculumMonth) private curriculumMonthRepo: Repository<CurriculumMonth>,
+    @InjectRepository(CurriculumWeekMaterial) private curriculumWeekRepo: Repository<CurriculumWeekMaterial>,
     @InjectRepository(Parent) private parentRepo: Repository<Parent>,
     @InjectRepository(PlayerAssessment) private assessmentRepo: Repository<PlayerAssessment>,
     @InjectRepository(Student) private studentRepo: Repository<Student>,
@@ -154,6 +160,61 @@ export class AcademicModuleService {
     return this.curriculumRepo.delete(id);
   }
 
+  // --- Curriculum Hierarchy CRUD ---
+
+  async createCurriculumLevel(data: { name: string; description?: string; colorCode?: string }) {
+    const level = this.curriculumLevelRepo.create(data);
+    return this.curriculumLevelRepo.save(level);
+  }
+
+  findAllCurriculumLevels() {
+    return this.curriculumLevelRepo.find({ relations: ['months', 'months.weekMaterials'] });
+  }
+
+  findOneCurriculumLevel(id: string) {
+    return this.curriculumLevelRepo.findOne({ where: { id }, relations: ['months', 'months.weekMaterials'] });
+  }
+
+  updateCurriculumLevel(id: string, data: Partial<{ name: string; description: string; colorCode: string }>) {
+    return this.curriculumLevelRepo.update(id, data);
+  }
+
+  removeCurriculumLevel(id: string) {
+    return this.curriculumLevelRepo.delete(id);
+  }
+
+  async createCurriculumMonth(data: { levelId: string; monthNumber: number; title?: string }) {
+    const month = this.curriculumMonthRepo.create({
+      ...data,
+      level: { id: data.levelId },
+    });
+    return this.curriculumMonthRepo.save(month);
+  }
+
+  updateCurriculumMonth(id: string, data: Partial<{ monthNumber: number; title: string }>) {
+    return this.curriculumMonthRepo.update(id, data);
+  }
+
+  removeCurriculumMonth(id: string) {
+    return this.curriculumMonthRepo.delete(id);
+  }
+
+  async createCurriculumWeekMaterial(data: { monthId: string; weekNumber: number; category: string; materialDescription: string }) {
+    const material = this.curriculumWeekRepo.create({
+      ...data,
+      month: { id: data.monthId },
+    });
+    return this.curriculumWeekRepo.save(material);
+  }
+
+  updateCurriculumWeekMaterial(id: string, data: Partial<{ weekNumber: number; category: string; materialDescription: string }>) {
+    return this.curriculumWeekRepo.update(id, data);
+  }
+
+  removeCurriculumWeekMaterial(id: string) {
+    return this.curriculumWeekRepo.delete(id);
+  }
+
   async createUnifiedParent(dto: CreateUnifiedParentDto) {
     const existingUser = await this.userRepo.findOne({ where: { email: dto.email } });
     if (existingUser) {
@@ -254,10 +315,11 @@ export class AcademicModuleService {
   }
 
   async createPlayerAssessment(dto: CreatePlayerAssessmentDto) {
-    const { studentId, ...rest } = dto;
+    const { studentId, weekMaterialId, ...rest } = dto;
     const assessment = this.assessmentRepo.create({
       ...rest,
       student: { id: studentId },
+      weekMaterial: { id: weekMaterialId },
     });
     return this.assessmentRepo.save(assessment);
   }
@@ -413,10 +475,12 @@ export class AcademicModuleService {
   }
 
   async createTrainingClass(dto: CreateTrainingClassDto) {
-    const { coachId, ...rest } = dto;
+    const { coachId, curriculumLevelId, activeMonthId, ...rest } = dto;
     const trainingClass = this.trainingClassRepo.create({
       ...rest,
       coach: coachId ? { id: coachId } : undefined,
+      curriculumLevel: curriculumLevelId ? { id: curriculumLevelId } : undefined,
+      activeMonth: activeMonthId ? { id: activeMonthId } : undefined,
     });
     return this.trainingClassRepo.save(trainingClass);
   }

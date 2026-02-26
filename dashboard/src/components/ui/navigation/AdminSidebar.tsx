@@ -77,6 +77,12 @@ const navigation2 = [
         href: "/admin/administrasi",
         icon: BookText,
         notifications: false,
+      },
+      {
+        name: "Kurikulum & Akademi",
+        href: "/admin/kurikulum",
+        icon: BookText,
+        notifications: false,
       }
       
     ],

@@ -1,0 +1,127 @@
+{
+	"info": {
+		"_postman_id": "b1b0e9a7-96a3-48b4-b52b-c8d76a54f21a",
+		"name": "Wira Bhakti Curriculum API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01. Create Level (Dasar)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Dasar\",\n    \"description\": \"Tingkat Fundamental\",\n    \"colorCode\": \"blue\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3001/academic/curriculum-levels",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"academic",
+						"curriculum-levels"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "02. Create Month (Bulan 1)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"levelId\": \"{{levelId}}\",\n    \"monthNumber\": 1,\n    \"title\": \"Bulan Pertama\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3001/academic/curriculum-months",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"academic",
+						"curriculum-months"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "03. Create Week Material (Minggu 1)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"monthId\": \"{{monthId}}\",\n    \"weekNumber\": 1,\n    \"category\": \"Dasar Body Control\",\n    \"materialDescription\": \"Stance, Start, Step\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3001/academic/curriculum-week-materials",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"academic",
+						"curriculum-week-materials"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "04. Get Level By ID (Hierarchy Tree)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3001/academic/curriculum-levels/{{levelId}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"academic",
+						"curriculum-levels",
+						"{{levelId}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "levelId",
+			"value": "FILL_ME_AFTER_STEP_1"
+		},
+		{
+			"key": "monthId",
+			"value": "FILL_ME_AFTER_STEP_2"
+		}
+	]
+}

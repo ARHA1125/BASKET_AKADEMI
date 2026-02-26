@@ -121,6 +121,63 @@ export class AcademicModuleController {
     return this.academicService.removeCurriculum(id);
   }
 
+  // --- Curriculum Hierarchy API ---
+
+  @Post('curriculum-levels')
+  createCurriculumLevel(@Body() data: { name: string; description?: string; colorCode?: string }) {
+    return this.academicService.createCurriculumLevel(data);
+  }
+
+  @Get('curriculum-levels')
+  findAllCurriculumLevels() {
+    return this.academicService.findAllCurriculumLevels();
+  }
+
+  @Get('curriculum-levels/:id')
+  findOneCurriculumLevel(@Param('id') id: string) {
+    return this.academicService.findOneCurriculumLevel(id);
+  }
+
+  @Patch('curriculum-levels/:id')
+  updateCurriculumLevel(@Param('id') id: string, @Body() data: Partial<{ name: string; description: string; colorCode: string }>) {
+    return this.academicService.updateCurriculumLevel(id, data);
+  }
+
+  @Delete('curriculum-levels/:id')
+  removeCurriculumLevel(@Param('id') id: string) {
+    return this.academicService.removeCurriculumLevel(id);
+  }
+
+  @Post('curriculum-months')
+  createCurriculumMonth(@Body() data: { levelId: string; monthNumber: number; title?: string }) {
+    return this.academicService.createCurriculumMonth(data);
+  }
+
+  @Patch('curriculum-months/:id')
+  updateCurriculumMonth(@Param('id') id: string, @Body() data: Partial<{ monthNumber: number; title: string }>) {
+    return this.academicService.updateCurriculumMonth(id, data);
+  }
+
+  @Delete('curriculum-months/:id')
+  removeCurriculumMonth(@Param('id') id: string) {
+    return this.academicService.removeCurriculumMonth(id);
+  }
+
+  @Post('curriculum-week-materials')
+  createCurriculumWeekMaterial(@Body() data: { monthId: string; weekNumber: number; category: string; materialDescription: string }) {
+    return this.academicService.createCurriculumWeekMaterial(data);
+  }
+
+  @Patch('curriculum-week-materials/:id')
+  updateCurriculumWeekMaterial(@Param('id') id: string, @Body() data: Partial<{ weekNumber: number; category: string; materialDescription: string }>) {
+    return this.academicService.updateCurriculumWeekMaterial(id, data);
+  }
+
+  @Delete('curriculum-week-materials/:id')
+  removeCurriculumWeekMaterial(@Param('id') id: string) {
+    return this.academicService.removeCurriculumWeekMaterial(id);
+  }
+
   @Post('unified/parents')
   createUnifiedParent(@Body() dto: CreateUnifiedParentDto) {
     return this.academicService.createUnifiedParent(dto);

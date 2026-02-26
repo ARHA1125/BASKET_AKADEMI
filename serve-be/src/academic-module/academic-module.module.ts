@@ -6,6 +6,9 @@ import { AcademicModuleController } from './academic-module.controller';
 // Entities
 import { Attendance } from './entities/attendance.entity';
 import { Curriculum } from './entities/curriculum.entity';
+import { CurriculumLevel } from './entities/curriculum-level.entity';
+import { CurriculumMonth } from './entities/curriculum-month.entity';
+import { CurriculumWeekMaterial } from './entities/curriculum-week-material.entity';
 import { Parent } from './entities/parent.entity';
 import { PlayerAssessment } from './entities/player-assessment.entity';
 import { Student } from './entities/student.entity';
@@ -18,10 +21,13 @@ import { PublicAppService } from './public-app.service';
 
 @Module({
   imports: [
-    // Register all entities so the Service can inject their Repositories
+   
     TypeOrmModule.forFeature([
       Attendance,
       Curriculum,
+      CurriculumLevel,
+      CurriculumMonth,
+      CurriculumWeekMaterial,
       Parent,
       PlayerAssessment,
       Student,

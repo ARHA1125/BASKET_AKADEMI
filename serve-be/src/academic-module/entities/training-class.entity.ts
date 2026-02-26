@@ -1,6 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
 import { Student } from './student.entity';
 import { User } from '../../auths-module/entities/user.entity';
+import { CurriculumLevel } from './curriculum-level.entity';
+import { CurriculumMonth } from './curriculum-month.entity';
 
 @Entity()
 export class TrainingClass {
@@ -18,4 +20,10 @@ export class TrainingClass {
 
   @ManyToOne(() => User, (user) => user.coachedClasses, { nullable: true })
   coach: User; 
+
+  @ManyToOne(() => CurriculumLevel, { nullable: true })
+  curriculumLevel: CurriculumLevel;
+
+  @ManyToOne(() => CurriculumMonth, { nullable: true })
+  activeMonth: CurriculumMonth;
 }
