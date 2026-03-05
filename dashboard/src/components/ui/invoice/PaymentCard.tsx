@@ -60,8 +60,8 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
   return (
       <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
          <div className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-            <h3 className="font-semibold text-lg">Payment Details</h3>
-            <p className="text-blue-50 text-sm mt-1">Select your preferred payment method.</p>
+            <h3 className="font-semibold text-lg">Rincian Pembayaran</h3>
+            <p className="text-blue-50 text-sm mt-1">Pilih metode pembayaran yang Anda inginkan.</p>
          </div>
          
          <div className="p-6 space-y-4">
@@ -89,8 +89,8 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
                         <QrCode size={120} className="text-slate-800" />
                      </div>
                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">Scan with GoPay / OVO / Dana</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">QR code valid for 15 minutes</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">Pindai dengan GoPay / OVO / Dana</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Kode QR berlaku selama 15 menit</p>
                      </div>
                   </div>
                )}
@@ -110,7 +110,7 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
                               <div className="text-right">
                                  <p className="font-mono font-bold text-lg text-blue-600">1234 5678 90</p>
                                  <button onClick={() => { navigator.clipboard.writeText('1234567890'); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-colors">
-                                    {copied ? '✓ Copied!' : 'Copy No. Rek'}
+                                    {copied ? '✓ Disalin!' : 'Salin No. Rek'}
                                  </button>
                               </div>
                            </div>
@@ -126,13 +126,13 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
                                         className="w-full bg-slate-900 hover:bg-slate-800 text-white" 
                                         onClick={() => window.open(activeProofUrl, '_blank')}
                                      >
-                                        <Eye size={16} className="mr-2"/> View Uploaded Proof
+                                        <Eye size={16} className="mr-2"/> Lihat Bukti yang Diunggah
                                      </Button>
                                 )}
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <p className="text-xs text-slate-500">Silahkan upload bukti transfer anda disini.</p>
+                                <p className="text-xs text-slate-500">Silakan unggah bukti transfer Anda di sini.</p>
                                 <input 
                                     type="file" 
                                     accept="image/*"
@@ -144,7 +144,7 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
                                     disabled={!file || uploading} 
                                     onClick={handleUpload}
                                 >
-                                    {uploading ? 'Uploading...' : 'Upload Proof'}
+                                    {uploading ? 'Mengunggah...' : 'Unggah Bukti'}
                                 </Button>
                             </div>
                         )}
@@ -155,13 +155,13 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
             
             {paymentMethod === 'qris' && (
                 <button className="w-full py-3 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all duration-300 active:scale-95">
-                   I Have Paid
+                   Saya Sudah Membayar
                 </button>
             )}
             
             <div className="flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-slate-500 mt-4">
                <ShieldCheck size={14} />
-               <span>Payments secured by Midtrans</span>
+               <span>Pembayaran diamankan oleh Midtrans</span>
             </div>
          </div>
       </div>

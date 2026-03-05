@@ -6,13 +6,7 @@ import Cookies from 'js-cookie';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 
-interface Sponsor {
-  id: string;
-  name: string;
-  logoUrl?: string;
-  agreementDocUrl?: string;
-  createdAt: string;
-}
+import { Sponsor } from '@/types/administrasi';
 
 export default function SponsorsView() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);

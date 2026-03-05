@@ -12,12 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 
-export interface Column<T> {
-    header: string;
-    accessorKey?: keyof T;
-    cell?: (item: T) => React.ReactNode;
-    className?: string;
-}
+import { Column } from '@/types/admin';
 
 interface ResourceTableProps<T> {
     data: T[];

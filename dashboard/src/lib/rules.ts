@@ -10,14 +10,7 @@ const getHeaders = () => {
   };
 };
 
-export interface AutomationRule {
-  id: string;
-  name: string;
-  keyword: string;
-  response: string;
-  isActive: boolean;
-  createdAt?: string;
-}
+import { AutomationRule } from '@/types/rules';
 
 export async function getRules(): Promise<AutomationRule[]> {
   const response = await fetch(`${API_URL}/notification-rules`, {

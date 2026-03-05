@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { CreatePaymentModuleDto } from './dto/create-payment-module.dto';
 import { UpdatePaymentModuleDto } from './dto/update-payment-module.dto';
 import { Invoice, InvoiceStatus } from './entities/invoice.entity';
@@ -48,6 +48,12 @@ export class PaymentModuleService {
         continue;
       }
 
+      const activeStudents = parent.students.filter(
+        student => student.user?.status === 'Active'
+      );
+
+      if (activeStudents.length === 0) continue;
+
       const invoice = new Invoice();
       invoice.parent = parent;
       invoice.dueDate = new Date(new Date().setDate(new Date().getDate() + 7));
@@ -57,10 +63,10 @@ export class PaymentModuleService {
       invoice.items = [];
       let totalAmount = 0;
 
-      for (const student of parent.students) {
+      for (const student of activeStudents) {
         const item = new InvoiceItem();
-        item.description = `SPP Monthly - ${student.user?.fullName || 'Student'} - ${new Date().toLocaleString('default', { month: 'long' })}`;
-        item.amount = 200000;
+        item.description = `SPP Bulanan - ${student.user?.fullName || 'Student'} - ${new Date().toLocaleString('default', { month: 'long' })}`;
+        item.amount = 100000;
         item.student = student;
 
         invoice.items.push(item);
@@ -161,7 +167,7 @@ export class PaymentModuleService {
     return this.generateMonthlyInvoices();
   }
 
-  async findAllInvoices(filter: 'current' | 'history') {
+  async findAllInvoices(filter: 'current' | 'history', month?: number, year?: number) {
     const query = this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.parent', 'parent')
@@ -171,7 +177,16 @@ export class PaymentModuleService {
       .leftJoinAndSelect('student.user', 'studentUser')
       .orderBy('invoice.createdAt', 'DESC');
 
-    if (filter === 'current') {
+    if (month && year) {
+      const startOfMonth = new Date(year, month - 1, 1);
+      const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+      query.where('invoice.createdAt >= :start AND invoice.createdAt <= :end', { start: startOfMonth, end: endOfMonth });
+      
+      if (filter === 'current') {
+          // If they are on "Aktif" tab but select a month, maybe keep only unpaid ones
+          query.andWhere('invoice.status = :status', { status: InvoiceStatus.UNPAID });
+      }
+    } else if (filter === 'current') {
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -192,7 +207,7 @@ export class PaymentModuleService {
       return {
         id: inv.id,
         student: studentName || 'Unknown',
-        category: 'SPP Monthly',
+        category: 'SPP Bulanan',
         date: inv.createdAt.toISOString().split('T')[0],
         amount: inv.amount,
         uniqueCode: inv.uniqueCode,
@@ -208,6 +223,30 @@ export class PaymentModuleService {
     });
   }
 
+  async deleteAllInvoices(filter: 'current' | 'history') {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const query = this.invoiceRepository.createQueryBuilder('invoice');
+
+    if (filter === 'current') {
+      query.where('invoice.createdAt >= :start', { start: startOfMonth });
+    } else {
+      query.where('invoice.createdAt < :start', { start: startOfMonth });
+    }
+
+    const invoicesToDelete = await query.getMany();
+    
+    if (invoicesToDelete.length === 0) {
+      return { deleted: false, count: 0, message: 'No invoices found to delete.' };
+    }
+
+    await this.invoiceRepository.remove(invoicesToDelete);
+
+    return { deleted: true, count: invoicesToDelete.length };
+  }
+
   async remove(id: string) {
     const invoice = await this.invoiceRepository.findOne({
       where: { id },
@@ -217,6 +256,146 @@ export class PaymentModuleService {
 
     await this.invoiceRepository.remove(invoice);
     return { deleted: true, id };
+  }
+
+  async getOverviewData() {
+    // 1. Total Revenue & Target (Current Month)
+    const startOfCurrentMonth = new Date();
+    startOfCurrentMonth.setDate(1);
+    startOfCurrentMonth.setHours(0, 0, 0, 0);
+
+    const endOfCurrentMonth = new Date();
+    endOfCurrentMonth.setMonth(endOfCurrentMonth.getMonth() + 1);
+    endOfCurrentMonth.setDate(0); 
+    endOfCurrentMonth.setHours(23, 59, 59, 999);
+
+    const currentMonthInvoices = await this.invoiceRepository.find({
+        where: {
+            createdAt: Between(startOfCurrentMonth, endOfCurrentMonth)
+        }
+    });
+
+    const totalRevenue = currentMonthInvoices
+        .filter(inv => inv.status === InvoiceStatus.PAID)
+        .reduce((sum, inv) => sum + Number(inv.uniqueAmount || inv.amount || 0), 0);
+        
+    const targetRevenue = currentMonthInvoices
+        .reduce((sum, inv) => sum + Number(inv.amount || 0), 0) || 70000000;
+
+    // Revenue Growth
+    const lastMonthStart = new Date();
+    lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+    lastMonthStart.setDate(1);
+    lastMonthStart.setHours(0, 0, 0, 0);
+
+    const lastMonthEnd = new Date();
+    lastMonthEnd.setDate(0); 
+    lastMonthEnd.setHours(23, 59, 59, 999);
+
+    const lastMonthInvoices = await this.invoiceRepository.find({
+        where: {
+            createdAt: Between(lastMonthStart, lastMonthEnd),
+            status: InvoiceStatus.PAID
+        }
+    });
+
+    const lastMonthRevenue = lastMonthInvoices
+        .reduce((sum, inv) => sum + Number(inv.uniqueAmount || inv.amount || 0), 0);
+
+    let revenueGrowth = 0;
+    if (lastMonthRevenue > 0) {
+        revenueGrowth = Math.round(((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+    } else if (totalRevenue > 0) {
+        revenueGrowth = 100;
+    }
+
+    // 2. Aging AR (Outstanding)
+    const unpaidInvoices = await this.invoiceRepository.find({
+        where: {
+             status: InvoiceStatus.UNPAID
+        }
+    });
+    
+    const agingAR = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+    const agingStudents = unpaidInvoices.length;
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const overdueInvoices = unpaidInvoices.filter(inv => inv.dueDate && new Date(inv.dueDate) < thirtyDaysAgo);
+    const overdueAmount = overdueInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+
+    // 3. Net Profit Estimate & Expenses
+    const payrolls = await this.calculatePayroll('current');
+    const estimatedExpenses = payrolls.reduce((sum, p) => sum + Number(p.total || 0), 0); 
+
+    const netProfit = totalRevenue - estimatedExpenses;
+    let grossMargin = 0;
+    if (totalRevenue > 0) {
+        grossMargin = Math.round((netProfit / totalRevenue) * 100);
+    } else if (netProfit < 0) {
+        grossMargin = -100;
+    }
+
+    // 4. Cash Flow Trends (Last 6 Months)
+    const cashFlow: any[] = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        
+        const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+        
+        const monthInvoices = await this.invoiceRepository.find({
+            where: {
+                createdAt: Between(monthStart, monthEnd)
+            }
+        });
+        
+        const income = monthInvoices
+            .filter(inv => inv.status === InvoiceStatus.PAID)
+            .reduce((sum, inv) => sum + Number(inv.uniqueAmount || inv.amount || 0), 0);
+            
+        const expense = monthInvoices
+            .filter(inv => inv.status === InvoiceStatus.UNPAID)
+            .reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+        
+        cashFlow.push({
+            month: d.toLocaleString('id-ID', { month: 'short' }),
+            income: income,
+            expense: expense
+        });
+    }
+
+    // 5. Recent Transactions
+    const recentDbInvoices = await this.invoiceRepository.find({
+        where: { status: InvoiceStatus.PAID },
+        order: {
+            verifiedAt: 'DESC'
+        },
+        take: 5
+    });
+    
+    const recentTransactions = recentDbInvoices.map((inv, idx) => ({
+        id: inv.id,
+        title: 'Pembayaran SPP',
+        date: inv.verifiedAt ? new Date(inv.verifiedAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-',
+        amount: Number(inv.uniqueAmount || inv.amount || 0),
+        type: 'income'
+    }));
+
+    return {
+        totalRevenue,
+        targetRevenue,
+        revenueGrowth,
+        agingAR,
+        agingStudents,
+        overdueAmount,
+        netProfit,
+        grossMargin,
+        cashFlow,
+        recentTransactions
+    };
   }
 
   async findCurrentMonthInvoicesEntities() {

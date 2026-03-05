@@ -40,8 +40,8 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
   if (error || !invoice) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-500">
-         <p>Failed to load invoice</p>
-         <Link href="/admin" className="text-blue-600 hover:underline mt-2">Back to Invoices</Link>
+         <p>Gagal memuat tagihan</p>
+         <Link href="/admin" className="text-blue-600 hover:underline mt-2">Kembali ke Daftar Tagihan</Link>
       </div>
     );
   }
@@ -69,8 +69,6 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
     items: invoice.items?.map((item: any, idx: number) => ({
         id: idx + 1,
         desc: item.description,
-        qty: 1,
-        price: Number(item.amount),
         total: Number(item.amount)
     })) || [],
     subtotal: Number(invoice.amount),
@@ -115,14 +113,14 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
 
       <div className="gsap-invoice-stagger max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
         <Link href="/admin" className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition-colors self-start sm:self-auto bg-white/50 backdrop-blur-sm border border-white/60 px-4 py-2 rounded-xl shadow-sm font-medium">
-          <ChevronLeft size={16} /> Back to Invoices
+          <ChevronLeft size={16} /> Kembali ke Daftar Tagihan
         </Link>
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
             onClick={() => window.print()}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-white/50 backdrop-blur-sm border border-white/60 text-sm text-slate-600 hover:text-blue-600 hover:bg-white transition-all rounded-xl shadow-sm font-medium"
           >
-            <Printer size={16} />Print
+            <Printer size={16} />Cetak
           </button>
         </div>
       </div>
@@ -159,10 +157,10 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
               /></div>
               
               <div className="gsap-invoice-stagger bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg p-4 rounded-2xl">
-                  <h3 className="text-sm font-semibold mb-2 text-slate-900">Invoice Details</h3>
+                  <h3 className="text-sm font-semibold mb-2 text-slate-900">Rincian Tagihan</h3>
                   <div className="text-xs text-slate-500 space-y-1">
-                      <p>Month: <span className="font-mono text-slate-700">{invoiceData.month || '-'}</span></p>
-                      <p>Delivery: <span className={`font-mono ${invoiceData.deliveryStatus === 'SUDAH_TERKIRIM' ? 'text-green-600' : 'text-amber-600'}`}>{invoiceData.deliveryStatus || '-'}</span></p>
+                      <p>Bulan: <span className="font-mono text-slate-700">{invoiceData.month || '-'}</span></p>
+                      <p>Pengiriman: <span className={`font-mono ${invoiceData.deliveryStatus === 'SUDAH_TERKIRIM' ? 'text-green-600' : 'text-amber-600'}`}>{invoiceData.deliveryStatus || '-'}</span></p>
                   </div>
               </div>
 

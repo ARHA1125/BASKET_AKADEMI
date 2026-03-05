@@ -20,11 +20,11 @@ export const InvoiceSummary = ({ subtotal, tax, total, uniqueCode }: InvoiceSumm
                </div>
              )}
              <div className="flex justify-between text-xs sm:text-sm">
-                <span className="text-slate-600 font-medium">Tax (0%)</span>
+                <span className="text-slate-600 font-medium">Pajak (0%)</span>
                 <span className="font-semibold text-slate-900">{formatIDR(tax)}</span>
              </div>
              <div className="border-t-2 border-blue-100 pt-3 sm:pt-4 flex justify-between items-center bg-gradient-to-r from-blue-50 to-transparent -mx-2 sm:-mx-4 px-2 sm:px-4 py-3 sm:py-4 rounded-lg">
-                <span className="text-base sm:text-lg font-bold text-slate-900">Total Amount</span>
+                <span className="text-base sm:text-lg font-bold text-slate-900">Total Tagihan</span>
                 <span className="text-xl sm:text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{formatIDR(total)}</span>
              </div>
           </div>

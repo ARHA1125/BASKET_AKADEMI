@@ -19,12 +19,7 @@ import { ArrowUpRight, Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import * as React from "react"
 
-import { DropdownUserProfileProps } from "@/types/components"
-
-interface AdditionalProps {
-    userEmail: string;
-    userName?: string;
-}
+import { DropdownUserProfileProps, AdditionalProps } from "@/types/components"
 
 export function DropdownUserProfile({
   children,

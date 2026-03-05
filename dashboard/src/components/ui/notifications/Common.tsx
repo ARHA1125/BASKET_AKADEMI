@@ -9,15 +9,7 @@ export const formatIDR = (num: number) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
 };
 
-
-
-interface CardProps {
-  children: React.ReactNode;
-  className?: string;
-  noPadding?: boolean;
-  decoration?: string;
-  decorationColor?: "indigo" | "emerald" | "rose" | "amber";
-}
+import { CardProps, TabItem, TabListProps } from '@/types/components';
 
 export const Card = ({ children, className = "", noPadding = false, decoration = "", decorationColor = "indigo" }: CardProps) => {
   const decorationClasses = {
@@ -97,18 +89,6 @@ export const Badge = ({ status, size = "md" }: { status: string; size?: "sm" | "
     </span>
   );
 };
-
-interface TabItem {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-}
-
-interface TabListProps {
-  tabs: TabItem[];
-  activeTab: string;
-  onChange: (id: any) => void;
-}
 
 export const TabList = ({ tabs, activeTab, onChange }: TabListProps) => (
   <div className="flex space-x-1 bg-slate-100/50 dark:bg-slate-900/50 p-1 rounded-lg w-fit mb-6 border border-slate-200/60 dark:border-slate-800/60 overflow-x-auto max-w-full">

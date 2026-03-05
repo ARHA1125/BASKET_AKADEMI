@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { TabList, Title, Text } from '@/components/ui/notifications/Common'; 
-import { BookOpen, Users, BarChart3 } from 'lucide-react';
+import { BookOpen, Users, BarChart3, TrendingUp } from 'lucide-react';
 import CurriculumBuilderView from '@/components/ui/kurikulum/CurriculumBuilderView';
+import CurriculumOverviewView from '@/components/ui/kurikulum/CurriculumOverviewView';
 
 export default function KurikulumPage() {
-  const [activeTab, setActiveTab] = useState('builder');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const tabs = [
+    { id: 'overview', label: 'Overview & Tracking', icon: <TrendingUp size={16}/> },
     { id: 'builder', label: 'Manajemen Master Kurikulum', icon: <BookOpen size={16}/> },
     { id: 'plotting', label: 'Manajemen Kelas & Plotting', icon: <Users size={16}/> },
     { id: 'tracking', label: 'Pemantauan Akademik Global', icon: <BarChart3 size={16}/> },
@@ -24,6 +26,7 @@ export default function KurikulumPage() {
       <TabList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
       
       <div className="min-h-[500px]">
+        {activeTab === 'overview' && <CurriculumOverviewView />}
         {activeTab === 'builder' && <CurriculumBuilderView />}
         {activeTab === 'plotting' && (
             <div className="flex flex-col items-center justify-center p-12 text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
@@ -33,10 +36,10 @@ export default function KurikulumPage() {
             </div>
         )}
         {activeTab === 'tracking' && (
-             <div className="flex flex-col items-center justify-center p-12 text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+            <div className="flex flex-col items-center justify-center p-12 text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
                 <BarChart3 size={48} className="mb-4 text-slate-300" />
-                <h3 className="font-semibold text-lg">Academic Tracking module coming soon</h3>
-                 <p>This feature will show global academic statistics and coach discipline.</p>
+                <h3 className="font-semibold text-lg">Pemantauan Akademik Global coming soon</h3>
+                <p>Global academic tracking visualizations and reports will be available here.</p>
             </div>
         )}
       </div>

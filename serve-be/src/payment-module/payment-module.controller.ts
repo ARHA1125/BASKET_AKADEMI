@@ -16,9 +16,27 @@ import * as fs from 'fs';
 export class PaymentModuleController {
   constructor(private readonly paymentModuleService: PaymentModuleService) {}
 
+  @Get('overview')
+  getOverview() {
+    return this.paymentModuleService.getOverviewData();
+  }
+
   @Get('invoices')
-  findAllInvoices(@Query('filter') filter: 'current' | 'history') {
-    return this.paymentModuleService.findAllInvoices(filter || 'history');
+  findAllInvoices(
+    @Query('filter') filter: 'current' | 'history',
+    @Query('month') month?: string,
+    @Query('year') year?: string
+  ) {
+    return this.paymentModuleService.findAllInvoices(
+        filter || 'history', 
+        month ? parseInt(month) : undefined, 
+        year ? parseInt(year) : undefined
+    );
+  }
+
+  @Delete('invoices/all')
+  deleteAllInvoices(@Query('filter') filter: 'current' | 'history') {
+    return this.paymentModuleService.deleteAllInvoices(filter || 'history');
   }
 
   @Get('schedule')

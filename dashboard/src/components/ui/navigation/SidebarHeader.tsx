@@ -4,12 +4,7 @@ import { Logo } from "@/components/Logo";
 import { SidebarHeader as BaseSidebarHeader } from "@/components/Sidebar";
 import { cx } from "@/lib/utils";
 
-interface SidebarHeaderProps {
-  title: string
-  subtitle: string
-  logoColor?: string 
-  className?: string
-}
+import { SidebarHeaderProps } from '@/types/components';
 
 export function SidebarHeader({ title, subtitle, logoColor = "text-blue-500", className }: SidebarHeaderProps) {
   return (

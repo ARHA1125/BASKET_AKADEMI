@@ -3,16 +3,10 @@ import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { useRef } from 'react';
 
-interface InvoiceItem {
-  id: number;
-  desc: string;
-  qty: number;
-  price: number;
-  total: number;
-}
+import { SimpleInvoiceItem } from '@/types/invoice-components';
 
 interface InvoiceItemsProps {
-  items: InvoiceItem[];
+  items: SimpleInvoiceItem[];
 }
 
 export const InvoiceItems = ({ items }: InvoiceItemsProps) => {
@@ -33,21 +27,17 @@ export const InvoiceItems = ({ items }: InvoiceItemsProps) => {
        <table className="w-full text-left">
           <thead>
              <tr className="border-b-2 border-slate-100 dark:border-slate-800">
-                <th className="py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-1/2">Description</th>
-                <th className="py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Qty</th>
-                <th className="py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Price</th>
-                <th className="py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Total</th>
+                <th className="py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider w-1/2">Deskripsi</th>
+                <th className="py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider text-right">Total</th>
              </tr>
           </thead>
           <tbody ref={containerRef} className="divide-y divide-slate-50 dark:divide-slate-800/50">
              {items.map((item) => (
                 <tr key={item.id} className="gsap-invoice-item">
                    <td className="py-4 pr-4">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{item.desc}</p>
+                      <p className="text-sm font-medium text-slate-800">{item.desc}</p>
                    </td>
-                   <td className="py-4 text-right text-sm text-slate-600 dark:text-slate-400">{item.qty}</td>
-                   <td className="py-4 text-right text-sm text-slate-600 dark:text-slate-400">{formatIDR(item.price)}</td>
-                   <td className="py-4 text-right text-sm font-medium text-slate-900 dark:text-slate-200">{formatIDR(item.total)}</td>
+                   <td className="py-4 text-right text-sm font-medium text-slate-800">{formatIDR(item.total)}</td>
                 </tr>
              ))}
           </tbody>
