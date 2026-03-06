@@ -8,7 +8,9 @@ import {
     RefreshCw,
     Trash2,
     Save,
-    Tags
+    Tags,
+    FileText,
+    Bell
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Badge, Card, Text, Title } from './Common';
@@ -27,17 +29,20 @@ export default function AutomationsView() {
 
   // Template Builder State
   const { templates, updateTemplate, createTemplate, loading: templatesLoading } = useTemplates();
-  const [invoiceTemplate, setInvoiceTemplate] = useState('');
-  const [invoiceTemplateId, setInvoiceTemplateId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'INVOICE' | 'REMINDER'>('INVOICE');
+  const [currentTemplate, setCurrentTemplate] = useState('');
+  const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
-    const invTmp = templates.find(t => t.type === 'INVOICE' && t.isActive);
-    if (invTmp) {
-      setInvoiceTemplate(invTmp.content);
-      setInvoiceTemplateId(invTmp.id);
-    } else if (!templatesLoading && templates.length > 0) {
-        // Only set default if templates are loaded and it's truly empty
-        setInvoiceTemplate(`*Tagihan Online*
+    const tmp = templates.find(t => t.type === activeTab && t.isActive);
+    if (tmp) {
+      setCurrentTemplate(tmp.content);
+      setCurrentTemplateId(tmp.id);
+    } else if (!templatesLoading) {
+      setCurrentTemplateId(null);
+      
+      if (activeTab === 'INVOICE') {
+        setCurrentTemplate(`*Tagihan Online*
 Wirabhakti Basketball Club
 
 Kepada Yth. Bapak / Ibu Wali Murid,
@@ -53,22 +58,40 @@ Hormat kami,
 *Wirabhakti Basketball Club*
 *Cek Nota Tagihan:*
 {{invoiceUrl}}`);
-    } else if (templates.length === 0 && !templatesLoading) {
-      // Fallback if no templates exist at all in DB yet
-       setInvoiceTemplate(`*Tagihan Online*\n\nKepada Yth. Wali Murid,\n\n*Daftar Siswa:*\n{{studentDetails}}\n\n*Bulan:* {{monthYear}}\n*Total Biaya:* Rp {{invoiceAmount}}\n\n*Cek Nota Tagihan:*\n{{invoiceUrl}}`);
-    }
-  }, [templates, templatesLoading]);
+      } else {
+        setCurrentTemplate(`*Peringatan Jatuh Tempo Tagihan*
+Wirabhakti Basketball Club
 
-  const handleSaveInvoiceTemplate = async () => {
-    if (invoiceTemplateId) {
-      await updateTemplate(invoiceTemplateId, { content: invoiceTemplate });
+Yth. Bapak / Ibu Wali Murid,
+Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus basket yang belum lunas:
+*Daftar Siswa:*
+{{studentDetails}}
+
+*Bulan:* {{monthYear}}
+*Total Biaya:* Rp {{invoiceAmount}}
+
+Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
+*Cek Nota Tagihan:*
+{{invoiceUrl}}`);
+      }
+    }
+  }, [templates, templatesLoading, activeTab]);
+
+  const handleSaveTemplate = async () => {
+    if (currentTemplateId) {
+      await updateTemplate(currentTemplateId, { content: currentTemplate });
     } else {
-      await createTemplate({ name: 'Desktop Invoice Builder', content: invoiceTemplate, type: TemplateType.INVOICE, isActive: true });
+      await createTemplate({ 
+          name: activeTab === 'INVOICE' ? 'Invoice Sender' : 'Invoice Due Reminder', 
+          content: currentTemplate, 
+          type: activeTab as TemplateType, 
+          isActive: true 
+      });
     }
   };
 
   const insertTag = (tag: string) => {
-    setInvoiceTemplate(prev => prev + tag);
+    setCurrentTemplate(prev => prev + tag);
   };
 
   return (
@@ -204,34 +227,67 @@ Hormat kami,
 
       {/* MESSAGE TEMPLATES SECTION */}
       <Title className="mt-8 mb-4">Message Templates</Title>
+      
+      {/* Template Type Tabs */}
+      <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 mb-6 pb-2">
+         <button
+            onClick={() => setActiveTab('INVOICE')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+               activeTab === 'INVOICE' 
+               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-500 dark:text-indigo-400'
+               : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+         >
+            <FileText size={16} />
+            Invoice Sender
+         </button>
+         <button
+            onClick={() => setActiveTab('REMINDER')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+               activeTab === 'REMINDER' 
+               ? 'border-orange-600 text-orange-600 dark:border-orange-500 dark:text-orange-400'
+               : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+         >
+            <Bell size={16} />
+            Invoice Due Reminder
+         </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
            <div className="flex items-center justify-between mb-4">
               <div>
-                 <Title className="mb-1">Invoice Reminder Template</Title>
-                 <Text>Customize the WhatsApp message sent when generating an invoice.</Text>
+                 <Title className="mb-1">
+                    {activeTab === 'INVOICE' ? 'Invoice Sender Template' : 'Invoice Due Reminder Template'}
+                 </Title>
+                 <Text>
+                    {activeTab === 'INVOICE' 
+                       ? 'Customize the WhatsApp message sent when an invoice is generated.'
+                       : 'Customize the WhatsApp warning message sent when an invoice is 7 days overdue.'}
+                 </Text>
               </div>
            </div>
            
            <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
-                 <Tags size={16} className="text-indigo-500" />
+                 <Tags size={16} className={activeTab === 'INVOICE' ? 'text-indigo-500' : 'text-orange-500'} />
                  Quick Insert Tags
               </label>
               <div className="flex flex-wrap gap-2">
-                 <button onClick={() => insertTag('{{studentDetails}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                 <button onClick={() => insertTag('{{studentDetails}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
                     + Student Details
                  </button>
-                 <button onClick={() => insertTag('{{monthYear}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                 <button onClick={() => insertTag('{{monthYear}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
                     + Month & Year
                  </button>
-                 <button onClick={() => insertTag('{{invoiceAmount}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                 <button onClick={() => insertTag('{{invoiceAmount}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
                     + Invoice Amount
                  </button>
-                 <button onClick={() => insertTag('{{invoiceUrl}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                 <button onClick={() => insertTag('{{invoiceUrl}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
                     + Invoice Link
                  </button>
-                 <button onClick={() => insertTag('\\n')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                 <button onClick={() => insertTag('\\n')} className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-md hover:bg-slate-50 transition-colors">
                     + Line Break
                  </button>
               </div>
@@ -239,22 +295,30 @@ Hormat kami,
 
            <div>
               <textarea 
-                 value={invoiceTemplate}
-                 onChange={(e) => setInvoiceTemplate(e.target.value)}
+                 value={currentTemplate}
+                 onChange={(e) => setCurrentTemplate(e.target.value)}
                  rows={12}
                  placeholder="Write your template here..." 
-                 className="w-full px-4 py-3 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 dark:text-slate-50 font-mono resize-y"
+                 className={`w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 bg-slate-50 dark:bg-slate-900 dark:text-slate-50 font-mono resize-y ${
+                    activeTab === 'INVOICE' 
+                       ? 'border-indigo-100 dark:border-indigo-900/30 focus:ring-indigo-500' 
+                       : 'border-orange-100 dark:border-orange-900/30 focus:ring-orange-500'
+                 }`}
               />
            </div>
            
            <div className="mt-4 flex justify-end">
               <button 
-                 onClick={handleSaveInvoiceTemplate}
-                 disabled={templatesLoading || !invoiceTemplate.trim()}
-                 className="flex items-center gap-2 px-6 py-2 bg-slate-900 dark:bg-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-slate-800 dark:hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                 onClick={handleSaveTemplate}
+                 disabled={templatesLoading || !currentTemplate.trim()}
+                 className={`flex items-center gap-2 px-6 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    activeTab === 'INVOICE'
+                       ? 'bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700'
+                       : 'bg-orange-600 hover:bg-orange-700'
+                 }`}
               >
                  <Save size={16} />
-                 Save Template
+                 Save {activeTab === 'INVOICE' ? 'Invoice' : 'Reminder'} Template
               </button>
            </div>
         </Card>
@@ -270,7 +334,7 @@ Hormat kami,
            <div className="p-4 bg-[url('https://i.pinimg.com/originals/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover rounded-xl shadow-inner min-h-[300px] flex flex-col justify-end">
               <div className="bg-[#E7FFDB] dark:bg-[#005C4B] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[90%] self-end">
                  <p className="text-sm text-[#111B21] dark:text-[#E9EDEF] whitespace-pre-wrap font-sans">
-                    {invoiceTemplate
+                    {currentTemplate
                        .replace(/\{\{studentDetails\}\}/g, '1. Nama Siswa: Budi\\n   Kelas: Basic')
                        .replace(/\{\{monthYear\}\}/g, 'Januari 2026')
                        .replace(/\{\{invoiceAmount\}\}/g, '350.000')

@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 
 export enum TemplateType {
   INVOICE = 'INVOICE',
+  REMINDER = 'REMINDER',
   EVENT = 'EVENT',
   CUSTOM = 'CUSTOM',
 }

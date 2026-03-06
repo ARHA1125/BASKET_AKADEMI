@@ -105,4 +105,86 @@ Hormat kami,
 
     return { sent: sentCount };
   }
+
+  async sendInvoiceDueReminders(invoices: Invoice[]) {
+    this.logger.log(`Sending due reminders for ${invoices.length} invoices...`);
+
+    const monthYear = new Date().toLocaleString('id-ID', {
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const activeTemplate = await this.templateRepository.findOne({
+      where: { type: TemplateType.REMINDER, isActive: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    const defaultMessageTemplate = `*Peringatan Jatuh Tempo Tagihan*
+Wirabhakti Basketball Club
+
+Yth. Bapak / Ibu Wali Murid,
+Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus basket yang belum lunas:
+*Daftar Siswa:*
+{{studentDetails}}
+
+*Bulan:* {{monthYear}}
+*Total Biaya:* Rp {{invoiceAmount}}
+
+Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
+*Cek Nota Tagihan:*
+{{invoiceUrl}}`;
+
+    const templateContent = activeTemplate?.content || defaultMessageTemplate;
+    let sentCount = 0;
+
+    for (const invoice of invoices) {
+      if (invoice.status === 'PAID') continue; // Extra safety check
+
+      const phone = invoice.parent?.user?.phoneNumber;
+      if (!phone) continue;
+      
+      let chatId = phone.trim();
+      if (chatId.startsWith('08')) {
+        chatId = '62' + chatId.slice(1);
+      }
+      if (!chatId.endsWith('@c.us')) {
+        chatId = `${chatId}@c.us`;
+      }
+      const studentDetails = invoice.items
+        .map((item, index) => {
+          const name = item.student?.user?.fullName ?? 'Siswa';
+          const grade = item.student?.trainingClass?.name ?? '-';
+
+          return `${index + 1}. *Nama Siswa:* ${name}\n   *Kelas:* ${grade}`;
+        })
+        .join('\n\n');
+      
+      const invoiceBaseUrl =
+        process.env.INVOICE_BASE_URL ??
+        'https://app.wirabhakti.my.id/invoice';
+      
+      const variables = {
+        studentDetails: studentDetails,
+        monthYear: monthYear,
+        invoiceAmount: new Intl.NumberFormat('id-ID').format(invoice.amount),
+        invoiceUrl: `${invoiceBaseUrl}/${invoice.id}`,
+      };
+
+      let message = templateContent;
+      for (const [key, value] of Object.entries(variables)) {
+        message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+      }
+
+      await this.notificationQueue.add('send-invoice', {
+        chatId,
+        message,
+        type: 'text',
+      });
+
+      sentCount++;
+    }
+
+    return { sent: sentCount };
+  }
 }
+

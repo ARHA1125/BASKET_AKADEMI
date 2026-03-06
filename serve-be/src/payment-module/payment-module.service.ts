@@ -159,6 +159,43 @@ export class PaymentModuleService {
         key: 'INVOICE_GENERATION_TIME',
       });
     }
+    return this.systemSettingRepository.save(timeSetting);
+  }
+
+  async getReminderSchedule() {
+    const daySetting = await this.systemSettingRepository.findOne({
+      where: { key: 'REMINDER_GENERATION_DAY' },
+    });
+    const timeSetting = await this.systemSettingRepository.findOne({
+      where: { key: 'REMINDER_GENERATION_TIME' },
+    });
+
+    return {
+      day: daySetting ? parseInt(daySetting.value) : 1, // Default to 1st of month maybe, or empty?
+      time: timeSetting ? timeSetting.value : '09:00', // Default morning
+    };
+  }
+
+  async setReminderSchedule(day: number, time: string) {
+    let daySetting = await this.systemSettingRepository.findOne({
+      where: { key: 'REMINDER_GENERATION_DAY' },
+    });
+    if (!daySetting) {
+      daySetting = this.systemSettingRepository.create({
+        key: 'REMINDER_GENERATION_DAY',
+      });
+    }
+    daySetting.value = day.toString();
+    await this.systemSettingRepository.save(daySetting);
+
+    let timeSetting = await this.systemSettingRepository.findOne({
+      where: { key: 'REMINDER_GENERATION_TIME' },
+    });
+    if (!timeSetting) {
+      timeSetting = this.systemSettingRepository.create({
+        key: 'REMINDER_GENERATION_TIME',
+      });
+    }
     timeSetting.value = time;
     return this.systemSettingRepository.save(timeSetting);
   }

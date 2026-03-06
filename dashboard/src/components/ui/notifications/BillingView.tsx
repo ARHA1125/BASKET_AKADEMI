@@ -48,21 +48,40 @@ export default function BillingView() {
   }, []);
   
 
-  const { invoices, loading, scheduleDay, scheduleTime, saveSchedule, manualGenerate, deleteInvoice, deleteAllInvoices, sendManualReminders, refreshInvoices } = useBilling(activeTab, selectedMonth || undefined, selectedYear || undefined);
+  const { 
+    invoices, loading, scheduleDay, scheduleTime, saveSchedule, 
+    reminderScheduleDay, reminderScheduleTime, saveReminderSchedule,
+    manualGenerate, deleteInvoice, deleteAllInvoices, sendManualReminders, refreshInvoices 
+  } = useBilling(activeTab, selectedMonth || undefined, selectedYear || undefined);
+
   const [selectedTime, setSelectedTime] = useState(scheduleTime);
   const [selectedDay, setSelectedDay] = useState(scheduleDay);
+
+  const [showReminderScheduleModal, setShowReminderScheduleModal] = useState(false);
+  const [selectedReminderTime, setSelectedReminderTime] = useState(reminderScheduleTime);
+  const [selectedReminderDay, setSelectedReminderDay] = useState(reminderScheduleDay);
   
 
   useEffect(() => {
     if (scheduleTime) setSelectedTime(scheduleTime);
     if (scheduleDay) setSelectedDay(scheduleDay);
-  }, [scheduleTime, scheduleDay]); 
+    if (reminderScheduleTime) setSelectedReminderTime(reminderScheduleTime);
+    if (reminderScheduleDay) setSelectedReminderDay(reminderScheduleDay);
+  }, [scheduleTime, scheduleDay, reminderScheduleTime, reminderScheduleDay]); 
   
   const handleSaveSchedule = async () => {
       await saveSchedule(selectedDay, selectedTime);
       setShowScheduleModal(false);
       toast.success("Jadwal Diperbarui", {
         description: `Pembuatan otomatis dijadwalkan pada tanggal ${selectedDay} pukul ${selectedTime} setiap bulannya.`
+      });
+  };
+
+  const handleSaveReminderSchedule = async () => {
+      await saveReminderSchedule(selectedReminderDay, selectedReminderTime);
+      setShowReminderScheduleModal(false);
+      toast.success("Jadwal Pengingat Diperbarui", {
+        description: `Pengingat otomatis dijadwalkan pada tanggal ${selectedReminderDay} pukul ${selectedReminderTime} setiap bulannya.`
       });
   };
 
@@ -232,7 +251,7 @@ export default function BillingView() {
                  <Zap size={24} className="text-yellow-300" />
               </div>
            </div>
-           <div className="mt-6 flex gap-3">
+           <div className="mt-6 flex flex-wrap gap-3">
               <button 
                 onClick={handleGenerateNow}
                 className="px-4 py-2 bg-white text-indigo-600 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-50 transition-colors"
@@ -249,7 +268,13 @@ export default function BillingView() {
                 onClick={() => setShowScheduleModal(true)}
                 className="px-4 py-2 bg-indigo-500/50 text-white rounded-lg text-sm font-medium hover:bg-indigo-500/70 transition-colors border border-indigo-400/30"
               >
-                 Konfigurasi Jadwal
+                 Jadwal Invoice
+              </button>
+              <button 
+                onClick={() => setShowReminderScheduleModal(true)}
+                className="px-4 py-2 bg-indigo-500/50 text-white rounded-lg text-sm font-medium hover:bg-indigo-500/70 transition-colors border border-indigo-400/30"
+              >
+                 Jadwal Pengingat
               </button>
            </div>
          </Card>
@@ -647,6 +672,91 @@ export default function BillingView() {
                         className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
                     >
                         Simpan Konfigurasi
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+      )}
+
+      {showReminderScheduleModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-4">
+                    <Title>Jadwal Pengingat Tagihan</Title>
+                    <button onClick={() => setShowReminderScheduleModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        &times;
+                    </button>
+                </div>
+                
+                <div className="mb-4 flex items-center justify-between">
+                     <span className="font-semibold text-slate-700 dark:text-slate-200">{monthName}</span>
+                     
+                     <input 
+                        type="time" 
+                        value={selectedReminderTime}
+                        onChange={(e) => setSelectedReminderTime(e.target.value)}
+                        className="p-1 rounded bg-slate-100 dark:bg-slate-800 border-none text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500"
+                     />
+                </div>
+
+                <div className="space-y-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Pilih tanggal untuk mengirim otomatis pesan pengingat tagihan (via WhatsApp) jika tagihan belum lunas lebih dari 7 hari.
+                    </p>
+                    
+
+                    <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                            <span key={d} className="text-[10px] uppercase font-bold text-slate-400">{d}</span>
+                        ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1">
+
+                       {Array.from({ length: startDay }).map((_, i) => (
+                           <div key={`empty-rem-${i}`} />
+                       ))}
+                       
+
+                       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                           const isToday = day === today.getDate();
+
+                           
+                           return (
+                               <button
+                                  key={day}
+                                  onClick={() => setSelectedReminderDay(day)}
+                                  className={`aspect-square flex items-center justify-center rounded-full text-xs font-medium transition-all
+                                    ${day === selectedReminderDay 
+                                        ? 'bg-orange-500 text-white shadow-md' 
+                                        : isToday 
+                                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 ring-1 ring-orange-500'
+                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
+                               >
+                                  {day}
+                               </button>
+                           );
+                       })}
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-500">
+                        <div className="flex gap-2 items-center">
+                            <span className="w-2 h-2 rounded-full bg-orange-500 block"></span>
+                            <span>Akan Dieksekusi</span>
+                        </div>
+                         <div className="flex gap-2 items-center">
+                            <span className="w-2 h-2 rounded-full bg-orange-100 dark:bg-orange-900/50 border border-orange-500 block"></span>
+                            <span>Hari Ini</span>
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={handleSaveReminderSchedule}
+                        className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                        Simpan Jadwal Pengingat
                     </button>
                 </div>
             </div>

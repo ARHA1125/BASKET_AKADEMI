@@ -49,6 +49,16 @@ export class PaymentModuleController {
     return this.paymentModuleService.setSchedule(day, time);
   }
 
+  @Get('reminder-schedule')
+  getReminderSchedule() {
+    return this.paymentModuleService.getReminderSchedule();
+  }
+
+  @Post('reminder-schedule')
+  setReminderSchedule(@Body('day') day: number, @Body('time') time: string) {
+    return this.paymentModuleService.setReminderSchedule(day, time);
+  }
+
   @Post('generate-now')
   manualGenerate() {
       return this.paymentModuleService.manualGenerate();
