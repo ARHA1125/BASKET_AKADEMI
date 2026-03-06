@@ -1,13 +1,16 @@
 import { useAutomationRules, useWahaStatus } from '@/hooks/use-automation';
+import { useTemplates, TemplateType } from '@/hooks/use-templates';
 import {
     Bot,
     MessageSquare,
     Plus,
     QrCode,
     RefreshCw,
-    Trash2
+    Trash2,
+    Save,
+    Tags
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge, Card, Text, Title } from './Common';
 
 export default function AutomationsView() {
@@ -20,6 +23,52 @@ export default function AutomationsView() {
     if (!newRule.response) return;
     await addRule({ keyword: newRule.keyword, response: newRule.response, isActive: true, name: 'Auto Rule' });
     setNewRule({ keyword: '', response: '' });
+  };
+
+  // Template Builder State
+  const { templates, updateTemplate, createTemplate, loading: templatesLoading } = useTemplates();
+  const [invoiceTemplate, setInvoiceTemplate] = useState('');
+  const [invoiceTemplateId, setInvoiceTemplateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const invTmp = templates.find(t => t.type === 'INVOICE' && t.isActive);
+    if (invTmp) {
+      setInvoiceTemplate(invTmp.content);
+      setInvoiceTemplateId(invTmp.id);
+    } else if (!templatesLoading && templates.length > 0) {
+        // Only set default if templates are loaded and it's truly empty
+        setInvoiceTemplate(`*Tagihan Online*
+Wirabhakti Basketball Club
+
+Kepada Yth. Bapak / Ibu Wali Murid,
+Kami informasikan tagihan kursus basket dengan detail berikut:
+*Daftar Siswa:*
+{{studentDetails}}
+
+*Bulan:* {{monthYear}}
+*Total Biaya:* Rp {{invoiceAmount}}
+
+Terima kasih atas kepercayaan Anda.
+Hormat kami,
+*Wirabhakti Basketball Club*
+*Cek Nota Tagihan:*
+{{invoiceUrl}}`);
+    } else if (templates.length === 0 && !templatesLoading) {
+      // Fallback if no templates exist at all in DB yet
+       setInvoiceTemplate(`*Tagihan Online*\n\nKepada Yth. Wali Murid,\n\n*Daftar Siswa:*\n{{studentDetails}}\n\n*Bulan:* {{monthYear}}\n*Total Biaya:* Rp {{invoiceAmount}}\n\n*Cek Nota Tagihan:*\n{{invoiceUrl}}`);
+    }
+  }, [templates, templatesLoading]);
+
+  const handleSaveInvoiceTemplate = async () => {
+    if (invoiceTemplateId) {
+      await updateTemplate(invoiceTemplateId, { content: invoiceTemplate });
+    } else {
+      await createTemplate({ name: 'Desktop Invoice Builder', content: invoiceTemplate, type: TemplateType.INVOICE, isActive: true });
+    }
+  };
+
+  const insertTag = (tag: string) => {
+    setInvoiceTemplate(prev => prev + tag);
   };
 
   return (
@@ -152,6 +201,89 @@ export default function AutomationsView() {
             </table>
          </div>
       </Card>
+
+      {/* MESSAGE TEMPLATES SECTION */}
+      <Title className="mt-8 mb-4">Message Templates</Title>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+           <div className="flex items-center justify-between mb-4">
+              <div>
+                 <Title className="mb-1">Invoice Reminder Template</Title>
+                 <Text>Customize the WhatsApp message sent when generating an invoice.</Text>
+              </div>
+           </div>
+           
+           <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                 <Tags size={16} className="text-indigo-500" />
+                 Quick Insert Tags
+              </label>
+              <div className="flex flex-wrap gap-2">
+                 <button onClick={() => insertTag('{{studentDetails}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                    + Student Details
+                 </button>
+                 <button onClick={() => insertTag('{{monthYear}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                    + Month & Year
+                 </button>
+                 <button onClick={() => insertTag('{{invoiceAmount}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                    + Invoice Amount
+                 </button>
+                 <button onClick={() => insertTag('{{invoiceUrl}}')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                    + Invoice Link
+                 </button>
+                 <button onClick={() => insertTag('\\n')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    + Line Break
+                 </button>
+              </div>
+           </div>
+
+           <div>
+              <textarea 
+                 value={invoiceTemplate}
+                 onChange={(e) => setInvoiceTemplate(e.target.value)}
+                 rows={12}
+                 placeholder="Write your template here..." 
+                 className="w-full px-4 py-3 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-900 dark:text-slate-50 font-mono resize-y"
+              />
+           </div>
+           
+           <div className="mt-4 flex justify-end">
+              <button 
+                 onClick={handleSaveInvoiceTemplate}
+                 disabled={templatesLoading || !invoiceTemplate.trim()}
+                 className="flex items-center gap-2 px-6 py-2 bg-slate-900 dark:bg-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-slate-800 dark:hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                 <Save size={16} />
+                 Save Template
+              </button>
+           </div>
+        </Card>
+
+        {/* Live Preview Card */}
+        <Card className="lg:col-span-1 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex-1">
+                 <h3 className="font-semibold text-slate-900 dark:text-slate-50">Live Preview</h3>
+                 <p className="text-xs text-slate-500">How parents will see it</p>
+              </div>
+           </div>
+           <div className="p-4 bg-[url('https://i.pinimg.com/originals/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover rounded-xl shadow-inner min-h-[300px] flex flex-col justify-end">
+              <div className="bg-[#E7FFDB] dark:bg-[#005C4B] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[90%] self-end">
+                 <p className="text-sm text-[#111B21] dark:text-[#E9EDEF] whitespace-pre-wrap font-sans">
+                    {invoiceTemplate
+                       .replace(/\{\{studentDetails\}\}/g, '1. Nama Siswa: Budi\\n   Kelas: Basic')
+                       .replace(/\{\{monthYear\}\}/g, 'Januari 2026')
+                       .replace(/\{\{invoiceAmount\}\}/g, '350.000')
+                       .replace(/\{\{invoiceUrl\}\}/g, 'https://app.wirabhakti.my.id/invoice/abc-123')
+                       .replace(/\\n/g, '\n')
+                    }
+                 </p>
+                 <div className="text-[10px] text-right mt-1 text-slate-500 dark:text-emerald-200/50">12:00 PM</div>
+              </div>
+           </div>
+        </Card>
+      </div>
+
     </div>
   );
 }

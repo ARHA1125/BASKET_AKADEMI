@@ -133,7 +133,7 @@ export function useStudents() {
 
     const stats = {
         pending: data.filter(s => s.user.status === 'Pending').length,
-        active: data.filter(s => s.user.status === 'Active' || !s.user.status).length,
+        active: data.filter(s => s.user.status === 'Active').length,
         total: data.length
     };
 

@@ -16,10 +16,10 @@ export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Student, { nullable: true })
+  @ManyToOne(() => Student, { nullable: true, onDelete: 'SET NULL' })
   student: Student;
 
-  @ManyToOne(() => Parent, { nullable: true }) 
+  @ManyToOne(() => Parent, { nullable: true, onDelete: 'SET NULL' }) 
   parent: Parent;
 
   @Column('decimal')

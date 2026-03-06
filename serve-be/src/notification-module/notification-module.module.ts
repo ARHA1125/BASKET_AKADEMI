@@ -16,6 +16,9 @@ import { NotificationRulesService } from './notification-rules.service';
 import { PaymentModuleModule } from '../payment-module/payment-module.module';
 import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
+import { MessageTemplate } from './entities/message-template.entity';
+import { MessageTemplateController } from './message-template.controller';
+import { MessageTemplateService } from './message-template.service';
 
 import { Invoice } from '../payment-module/entities/invoice.entity';
 
@@ -27,17 +30,24 @@ import { Invoice } from '../payment-module/entities/invoice.entity';
     HttpModule,
     ScheduleModule.forRoot(),
     ConfigModule,
-    TypeOrmModule.forFeature([NotificationRule, Invoice]),
+    TypeOrmModule.forFeature([NotificationRule, Invoice, MessageTemplate]),
     PaymentModuleModule
   ],
-  controllers: [NotificationModuleController, WahaController, NotificationRulesController, NotificationController],
+  controllers: [
+    NotificationModuleController, 
+    WahaController, 
+    NotificationRulesController, 
+    NotificationController, 
+    MessageTemplateController
+  ],
   providers: [
     NotificationModuleService,
     WahaService,
     NotificationProcessor,
     InvoiceScheduler,
     NotificationRulesService,
-    NotificationService
+    NotificationService,
+    MessageTemplateService
   ],
   exports: [WahaService],
 })

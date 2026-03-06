@@ -222,13 +222,23 @@ export default function StudentView() {
                         </Card>
                         <Card className="p-6">
                             <div className="flex items-center gap-4">
+                                <div className="p-3 bg-amber-50 text-amber-600 rounded-lg dark:bg-amber-900/20 dark:text-amber-400">
+                                    <FileText className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Members</p>
+                                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{stats.pending}</p>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="p-6">
+                            <div className="flex items-center gap-4">
                                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg dark:bg-emerald-900/20 dark:text-emerald-400">
                                     <Check className="w-6 h-6" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Members</p>
-                                    
-                                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{activeCount > 0 ? activeCount : total}</p>
+                                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{stats.active}</p>
                                 </div>
                             </div>
                         </Card>

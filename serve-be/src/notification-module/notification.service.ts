@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Invoice } from '../payment-module/entities/invoice.entity';
+import { MessageTemplate, TemplateType } from './entities/message-template.entity';
 
 @Injectable()
 export class NotificationService {
@@ -14,6 +15,8 @@ export class NotificationService {
     private readonly notificationQueue: Queue,
     @InjectRepository(Invoice)
     private readonly invoiceRepository: Repository<Invoice>,
+    @InjectRepository(MessageTemplate)
+    private readonly templateRepository: Repository<MessageTemplate>,
   ) {}
 
   async sendInvoiceReminders(invoices: Invoice[]) {
@@ -23,6 +26,31 @@ export class NotificationService {
       month: 'long',
       year: 'numeric',
     });
+
+    // Fetch active template
+    const activeTemplate = await this.templateRepository.findOne({
+      where: { type: TemplateType.INVOICE, isActive: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    const defaultMessageTemplate = `*Tagihan Online*
+Wirabhakti Basketball Club
+
+Kepada Yth. Bapak / Ibu Wali Murid,
+Kami informasikan tagihan kursus basket dengan detail berikut:
+*Daftar Siswa:*
+{{studentDetails}}
+
+*Bulan:* {{monthYear}}
+*Total Biaya:* Rp {{invoiceAmount}}
+
+Terima kasih atas kepercayaan Anda.
+Hormat kami,
+*Wirabhakti Basketball Club*
+*Cek Nota Tagihan:*
+{{invoiceUrl}}`;
+
+    const templateContent = activeTemplate?.content || defaultMessageTemplate;
 
     let sentCount = 0;
 
@@ -51,26 +79,17 @@ export class NotificationService {
       const invoiceBaseUrl =
         process.env.INVOICE_BASE_URL ??
         'https://app.wirabhakti.my.id/invoice';
-      const message =
-`*Tagihan Online*
-Wirabhakti Basketball Club
+      const variables = {
+        studentDetails: studentDetails,
+        monthYear: monthYear,
+        invoiceAmount: new Intl.NumberFormat('id-ID').format(invoice.amount),
+        invoiceUrl: `${invoiceBaseUrl}/${invoice.id}`,
+      };
 
-*(INI HANYALAH TESTING, BALAS 'IYA' JIKA PESAN INI MASUK)*
-*("faizal")*
-
-Kepada Yth. Bapak / Ibu Wali Murid,
-Kami informasikan tagihan kursus basket dengan detail berikut:
-*Daftar Siswa:*
-${studentDetails}
-
-*Bulan:* ${monthYear}
-*Total Biaya:* Rp ${new Intl.NumberFormat('id-ID').format(invoice.amount)}
-
-Terima kasih atas kepercayaan Anda.
-Hormat kami,
-*Wirabhakti Basketball Club*
-*Cek Nota Tagihan:*
-${invoiceBaseUrl}/${invoice.id}`;
+      let message = templateContent;
+      for (const [key, value] of Object.entries(variables)) {
+        message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+      }
 
       await this.notificationQueue.add('send-invoice', {
         chatId,
