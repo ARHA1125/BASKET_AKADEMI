@@ -70,14 +70,11 @@ export class InvoiceScheduler {
 
     this.logger.log(`Reminder Schedule Match (Day ${schedule.day} @ ${schedule.time}). Sending due date reminders...`);
 
-    // Fetch invoices that are UNPAID and were created at least 7 days ago
-    const sevenDaysAgo = new Date(jakartaTime);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const overdueInvoices = await this.invoiceRepository.find({
         where: {
             status: InvoiceStatus.UNPAID,
-            createdAt: LessThan(sevenDaysAgo)
+            createdAt: LessThan(jakartaTime)
         },
         relations: [
             'parent',
@@ -90,7 +87,7 @@ export class InvoiceScheduler {
     });
 
     if (overdueInvoices.length > 0) {
-        this.logger.log(`Found ${overdueInvoices.length} unpaid invoices older than 7 days. Queuing reminders...`);
+        this.logger.log(`Found ${overdueInvoices.length} unpaid invoices. Queuing reminders...`);
         await this.notificationService.sendInvoiceDueReminders(overdueInvoices);
     } else {
         this.logger.log(`No overdue invoices found that need a reminder today.`);
