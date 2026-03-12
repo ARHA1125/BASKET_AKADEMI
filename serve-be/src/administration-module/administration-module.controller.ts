@@ -3,6 +3,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AdministrationService } from './administration-module.service';
 import { CreateSponsorDto } from './dto/create-sponsor.dto';
 import { UpdateSponsorDto } from './dto/update-sponsor.dto';
+import { Public } from '../common/decorators/public.decorator';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
@@ -45,6 +46,12 @@ export class AdministrationController {
 
   @Get()
   findAll() {
+    return this.administrationService.findAll();
+  }
+
+  @Public()
+  @Get('public')
+  findAllPublic() {
     return this.administrationService.findAll();
   }
 
