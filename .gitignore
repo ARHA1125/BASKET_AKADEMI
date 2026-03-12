@@ -3,11 +3,9 @@
 /node_modules
 /build
 /docs
-/server-be/img
 /landing-page
 /minecraft-data
 /serve-be/.dashboard.code-workspace
-/serve-be/img
 .dashboard.code-workspace
 # Logs
 logs
