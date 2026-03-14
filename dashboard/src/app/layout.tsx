@@ -16,7 +16,7 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://wirabhakti.my.id"),
+  metadataBase: new URL("https://app.wirabhakti.my.id"),
   title: "Wirabhakti Basketball Academy",
   description: "Basket akademi terbaik di Lumajang!",
   keywords: ["Dashboard", "Data Visualization", "Software"],
@@ -34,20 +34,13 @@ export const metadata: Metadata = {
     title: "Wirabhakti Basketball Academy",
     description: "Basket akademi terbaik di Lumajang!",
     siteName: "Wirabhakti Basketball Academy",
-    images: [
-      {
-        url: "/OG.png",
-        width: 1200,
-        height: 630,
-        alt: "Wirabhakti Basketball Academy Dashboard",
-      },
-    ],
+    images: ["https://app.wirabhakti.my.id/OG.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Wirabhakti Basketball Academy",
     description: "Basket akademi terbaik di Lumajang!",
-    images: ["/OG.png"],
+    images: ["https://app.wirabhakti.my.id/OG.png"],
     creator: "@fazemii01",
   },
   icons: {
