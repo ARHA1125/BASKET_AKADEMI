@@ -107,8 +107,17 @@ export class PaymentModuleService {
   }
 
   async findOne(id: string) {
+    // Sanitize the ID to fix links containing trailing punctuation (e.g. `; or backticks)
+    const cleanId = id.replace(/[^a-fA-F0-9-]/g, '');
+    
+    // Validate UUID format before querying to prevent Postgres QueryFailedError
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i;
+    if (!uuidRegex.test(cleanId)) {
+      return null;
+    }
+
     const invoice = await this.invoiceRepository.findOne({
-      where: { id },
+      where: { id: cleanId },
       relations: [
         'items',
         'items.student',
