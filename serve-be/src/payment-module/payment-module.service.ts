@@ -168,6 +168,7 @@ export class PaymentModuleService {
         key: 'INVOICE_GENERATION_TIME',
       });
     }
+    timeSetting.value = time;
     return this.systemSettingRepository.save(timeSetting);
   }
 
