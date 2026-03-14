@@ -30,15 +30,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "id_ID",
-    url: "https://wirabhakti.my.id",
+    url: "https://app.wirabhakti.my.id",
     title: "Wirabhakti Basketball Academy",
     description: "Basket akademi terbaik di Lumajang!",
     siteName: "Wirabhakti Basketball Academy",
+    images: [
+      {
+        url: "/OG.png",
+        width: 1200,
+        height: 630,
+        alt: "Wirabhakti Basketball Academy Dashboard",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Wirabhakti Basketball Academy",
     description: "Basket akademi terbaik di Lumajang!",
+    images: ["/OG.png"],
     creator: "@fazemii01",
   },
   icons: {
