@@ -44,7 +44,8 @@ const InputField = ({
   icon: Icon,
   placeholder,
   suffix,
-  required = false
+  required = false,
+  error
 }: {
   label: string;
   name: string;
@@ -55,14 +56,15 @@ const InputField = ({
   placeholder?: string;
   suffix?: string;
   required?: boolean;
+  error?: string;
 }) => (
   <div className="space-y-2 group">
-    <label className="text-sm font-medium text-slate-600 transition-colors group-focus-within:text-blue-600">
+    <label className={`text-sm font-medium transition-colors ${error ? 'text-red-500' : 'text-slate-600 group-focus-within:text-blue-600'}`}>
       {label}
     </label>
     <div className="relative">
       {Icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+        <div className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${error ? 'text-red-400' : 'text-slate-400 group-focus-within:text-blue-500'}`}>
           <Icon size={18} />
         </div>
       )}
@@ -73,7 +75,7 @@ const InputField = ({
         onChange={onChange}
         required={required}
         placeholder={placeholder}
-        className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${Icon ? 'pl-10' : 'pl-4'} ${suffix ? 'pr-12' : 'pr-4'}`}
+        className={`w-full bg-slate-50 border rounded-xl py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all duration-300 ${Icon ? 'pl-10' : 'pl-4'} ${suffix ? 'pr-12' : 'pr-4'} ${error ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 focus:ring-blue-500/20 focus:border-blue-500'}`}
       />
       {suffix && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm pointer-events-none">
@@ -81,6 +83,7 @@ const InputField = ({
         </div>
       )}
     </div>
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
   </div>
 );
 
@@ -89,27 +92,29 @@ const SelectField = ({
   name,
   value,
   onChange,
-  options
+  options,
+  error
 }: {
   label: string;
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: { value: string; label: string }[];
+  error?: string;
 }) => (
   <div className="space-y-2 group">
-    <label className="text-sm font-medium text-slate-600 transition-colors group-focus-within:text-blue-600">
+    <label className={`text-sm font-medium transition-colors ${error ? 'text-red-500' : 'text-slate-600 group-focus-within:text-blue-600'}`}>
       {label}
     </label>
     <div className="relative">
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+      <div className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${error ? 'text-red-400' : 'text-slate-400 group-focus-within:text-blue-500'}`}>
         <Trophy size={18} />
       </div>
       <select
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 appearance-none"
+        className={`w-full bg-slate-50 border rounded-xl py-3 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 transition-all duration-300 appearance-none ${error ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' : 'border-slate-200 focus:ring-blue-500/20 focus:border-blue-500'}`}
       >
         <option value="" disabled>Pilih Posisi</option>
         {options.map(opt => (
@@ -120,6 +125,7 @@ const SelectField = ({
         <ChevronRight className="rotate-90" size={16} />
       </div>
     </div>
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
   </div>
 );
 
@@ -178,6 +184,7 @@ export default function PublicApplicationWizard() {
   const [step, setStep] = useState<Step>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [formData, setFormData] = useState<FormData>({
     parentName: '',
     parentEmail: '',
@@ -193,9 +200,71 @@ export default function PublicApplicationWizard() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error for this field when user types
+    if (errors[name as keyof FormData]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
-  const nextStep = () => setStep(prev => (prev < 3 ? prev + 1 as Step : prev));
+  const validateStep = (currentStep: Step) => {
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
+    let isValid = true;
+
+    if (currentStep === 1) {
+      if (!formData.parentName.trim()) {
+        newErrors.parentName = 'Nama orang tua wajib diisi';
+        isValid = false;
+      }
+      if (!formData.parentEmail.trim()) {
+        newErrors.parentEmail = 'Email wajib diisi';
+        isValid = false;
+      } else if (!/^\S+@\S+\.\S+$/.test(formData.parentEmail)) {
+        newErrors.parentEmail = 'Format email tidak valid';
+        isValid = false;
+      }
+      if (!formData.parentPhone.trim()) {
+        newErrors.parentPhone = 'Nomor telepon wajib diisi';
+        isValid = false;
+      }
+    } else if (currentStep === 2) {
+      if (!formData.studentName.trim()) {
+        newErrors.studentName = 'Nama atlet wajib diisi';
+        isValid = false;
+      }
+      if (!formData.studentEmail.trim()) {
+        newErrors.studentEmail = 'Email atlet wajib diisi';
+        isValid = false;
+      } else if (!/^\S+@\S+\.\S+$/.test(formData.studentEmail)) {
+        newErrors.studentEmail = 'Format email tidak valid';
+        isValid = false;
+      }
+      if (!formData.studentDob) {
+        newErrors.studentDob = 'Tanggal lahir wajib diisi';
+        isValid = false;
+      }
+      if (!formData.studentHeight) {
+        newErrors.studentHeight = 'Tinggi badan wajib diisi';
+        isValid = false;
+      }
+      if (!formData.studentWeight) {
+        newErrors.studentWeight = 'Berat badan wajib diisi';
+        isValid = false;
+      }
+      if (!formData.studentPosition) {
+        newErrors.studentPosition = 'Posisi diminati wajib diisi';
+        isValid = false;
+      }
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(prev => (prev < 3 ? prev + 1 as Step : prev));
+    }
+  };
   const prevStep = () => setStep(prev => (prev > 1 ? prev - 1 as Step : prev));
 
   const handleSubmit = async () => {
@@ -334,6 +403,7 @@ export default function PublicApplicationWizard() {
                   placeholder="Contoh: Budi Santoso"
                   icon={User}
                   required
+                  error={errors.parentName}
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InputField
@@ -345,6 +415,7 @@ export default function PublicApplicationWizard() {
                     placeholder="nama@email.com"
                     icon={Mail}
                     required
+                    error={errors.parentEmail}
                   />
                   <InputField
                     label="Nomor Telepon"
@@ -355,6 +426,7 @@ export default function PublicApplicationWizard() {
                     placeholder="+62 812..."
                     icon={Phone}
                     required
+                    error={errors.parentPhone}
                   />
                 </div>
               </div>
@@ -381,6 +453,7 @@ export default function PublicApplicationWizard() {
                   placeholder="Contoh: Ahmad Junior"
                   icon={User}
                   required
+                  error={errors.studentName}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -392,6 +465,7 @@ export default function PublicApplicationWizard() {
                     onChange={handleChange}
                     icon={Calendar}
                     required
+                    error={errors.studentDob}
                   />
                   <InputField
                     label="Email Siswa"
@@ -402,6 +476,7 @@ export default function PublicApplicationWizard() {
                     placeholder="siswa@email.com"
                     icon={Mail}
                     required
+                    error={errors.studentEmail}
                   />
                 </div>
 
@@ -416,6 +491,7 @@ export default function PublicApplicationWizard() {
                     suffix="cm"
                     icon={Ruler}
                     required
+                    error={errors.studentHeight}
                   />
                   <InputField
                     label="Berat Badan"
@@ -427,6 +503,7 @@ export default function PublicApplicationWizard() {
                     suffix="kg"
                     icon={Weight}
                     required
+                    error={errors.studentWeight}
                   />
                   <div className="col-span-2 md:col-span-1">
                     <SelectField
@@ -441,6 +518,7 @@ export default function PublicApplicationWizard() {
                         { value: 'Power Forward', label: 'Power Forward' },
                         { value: 'Center', label: 'Center' },
                       ]}
+                      error={errors.studentPosition}
                     />
                   </div>
                 </div>
