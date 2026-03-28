@@ -18,6 +18,26 @@ export class PublicAppService {
     private parentRepo: Repository<Parent>,
   ) {}
 
+  async checkDuplicate(email?: string, phone?: string) {
+    const result = { emailExists: false, phoneExists: false };
+    
+    if (email) {
+      const existingEmail = await this.userRepo.findOne({ where: { email } });
+      if (existingEmail) {
+        result.emailExists = true;
+      }
+    }
+    
+    if (phone) {
+      const existingPhone = await this.userRepo.findOne({ where: { phoneNumber: phone } });
+      if (existingPhone) {
+        result.phoneExists = true;
+      }
+    }
+    
+    return result;
+  }
+
   async processApplication(dto: PublicApplicationDto) {
     // 1. Handle Parent
     let parentUser = await this.userRepo.findOne({ where: { email: dto.parentEmail } });

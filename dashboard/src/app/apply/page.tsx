@@ -45,7 +45,8 @@ const InputField = ({
   placeholder,
   suffix,
   required = false,
-  error
+  error,
+  note
 }: {
   label: string;
   name: string;
@@ -57,6 +58,7 @@ const InputField = ({
   suffix?: string;
   required?: boolean;
   error?: string;
+  note?: string;
 }) => (
   <div className="space-y-2 group">
     <label className={`text-sm font-medium transition-colors ${error ? 'text-red-500' : 'text-slate-600 group-focus-within:text-blue-600'}`}>
@@ -84,6 +86,7 @@ const InputField = ({
       )}
     </div>
     {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    {note && !error && <p className="text-slate-500 text-xs mt-1">{note}</p>}
   </div>
 );
 
@@ -260,8 +263,54 @@ export default function PublicApplicationWizard() {
     return isValid;
   };
 
-  const nextStep = () => {
+  const checkDuplicate = async (email?: string, phone?: string) => {
+    try {
+      const params = new URLSearchParams();
+      if (email) params.append('email', email);
+      if (phone) params.append('phone', phone);
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/public/check-duplicate?${params.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.error('Failed to check duplicate', e);
+    }
+    return { emailExists: false, phoneExists: false };
+  };
+
+  const nextStep = async () => {
     if (validateStep(step)) {
+      if (step < 3) {
+        setIsSubmitting(true);
+        if (step === 1) {
+          const { emailExists, phoneExists } = await checkDuplicate(formData.parentEmail, formData.parentPhone);
+          let hasDuplicate = false;
+          
+          if (emailExists) {
+            setErrors(prev => ({ ...prev, parentEmail: 'Email ini sudah terdaftar' }));
+            hasDuplicate = true;
+          }
+          if (phoneExists) {
+            setErrors(prev => ({ ...prev, parentPhone: 'Nomor Handphone ini sudah terdaftar' }));
+            hasDuplicate = true;
+          }
+          
+          if (hasDuplicate) {
+             setIsSubmitting(false);
+             return;
+          }
+        } else if (step === 2 && formData.studentEmail) {
+          const { emailExists } = await checkDuplicate(formData.studentEmail);
+          if (emailExists) {
+            setErrors(prev => ({ ...prev, studentEmail: 'Email ini sudah terdaftar' }));
+            setIsSubmitting(false);
+            return;
+          }
+        }
+        setIsSubmitting(false);
+      }
+
       setStep(prev => (prev < 3 ? prev + 1 as Step : prev));
     }
   };
@@ -477,6 +526,7 @@ export default function PublicApplicationWizard() {
                     icon={Mail}
                     required
                     error={errors.studentEmail}
+                    note="Jika tidak punya Email isi dengan nama@mail.com. contoh faizal@mail.com"
                   />
                 </div>
 
