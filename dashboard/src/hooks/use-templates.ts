@@ -6,6 +6,7 @@ export enum TemplateType {
   REMINDER = 'REMINDER',
   EVENT = 'EVENT',
   CUSTOM = 'CUSTOM',
+  BROADCAST = 'BROADCAST',
 }
 
 export interface MessageTemplate {

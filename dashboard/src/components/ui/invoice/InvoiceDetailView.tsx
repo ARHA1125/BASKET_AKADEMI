@@ -49,8 +49,8 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
   const invoiceData = {
     id: invoice.id,
     status: invoice.status.toLowerCase(), 
-    issueDate: new Date(invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-    dueDate: new Date(invoice.dueDate || invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+    issueDate: new Date(invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }),
+    dueDate: new Date(invoice.dueDate || invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }),
     student: {
       name: invoice.parent?.user?.fullName || 'Parent', 
       id: invoice.parent?.user?.email || '-', 

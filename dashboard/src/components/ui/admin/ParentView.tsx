@@ -1,5 +1,4 @@
 import { StatsCardSkeleton, TableRowSkeleton } from '@/components/LoadingSkeletons';
-import { Badge } from '@/components/ui/notifications/Common';
 import { useParents } from '@/hooks/use-academic';
 import { Parent } from '@/types/academic';
 import {
@@ -162,8 +161,8 @@ export default function ParentView() {
                                     <Check className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Accounts</p>
-                                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{data.filter(p => p.user.status !== 'Inactive').length}</p> 
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Approved Accounts</p>
+                                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{data.filter(p => p.status === 'approved').length}</p> 
                                 </div>
                             </div>
                         </Card>
@@ -229,7 +228,25 @@ export default function ParentView() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <Badge status={item.user.status || 'Active'} size="sm" />
+                                            <button
+                                                onClick={async () => {
+                                                    const newStatus = item.status === 'approved' ? 'pending' : 'approved';
+                                                    const success = await updateResource(item.id, { status: newStatus });
+                                                    if (success) {
+                                                        toast.success(`Parent ${newStatus === 'approved' ? 'approved' : 'set to pending'}`);
+                                                    }
+                                                }}
+                                                className="cursor-pointer"
+                                                title={`Click to ${item.status === 'approved' ? 'set pending' : 'approve'}`}
+                                            >
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                                                    item.status === 'approved'
+                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                }`}>
+                                                    {item.status || 'approved'}
+                                                </span>
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">

@@ -176,7 +176,7 @@ export default function WahaPage() {
                                                    Phone Number
                                                </label>
                                                <Input
-                                                   placeholder="628123456789"
+                                                   placeholder="6282244866770"
                                                    value={testPhone}
                                                    onChange={(e) => setTestPhone(e.target.value)}
                                                />

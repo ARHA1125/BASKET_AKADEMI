@@ -10,10 +10,18 @@ import {
     Save,
     Tags,
     FileText,
-    Bell
+    Bell,
+    Megaphone,
+    Users,
+    Send,
+    Clock,
+    CheckCircle2,
+    AlertCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Badge, Card, Text, Title } from './Common';
+import { useBroadcast } from '@/hooks/use-broadcast';
+import { toast } from 'sonner';
 
 export default function AutomationsView() {
   const { rules, loading: rulesLoading, addRule, removeRule } = useAutomationRules();
@@ -23,15 +31,30 @@ export default function AutomationsView() {
 
   const handleAddRule = async () => {
     if (!newRule.response) return;
-    await addRule({ keyword: newRule.keyword, response: newRule.response, isActive: true, name: 'Auto Rule' });
-    setNewRule({ keyword: '', response: '' });
+    try {
+      await addRule({ keyword: newRule.keyword, response: newRule.response, isActive: true, name: 'Auto Rule' });
+      setNewRule({ keyword: '', response: '' });
+      toast.success('Rule berhasil ditambahkan!');
+    } catch {
+      toast.error('Gagal menambahkan rule.');
+    }
   };
 
   // Template Builder State
   const { templates, updateTemplate, createTemplate, loading: templatesLoading } = useTemplates();
-  const [activeTab, setActiveTab] = useState<'INVOICE' | 'REMINDER'>('INVOICE');
+  const [activeTab, setActiveTab] = useState<'INVOICE' | 'REMINDER' | 'BROADCAST'>('INVOICE');
   const [currentTemplate, setCurrentTemplate] = useState('');
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
+
+  // Broadcast State
+  const { loading: broadcasting, recipientCount, history, historyLoading, fetchRecipientCount, sendBroadcast, fetchHistory } = useBroadcast();
+
+  useEffect(() => {
+    if (activeTab === 'BROADCAST') {
+      fetchRecipientCount();
+      fetchHistory();
+    }
+  }, [activeTab, fetchRecipientCount, fetchHistory]);
 
   useEffect(() => {
     const tmp = templates.find(t => t.type === activeTab && t.isActive);
@@ -58,7 +81,7 @@ Hormat kami,
 *Wirabhakti Basketball Club*
 *Cek Nota Tagihan:*
 {{invoiceUrl}}`);
-      } else {
+      } else if (activeTab === 'REMINDER') {
         setCurrentTemplate(`*Peringatan Jatuh Tempo Tagihan*
 Wirabhakti Basketball Club
 
@@ -73,25 +96,92 @@ Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus 
 Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 *Cek Nota Tagihan:*
 {{invoiceUrl}}`);
+      } else if (activeTab === 'BROADCAST') {
+        setCurrentTemplate(`*Informasi Wirabhakti Basketball Academy*
+
+Halo {{fullName}},
+
+[Ketik pesan broadcast Anda di sini]
+
+*Daftar Siswa Anda:*
+{{studentNames}}
+
+Salam Olahraga,
+*Wirabhakti Basketball Academy*`);
       }
     }
   }, [templates, templatesLoading, activeTab]);
 
   const handleSaveTemplate = async () => {
-    if (currentTemplateId) {
-      await updateTemplate(currentTemplateId, { content: currentTemplate });
-    } else {
-      await createTemplate({ 
-          name: activeTab === 'INVOICE' ? 'Invoice Sender' : 'Invoice Due Reminder', 
-          content: currentTemplate, 
-          type: activeTab as TemplateType, 
-          isActive: true 
-      });
+    try {
+      if (currentTemplateId) {
+        await updateTemplate(currentTemplateId, { content: currentTemplate });
+      } else {
+        await createTemplate({ 
+            name: activeTab === 'INVOICE' ? 'Invoice Sender' : activeTab === 'REMINDER' ? 'Invoice Due Reminder' : 'Broadcast Message', 
+            content: currentTemplate, 
+            type: activeTab as TemplateType, 
+            isActive: true 
+        });
+      }
+      toast.success('Template berhasil disimpan!');
+    } catch {
+      toast.error('Gagal menyimpan template.');
     }
   };
 
   const insertTag = (tag: string) => {
     setCurrentTemplate(prev => prev + tag);
+  };
+
+  // Template-dependent variables per tab
+  const getQuickTags = () => {
+    if (activeTab === 'BROADCAST') {
+      return [
+        { label: '+ Nama Wali Murid', tag: '{{fullName}}' },
+        { label: '+ Daftar Siswa', tag: '{{studentNames}}' },
+        { label: '+ Jumlah Siswa', tag: '{{studentCount}}' },
+        { label: '+ Tanggal', tag: '{{date}}' },
+        { label: '+ Line Break', tag: '\\n' },
+      ];
+    }
+    return [
+      { label: '+ Student Details', tag: '{{studentDetails}}' },
+      { label: '+ Month & Year', tag: '{{monthYear}}' },
+      { label: '+ Invoice Amount', tag: '{{invoiceAmount}}' },
+      { label: '+ Invoice Link', tag: '{{invoiceUrl}}' },
+      { label: '+ Line Break', tag: '\\n' },
+    ];
+  };
+
+  const getPreviewReplacements = (text: string) => {
+    return text
+      .replace(/\{\{studentDetails\}\}/g, '1. Nama Siswa: Budi\\n   Kelas: Basic')
+      .replace(/\{\{monthYear\}\}/g, 'Januari 2026')
+      .replace(/\{\{invoiceAmount\}\}/g, '350.000')
+      .replace(/\{\{invoiceUrl\}\}/g, 'https://app.wirabhakti.my.id/invoice/abc-123')
+      .replace(/\{\{fullName\}\}/g, 'Bapak Budi Santoso')
+      .replace(/\{\{studentNames\}\}/g, '1. Ahmad Budi (Basic)\\n2. Siti Aisyah (Intermediate)')
+      .replace(/\{\{studentCount\}\}/g, '2')
+      .replace(/\{\{date\}\}/g, 'Sabtu, 4 April 2026')
+      .replace(/\\n/g, '\n');
+  };
+
+  const getTabColor = () => {
+    if (activeTab === 'INVOICE') return 'indigo';
+    if (activeTab === 'REMINDER') return 'orange';
+    return 'blue';
+  };
+
+  const tabColor = getTabColor();
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'COMPLETED': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><CheckCircle2 size={12}/>Selesai</span>;
+      case 'SENDING': case 'QUEUED': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"><Clock size={12}/>Mengirim</span>;
+      case 'FAILED': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"><AlertCircle size={12}/>Gagal</span>;
+      default: return <span className="text-xs text-slate-500">{status}</span>;
+    }
   };
 
   return (
@@ -252,6 +342,17 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
             <Bell size={16} />
             Invoice Due Reminder
          </button>
+         <button
+            onClick={() => setActiveTab('BROADCAST')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+               activeTab === 'BROADCAST' 
+               ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+               : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+         >
+            <Megaphone size={16} />
+            Broadcast Message
+         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -259,37 +360,41 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
            <div className="flex items-center justify-between mb-4">
               <div>
                  <Title className="mb-1">
-                    {activeTab === 'INVOICE' ? 'Invoice Sender Template' : 'Invoice Due Reminder Template'}
+                    {activeTab === 'INVOICE' ? 'Invoice Sender Template' : activeTab === 'REMINDER' ? 'Invoice Due Reminder Template' : 'Broadcast Message Template'}
                  </Title>
                  <Text>
                     {activeTab === 'INVOICE' 
                        ? 'Customize the WhatsApp message sent when an invoice is generated.'
-                       : 'Customize the WhatsApp warning message sent when an invoice is 7 days overdue.'}
+                       : activeTab === 'REMINDER' 
+                       ? 'Customize the WhatsApp warning message sent when an invoice is 7 days overdue.' 
+                       : 'Build your broadcast template. Save it first, then send to all approved parents.'}
                  </Text>
               </div>
+              {activeTab === 'BROADCAST' && (
+                <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-3 py-2 rounded-lg">
+                   <Users size={16} className="text-blue-600 dark:text-blue-400" />
+                   <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{recipientCount}</span>
+                   <span className="text-xs text-blue-500 dark:text-blue-400">penerima</span>
+                </div>
+              )}
            </div>
            
            <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
-                 <Tags size={16} className={activeTab === 'INVOICE' ? 'text-indigo-500' : 'text-orange-500'} />
-                 Quick Insert Tags
+                 <Tags size={16} className={`text-${tabColor}-500`} />
+                 Quick Insert Tags & Emojis
               </label>
+              
               <div className="flex flex-wrap gap-2">
-                 <button onClick={() => insertTag('{{studentDetails}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
-                    + Student Details
-                 </button>
-                 <button onClick={() => insertTag('{{monthYear}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
-                    + Month & Year
-                 </button>
-                 <button onClick={() => insertTag('{{invoiceAmount}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
-                    + Invoice Amount
-                 </button>
-                 <button onClick={() => insertTag('{{invoiceUrl}}')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors">
-                    + Invoice Link
-                 </button>
-                 <button onClick={() => insertTag('\\n')} className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-md hover:bg-slate-50 transition-colors">
-                    + Line Break
-                 </button>
+                 {getQuickTags().map((item) => (
+                   <button 
+                     key={item.tag}
+                     onClick={() => insertTag(item.tag)} 
+                     className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors"
+                   >
+                      {item.label}
+                   </button>
+                 ))}
               </div>
            </div>
 
@@ -302,25 +407,117 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
                  className={`w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 bg-slate-50 dark:bg-slate-900 dark:text-slate-50 font-mono resize-y ${
                     activeTab === 'INVOICE' 
                        ? 'border-indigo-100 dark:border-indigo-900/30 focus:ring-indigo-500' 
-                       : 'border-orange-100 dark:border-orange-900/30 focus:ring-orange-500'
+                       : activeTab === 'REMINDER'
+                       ? 'border-orange-100 dark:border-orange-900/30 focus:ring-orange-500'
+                       : 'border-blue-100 dark:border-blue-900/30 focus:ring-blue-500'
                  }`}
               />
            </div>
            
-           <div className="mt-4 flex justify-end">
-              <button 
-                 onClick={handleSaveTemplate}
-                 disabled={templatesLoading || !currentTemplate.trim()}
-                 className={`flex items-center gap-2 px-6 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    activeTab === 'INVOICE'
-                       ? 'bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700'
-                       : 'bg-orange-600 hover:bg-orange-700'
-                 }`}
-              >
-                 <Save size={16} />
-                 Save {activeTab === 'INVOICE' ? 'Invoice' : 'Reminder'} Template
-              </button>
+           <div className="mt-4 flex flex-wrap justify-between items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                 <button 
+                    onClick={handleSaveTemplate}
+                    disabled={templatesLoading || !currentTemplate.trim()}
+                    className={`flex items-center gap-2 px-6 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                       activeTab === 'INVOICE'
+                          ? 'bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700'
+                          : activeTab === 'REMINDER'
+                          ? 'bg-orange-600 hover:bg-orange-700'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                 >
+                    <Save size={16} />
+                    Save {activeTab === 'INVOICE' ? 'Invoice' : activeTab === 'REMINDER' ? 'Reminder' : 'Broadcast'} Template
+                 </button>
+
+                 {activeTab === 'BROADCAST' && (
+                    <button 
+                       onClick={async () => {
+                         if (!currentTemplateId) {
+                           await handleSaveTemplate();
+                           toast.info('Template disimpan otomatis sebelum mengirim.');
+                         }
+                         toast(`Kirim broadcast messages ke ${recipientCount} penerima?`, {
+                           duration: 10000,
+                           action: {
+                             label: 'Kirim Sekarang',
+                             onClick: async () => {
+                               toast.info('Mengirim broadcast messages...');
+                               const result = await sendBroadcast();
+                               if (result) {
+                                 toast.success(`Broadcast messages berhasil dikirim ke ${result.queued} penerima!`);
+                               }
+                             },
+                           },
+                         });
+                       }}
+                       disabled={broadcasting || recipientCount === 0 || !currentTemplate.trim()}
+                       className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                       <Send size={16} />
+                       {broadcasting ? 'Mengirim...' : `Kirim ke ${recipientCount} Penerima`}
+                    </button>
+                 )}
+              </div>
            </div>
+
+           {/* Broadcast History */}
+           {activeTab === 'BROADCAST' && (
+              <div className="mt-6">
+                 <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                       <Clock size={16} className="text-blue-500" />
+                       Riwayat Broadcast
+                    </h4>
+                    <button 
+                       onClick={fetchHistory}
+                       disabled={historyLoading}
+                       className="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                    >
+                       Refresh
+                    </button>
+                 </div>
+
+                 {historyLoading ? (
+                    <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">Loading...</p>
+                 ) : history.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+                       <Megaphone size={24} className="mx-auto text-slate-400 mb-2" />
+                       <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat broadcast.</p>
+                    </div>
+                 ) : (
+                    <div className="space-y-2">
+                       {history.map((log) => (
+                         <div key={log.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg hover:shadow-sm transition-shadow">
+                            <div className="flex items-center gap-3">
+                               <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                  <Megaphone size={16} className="text-blue-600 dark:text-blue-400" />
+                               </div>
+                               <div>
+                                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                     {log.totalRecipients} penerima
+                                  </p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                                     {new Date(log.createdAt).toLocaleString('id-ID', { 
+                                        day: 'numeric', month: 'short', year: 'numeric', 
+                                        hour: '2-digit', minute: '2-digit' 
+                                     })}
+                                  </p>
+                               </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                               <div className="text-right mr-2">
+                                  <p className="text-xs text-slate-500">Terkirim: {log.sentCount}/{log.totalRecipients}</p>
+                               </div>
+                               {getStatusBadge(log.status)}
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                 )}
+              </div>
+           )}
         </Card>
 
         {/* Live Preview Card */}
@@ -334,13 +531,7 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
            <div className="p-4 bg-[url('https://i.pinimg.com/originals/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover rounded-xl shadow-inner min-h-[300px] flex flex-col justify-end">
               <div className="bg-[#E7FFDB] dark:bg-[#005C4B] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[90%] self-end">
                  <p className="text-sm text-[#111B21] dark:text-[#E9EDEF] whitespace-pre-wrap font-sans">
-                    {currentTemplate
-                       .replace(/\{\{studentDetails\}\}/g, '1. Nama Siswa: Budi\\n   Kelas: Basic')
-                       .replace(/\{\{monthYear\}\}/g, 'Januari 2026')
-                       .replace(/\{\{invoiceAmount\}\}/g, '350.000')
-                       .replace(/\{\{invoiceUrl\}\}/g, 'https://app.wirabhakti.my.id/invoice/abc-123')
-                       .replace(/\\n/g, '\n')
-                    }
+                    {getPreviewReplacements(currentTemplate)}
                  </p>
                  <div className="text-[10px] text-right mt-1 text-slate-500 dark:text-emerald-200/50">12:00 PM</div>
               </div>
