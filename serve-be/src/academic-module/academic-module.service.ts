@@ -275,8 +275,8 @@ export class AcademicModuleService {
   async updateParent(id: string, dto: UpdateParentDto & { fullName?: string; email?: string; status?: string; phoneNumber?: string }) {
     const { fullName, email, status, phoneNumber, ...rest } = dto;
 
-
-    if (fullName || email || status || phoneNumber) {
+    // Update User fields (fullName, email, phoneNumber)
+    if (fullName || email || phoneNumber) {
       const parent = await this.parentRepo.findOne({
         where: { id },
         relations: ['user'],
@@ -286,22 +286,24 @@ export class AcademicModuleService {
         await this.userRepo.update(parent.user.id, {
           ...(fullName && { fullName }),
           ...(email && { email }),
-          ...(status && { status }),
           ...(phoneNumber && { phoneNumber }),
         });
       }
     }
 
-
+    // Update Parent fields (phoneNumber, status, etc.)
     const parentUpdateData: any = { ...rest };
   
     if (phoneNumber) {
         parentUpdateData.phoneNumber = phoneNumber;
     }
 
+    if (status) {
+        parentUpdateData.status = status;
+    }
+
     delete parentUpdateData.fullName;
     delete parentUpdateData.email;
-    delete parentUpdateData.status;
 
     if (Object.keys(parentUpdateData).length > 0) {
       return this.parentRepo.update(id, parentUpdateData);

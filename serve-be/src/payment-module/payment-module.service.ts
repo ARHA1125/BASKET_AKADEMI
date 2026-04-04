@@ -34,8 +34,11 @@ export class PaymentModuleService {
     for (const parent of parents) {
       if (!parent.students || parent.students.length === 0) continue;
 
-      const now = new Date();
-      const monthStr = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+      // Force Jakarta time to calculate correct month/year
+      const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+      const jakartaDate = new Date(jakartaTimeStr);
+      
+      const monthStr = `${String(jakartaDate.getMonth() + 1).padStart(2, '0')}-${jakartaDate.getFullYear()}`;
 
       const existingInvoice = await this.invoiceRepository.findOne({
         where: {
@@ -56,16 +59,27 @@ export class PaymentModuleService {
 
       const invoice = new Invoice();
       invoice.parent = parent;
-      invoice.dueDate = new Date(new Date().setDate(new Date().getDate() + 7));
+      
+      // Force createdAt to exactly match the evaluated Jakarta Date
+      invoice.createdAt = jakartaDate;
+
+      // Determine due date dynamically based on the exact Jakarta Date
+      const dueDate = new Date(jakartaDate);
+      dueDate.setDate(dueDate.getDate() + 7);
+      invoice.dueDate = dueDate;
+
       invoice.status = InvoiceStatus.UNPAID;
       invoice.month = monthStr;
       invoice.deliveryStatus = 'BELUM_TERKIRIM';
       invoice.items = [];
       let totalAmount = 0;
 
+      const monthNameId = new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'Asia/Jakarta' }).format(new Date());
+      const fullYear = jakartaDate.getFullYear();
+
       for (const student of activeStudents) {
         const item = new InvoiceItem();
-        item.description = `SPP Bulanan - ${student.user?.fullName || 'Student'} - ${new Date().toLocaleString('default', { month: 'long' })}`;
+        item.description = `SPP Bulanan - ${student.user?.fullName || 'Student'} - ${monthNameId} ${fullYear}`;
         item.amount = 100000;
         item.student = student;
 
@@ -127,6 +141,7 @@ export class PaymentModuleService {
         'parent.user',
       ],
     });
+    
     return invoice;
   }
 
@@ -234,10 +249,16 @@ export class PaymentModuleService {
           query.andWhere('invoice.status = :status', { status: InvoiceStatus.UNPAID });
       }
     } else if (filter === 'current') {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      query.where('invoice.createdAt >= :start', { start: startOfMonth });
+      const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+      const jakartaDate = new Date(jakartaTimeStr);
+      
+      const startOfMonth = new Date(jakartaDate.getFullYear(), jakartaDate.getMonth(), 1);
+      
+      // Allow unpaid invoices from previous months to be shown in 'current'
+      query.where('(invoice.createdAt >= :start OR invoice.status = :status)', { 
+          start: startOfMonth, 
+          status: InvoiceStatus.UNPAID 
+      });
     }
 
     const invoices = await query.getMany();
@@ -255,7 +276,7 @@ export class PaymentModuleService {
         id: inv.id,
         student: studentName || 'Unknown',
         category: 'SPP Bulanan',
-        date: inv.createdAt.toISOString().split('T')[0],
+        date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(inv.createdAt),
         amount: inv.amount,
         uniqueCode: inv.uniqueCode,
         uniqueAmount: inv.uniqueAmount,
@@ -426,7 +447,7 @@ export class PaymentModuleService {
     const recentTransactions = recentDbInvoices.map((inv, idx) => ({
         id: inv.id,
         title: 'Pembayaran SPP',
-        date: inv.verifiedAt ? new Date(inv.verifiedAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-',
+        date: inv.verifiedAt ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).format(inv.verifiedAt) : '-',
         amount: Number(inv.uniqueAmount || inv.amount || 0),
         type: 'income'
     }));
@@ -446,9 +467,10 @@ export class PaymentModuleService {
   }
 
   async findCurrentMonthInvoicesEntities() {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+    const jakartaDate = new Date(jakartaTimeStr);
+    
+    const startOfMonth = new Date(jakartaDate.getFullYear(), jakartaDate.getMonth(), 1);
 
     return this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -458,15 +480,16 @@ export class PaymentModuleService {
       .leftJoinAndSelect('items.student', 'student')
       .leftJoinAndSelect('student.user', 'studentUser')
       .leftJoinAndSelect('student.trainingClass', 'trainingClass')
-      .where('invoice.createdAt >= :start', { start: startOfMonth })
+      .where('(invoice.createdAt >= :start OR invoice.status = :status)', { start: startOfMonth, status: InvoiceStatus.UNPAID })
       .orderBy('invoice.createdAt', 'DESC')
       .getMany();
   }
 
   async findUnsentInvoicesForCurrentMonth() {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+    const jakartaDate = new Date(jakartaTimeStr);
+    
+    const startOfMonth = new Date(jakartaDate.getFullYear(), jakartaDate.getMonth(), 1);
 
     return this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -476,7 +499,7 @@ export class PaymentModuleService {
       .leftJoinAndSelect('items.student', 'student')
       .leftJoinAndSelect('student.user', 'studentUser')
       .leftJoinAndSelect('student.trainingClass', 'trainingClass')
-      .where('invoice.createdAt >= :start', { start: startOfMonth })
+      .where('(invoice.createdAt >= :start OR invoice.status = :unpaidStatus)', { start: startOfMonth, unpaidStatus: InvoiceStatus.UNPAID })
       .andWhere('invoice.deliveryStatus = :status', { status: 'BELUM_TERKIRIM' })
       .orderBy('invoice.createdAt', 'DESC')
       .getMany();

@@ -21,6 +21,9 @@ import { MessageTemplateController } from './message-template.controller';
 import { MessageTemplateService } from './message-template.service';
 
 import { Invoice } from '../payment-module/entities/invoice.entity';
+import { User } from '../auths-module/entities/user.entity';
+import { BroadcastLog } from './entities/broadcast-log.entity';
+import { Parent } from '../academic-module/entities/parent.entity';
 
 @Module({
   imports: [
@@ -30,7 +33,7 @@ import { Invoice } from '../payment-module/entities/invoice.entity';
     HttpModule,
     ScheduleModule.forRoot(),
     ConfigModule,
-    TypeOrmModule.forFeature([NotificationRule, Invoice, MessageTemplate]),
+    TypeOrmModule.forFeature([NotificationRule, Invoice, MessageTemplate, User, BroadcastLog, Parent]),
     PaymentModuleModule
   ],
   controllers: [

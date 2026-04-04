@@ -1,6 +1,8 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+process.env.TZ = 'Asia/Jakarta';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ensureDatabaseExists } from './utils/ensure-database.util';
