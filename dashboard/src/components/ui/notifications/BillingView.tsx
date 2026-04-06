@@ -280,7 +280,7 @@ export default function BillingView() {
          </Card>
   
          <Card>
-           <Title className="mb-2">Gerbang Pembayaran</Title>
+           <Title className="mb-2">Payment Gateway</Title>
            <div className="space-y-4 mt-4">
               <div className="flex items-center justify-between p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10">
                  <div className="flex items-center gap-3">
@@ -290,9 +290,9 @@ export default function BillingView() {
                        <p className="text-[10px] text-slate-500 dark:text-slate-400">QRIS, GoPay, VA</p>
                     </div>
                  </div>
-                 <Badge status="active" size="sm" />
+                 <Badge status="Inactive" size="sm" />
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+              {/* <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800">
                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 text-xs">XD</div>
                     <div>
@@ -301,7 +301,7 @@ export default function BillingView() {
                     </div>
                  </div>
                  <Badge status="inactive" size="sm" />
-              </div>
+              </div> */}
            </div>
          </Card>
       </div>

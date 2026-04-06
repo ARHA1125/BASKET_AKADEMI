@@ -3,6 +3,7 @@ export interface UserProfile {
     email: string;
     phoneNumber?: string;
     status?: string; 
+    createdAt?: string;
 }
 
 export interface Student {

@@ -14,9 +14,6 @@ import {
     Megaphone,
     Users,
     Send,
-    Clock,
-    CheckCircle2,
-    AlertCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Badge, Card, Text, Title } from './Common';
@@ -47,14 +44,13 @@ export default function AutomationsView() {
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
 
   // Broadcast State
-  const { loading: broadcasting, recipientCount, history, historyLoading, fetchRecipientCount, sendBroadcast, fetchHistory } = useBroadcast();
+  const { loading: broadcasting, recipientCount, fetchRecipientCount, sendBroadcast } = useBroadcast();
 
   useEffect(() => {
     if (activeTab === 'BROADCAST') {
       fetchRecipientCount();
-      fetchHistory();
     }
-  }, [activeTab, fetchRecipientCount, fetchHistory]);
+  }, [activeTab, fetchRecipientCount]);
 
   useEffect(() => {
     const tmp = templates.find(t => t.type === activeTab && t.isActive);
@@ -174,15 +170,6 @@ Salam Olahraga,
   };
 
   const tabColor = getTabColor();
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><CheckCircle2 size={12}/>Selesai</span>;
-      case 'SENDING': case 'QUEUED': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"><Clock size={12}/>Mengirim</span>;
-      case 'FAILED': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"><AlertCircle size={12}/>Gagal</span>;
-      default: return <span className="text-xs text-slate-500">{status}</span>;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -364,10 +351,10 @@ Salam Olahraga,
                  </Title>
                  <Text>
                     {activeTab === 'INVOICE' 
-                       ? 'Customize the WhatsApp message sent when an invoice is generated.'
+                       ? ''
                        : activeTab === 'REMINDER' 
-                       ? 'Customize the WhatsApp warning message sent when an invoice is 7 days overdue.' 
-                       : 'Build your broadcast template. Save it first, then send to all approved parents.'}
+                       ? '' 
+                       : ''}
                  </Text>
               </div>
               {activeTab === 'BROADCAST' && (
@@ -461,64 +448,7 @@ Salam Olahraga,
                  )}
               </div>
            </div>
-
-           {/* Broadcast History */}
-           {activeTab === 'BROADCAST' && (
-              <div className="mt-6">
-                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                       <Clock size={16} className="text-blue-500" />
-                       Riwayat Broadcast
-                    </h4>
-                    <button 
-                       onClick={fetchHistory}
-                       disabled={historyLoading}
-                       className="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
-                    >
-                       Refresh
-                    </button>
-                 </div>
-
-                 {historyLoading ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">Loading...</p>
-                 ) : history.length === 0 ? (
-                    <div className="text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
-                       <Megaphone size={24} className="mx-auto text-slate-400 mb-2" />
-                       <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat broadcast.</p>
-                    </div>
-                 ) : (
-                    <div className="space-y-2">
-                       {history.map((log) => (
-                         <div key={log.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg hover:shadow-sm transition-shadow">
-                            <div className="flex items-center gap-3">
-                               <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                  <Megaphone size={16} className="text-blue-600 dark:text-blue-400" />
-                               </div>
-                               <div>
-                                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                                     {log.totalRecipients} penerima
-                                  </p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                                     {new Date(log.createdAt).toLocaleString('id-ID', { 
-                                        day: 'numeric', month: 'short', year: 'numeric', 
-                                        hour: '2-digit', minute: '2-digit' 
-                                     })}
-                                  </p>
-                               </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                               <div className="text-right mr-2">
-                                  <p className="text-xs text-slate-500">Terkirim: {log.sentCount}/{log.totalRecipients}</p>
-                               </div>
-                               {getStatusBadge(log.status)}
-                            </div>
-                         </div>
-                       ))}
-                    </div>
-                 )}
-              </div>
-           )}
-        </Card>
+         </Card>
 
         {/* Live Preview Card */}
         <Card className="lg:col-span-1 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">

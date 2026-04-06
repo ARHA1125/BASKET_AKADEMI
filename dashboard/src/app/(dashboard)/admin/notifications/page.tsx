@@ -19,7 +19,7 @@ export default function FinancialHubPage() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <BarChart3 size={16}/> },
     { id: 'billing', label: 'Billing & Invoices', icon: <Receipt size={16}/> },
-    { id: 'payroll', label: 'Coach Payroll', icon: <Banknote size={16}/> },
+    // { id: 'payroll', label: 'Coach Payroll', icon: <Banknote size={16}/> },
     { id: 'automation', label: 'Automations', icon: <Bot size={16}/> },
   ];
 
