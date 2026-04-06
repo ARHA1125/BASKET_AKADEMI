@@ -399,12 +399,14 @@ export class AcademicModuleService {
     return this.studentRepo.save(student);
   }
 
-  async findAllStudent(page = 1, limit = 10, search = '') {
+  async findAllStudent(page = 1, limit = 10, search = '', applicationOrder: 'ASC' | 'DESC' = 'DESC') {
     const query = this.studentRepo.createQueryBuilder('student')
       .leftJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('parent.user', 'parentUser')
       .leftJoinAndSelect('student.trainingClass', 'trainingClass');
+
+    const normalizedOrder = applicationOrder === 'ASC' ? 'ASC' : 'DESC';
 
     if (search) {
       query.where(
@@ -415,6 +417,7 @@ export class AcademicModuleService {
 
     const [data, total] = await query
       .clone()
+      .orderBy('user.createdAt', normalizedOrder)
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
@@ -446,6 +449,52 @@ export class AcademicModuleService {
         active: Number(rawStats?.active ?? 0),
       },
     };
+  }
+
+  async bulkApprovePendingStudents(search = '') {
+    const query = this.studentRepo.createQueryBuilder('student')
+      .leftJoinAndSelect('student.user', 'user')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('parent.user', 'parentUser')
+      .where('user.status = :pendingStatus', { pendingStatus: 'Pending' });
+
+    if (search) {
+      query.andWhere(
+        '(user.fullName ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const pendingStudents = await query.getMany();
+
+    if (pendingStudents.length === 0) {
+      return { updated: 0 };
+    }
+
+    const studentUserIds = pendingStudents.map(student => student.user?.id).filter(Boolean);
+    const parentUserIds = [...new Set(
+      pendingStudents
+        .map(student => student.parent?.user?.id)
+        .filter(Boolean)
+    )];
+
+    if (studentUserIds.length > 0) {
+      await this.userRepo.createQueryBuilder()
+        .update(User)
+        .set({ status: 'Active' })
+        .where('id IN (:...ids)', { ids: studentUserIds })
+        .execute();
+    }
+
+    if (parentUserIds.length > 0) {
+      await this.userRepo.createQueryBuilder()
+        .update(User)
+        .set({ status: 'Active' })
+        .where('id IN (:...ids)', { ids: parentUserIds })
+        .execute();
+    }
+
+    return { updated: pendingStudents.length };
   }
 
   findOneStudent(id: string) {

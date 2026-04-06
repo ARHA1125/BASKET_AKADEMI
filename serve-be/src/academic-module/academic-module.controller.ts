@@ -252,14 +252,20 @@ export class AcademicModuleController {
   findAllStudent(
     @Query('page') page?: number, 
     @Query('limit') limit?: number, 
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('applicationOrder') applicationOrder?: 'ASC' | 'DESC',
   ) {
-    return this.academicService.findAllStudent(page, limit, search);
+    return this.academicService.findAllStudent(page, limit, search, applicationOrder);
   }
 
   @Get('students/:id')
   findOneStudent(@Param('id') id: string) {
     return this.academicService.findOneStudent(id);
+  }
+
+  @Patch('students/bulk-approve')
+  bulkApproveStudents(@Body() body?: { search?: string }) {
+    return this.academicService.bulkApprovePendingStudents(body?.search);
   }
 
   @Patch('students/:id')
