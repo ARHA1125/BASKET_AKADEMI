@@ -1,12 +1,13 @@
 import { getToken } from '@/lib/auth';
 import { Coach, Parent, Student } from '@/types/academic';
-import { PaginatedResponse } from '@/types/common';
+import { PaginatedResponse, PaginatedResponseStats } from '@/types/common';
 import { useCallback, useState } from 'react';
 
 export function useAcademic<T>(resource: 'students' | 'parents' | 'coaches') {
     const [data, setData] = useState<T[]>([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
+    const [stats, setStats] = useState<PaginatedResponseStats | null>(null);
 
     const fetchData = useCallback(async (page: number, search: string, limit: number = 10) => {
         setLoading(true);
@@ -20,6 +21,7 @@ export function useAcademic<T>(resource: 'students' | 'parents' | 'coaches') {
                 const json: PaginatedResponse<T> = await res.json();
                 setData(json.data);
                 setTotal(json.total);
+                setStats(json.stats ?? null);
             }
         } catch (error) {
             console.error(error);
@@ -112,6 +114,7 @@ export function useAcademic<T>(resource: 'students' | 'parents' | 'coaches') {
         data,
         loading,
         total,
+        stats,
         fetchData,
         createUnified,
         updateResource,
@@ -120,7 +123,7 @@ export function useAcademic<T>(resource: 'students' | 'parents' | 'coaches') {
 }
 
 export function useStudents() {
-    const { data, ...rest } = useAcademic<Student>('students');
+    const { data, stats: apiStats, total, ...rest } = useAcademic<Student>('students');
     const [activeTab, setActiveTab] = useState<'all' | 'active' | 'pending'>('all');
 
    
@@ -132,9 +135,9 @@ export function useStudents() {
     });
 
     const stats = {
-        pending: data.filter(s => s.user.status === 'Pending').length,
-        active: data.filter(s => s.user.status === 'Active').length,
-        total: data.length
+        pending: apiStats?.pending ?? 0,
+        active: apiStats?.active ?? 0,
+        total: apiStats?.total ?? total
     };
 
     return { 
@@ -142,6 +145,7 @@ export function useStudents() {
         allData: data,
         activeTab, 
         setActiveTab, 
+        total,
         stats,
         ...rest 
     };
