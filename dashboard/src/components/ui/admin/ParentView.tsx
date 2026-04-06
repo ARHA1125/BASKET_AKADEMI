@@ -106,7 +106,7 @@ export default function ParentView() {
         } else {
             success = await createUnified({
                 ...payload,
-                password: 'Password123!', 
+                password: 'Password123', 
             });
         }
 
