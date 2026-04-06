@@ -414,16 +414,38 @@ export class AcademicModuleService {
     }
 
     const [data, total] = await query
+      .clone()
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
+
+    const rawStats = await query
+      .clone()
+      .select('COUNT(student.id)', 'total')
+      .addSelect("COUNT(student.id) FILTER (WHERE user.status = :pendingStatus)", 'pending')
+      .addSelect("COUNT(student.id) FILTER (WHERE user.status = :activeStatus)", 'active')
+      .setParameters({
+        pendingStatus: 'Pending',
+        activeStatus: 'Active',
+      })
+      .getRawOne<{ total: string; pending: string; active: string }>();
 
     const mappedData = data.map(student => ({
       ...student,
       parentName: student.parent?.user?.fullName || '-',
     }));
 
-    return { data: mappedData, total, page, limit };
+    return {
+      data: mappedData,
+      total,
+      page,
+      limit,
+      stats: {
+        total: Number(rawStats?.total ?? total),
+        pending: Number(rawStats?.pending ?? 0),
+        active: Number(rawStats?.active ?? 0),
+      },
+    };
   }
 
   findOneStudent(id: string) {
