@@ -46,7 +46,7 @@ export class PublicAppService {
     if (!parentUser) {
       // Create new Parent User (Pending)
       const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash('ChangeMe123!', salt); // Temporary password
+      const hashedPassword = await bcrypt.hash('Password123', salt); // Default password until user changes it
 
       parentUser = this.userRepo.create({
         email: dto.parentEmail,
@@ -85,7 +85,7 @@ export class PublicAppService {
     }
 
     const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash('ChangeMe123!', salt);
+    const hashedPassword = await bcrypt.hash('Password123', salt);
 
     // Generate a placeholder email if none provided to satisfy unique constraint
     const studentEmail = dto.studentEmail || `pending.${Date.now()}@example.com`;
