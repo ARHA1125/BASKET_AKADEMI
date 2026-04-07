@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-
+import { useSpring, animated } from '@react-spring/web';
+import { useDrag } from '@use-gesture/react';
 
 export function SwipeableVerificationModal({
   invoices,
@@ -40,19 +41,53 @@ export function SwipeableVerificationModal({
     setCurrentIndex(startIndex);
   }, [startIndex]);
 
+  const [{ x }, api] = useSpring(() => ({ x: 0 }));
+
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
+      api.start({ x: 0, from: { x: -300 } });
       setCurrentIndex(currentIndex - 1);
       setPaymentMethod('TRANSFER');
     }
-  }, [currentIndex]);
+  }, [currentIndex, api]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < totalInvoices - 1) {
+      api.start({ x: 0, from: { x: 300 } });
       setCurrentIndex(currentIndex + 1);
       setPaymentMethod('TRANSFER');
     }
-  }, [currentIndex, totalInvoices]);
+  }, [currentIndex, totalInvoices, api]);
+
+  const bind = useDrag(
+    ({ down, movement: [mx], direction: [dx], velocity: [vx], cancel }) => {
+      // Threshold for swipe
+      if (down && Math.abs(mx) > 100 && vx > 0.5) {
+        cancel();
+        if (dx > 0 && currentIndex > 0) {
+          handlePrevious();
+        } else if (dx < 0 && currentIndex < totalInvoices - 1) {
+          handleNext();
+        } else {
+          // Bounce back if at ends
+          api.start({ x: 0, config: { tension: 400, friction: 25 } });
+        }
+        return;
+      }
+      
+      const isOutOfBounds = 
+        (currentIndex === 0 && mx > 0) || 
+        (currentIndex === totalInvoices - 1 && mx < 0);
+        
+      api.start({
+        x: down ? (isOutOfBounds ? mx * 0.2 : mx) : 0,
+        immediate: down,
+        config: { tension: 300, friction: down ? 40 : 25 }
+      });
+    },
+    { axis: 'x', filterTaps: true, rubberband: true }
+  );
+
 
   const handleVerify = async () => {
     if (!currentInvoice) return;
@@ -70,6 +105,7 @@ export function SwipeableVerificationModal({
       );
 
       if (nextUnverifiedIndex !== -1) {
+        api.start({ x: 0, from: { x: 300 } });
         setCurrentIndex(nextUnverifiedIndex);
         setPaymentMethod('TRANSFER');
       } else {
@@ -103,6 +139,7 @@ export function SwipeableVerificationModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, handlePrevious, handleNext, handleVerify, isVerifying, onClose]);
 
   if (!isOpen || !currentInvoice || !mounted) return null;
@@ -113,9 +150,13 @@ export function SwipeableVerificationModal({
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-hidden">
+      <animated.div 
+        {...bind()}
+        style={{ x, touchAction: 'none' }}
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto will-change-transform cursor-grab active:cursor-grabbing"
+      >
+        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10 pointer-events-none">
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
               Invoice Verification
@@ -126,7 +167,7 @@ export function SwipeableVerificationModal({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors pointer-events-auto"
           >
             <X size={24} />
           </button>
@@ -315,7 +356,7 @@ export function SwipeableVerificationModal({
             Use ← → to navigate • Enter to verify • Esc to close
           </p>
         </div>
-      </div>
+      </animated.div>
     </div>,
     document.body
   );

@@ -1,6 +1,8 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+process.env.TZ = 'Asia/Jakarta';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ensureDatabaseExists } from './utils/ensure-database.util';
@@ -11,6 +13,9 @@ async function bootstrap() {
   app.enableCors({
     origin: [
        'http://localhost:3000',
+       'https://localhost:3001',
+       'http://localhost:3001',
+       'https://localhost:3000',
        'https://app.wirabhakti.my.id', 
        'https://wirabhakti.my.id',
     ],

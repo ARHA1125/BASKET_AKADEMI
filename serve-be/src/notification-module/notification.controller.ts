@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, HttpException, HttpStatus, Query, Param } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { PaymentModuleService } from '../payment-module/payment-module.service';
 import { Roles } from '../common/decorators/role.decorator';
@@ -14,19 +14,38 @@ export class NotificationController {
 
   @Post('invoices/send-manual')
   async sendManualReminders() {
-    // 1. Get all invoices for the current month
     const invoices = await this.paymentService.findAllInvoices('current');
-    
-    // We need to map the raw result back to entities if findAllInvoices returns DTOs/Interfaces
-    // However, PaymentModuleService.findAllInvoices currently returns formatted plain objects.
-    // We need the ACTUAL entities to access relationships (parent, user, items) for the message template.
-    // So we should add a method to PaymentModuleService to get RAW invoices or use findAllInvoices logic here?
-    // Actually, let's add `findPendingInvoices` to PaymentModuleService. 
-    // BUT for now, let's assume we can fetch them here or modify Service.
-    
-    // Simpler: Let's call a new method in PaymentModuleService that returns Entities
     const pendingInvoices = await this.paymentService.findCurrentMonthInvoicesEntities();
-    
     return this.notificationService.sendInvoiceReminders(pendingInvoices);
+  }
+
+  // ─── BROADCAST ENDPOINTS ───
+
+  @Get('broadcast/recipients')
+  async getBroadcastRecipientCount() {
+    const count = await this.notificationService.countBroadcastRecipients();
+    return { count };
+  }
+
+  @Post('broadcast/send')
+  async startBroadcast() {
+    try {
+      return await this.notificationService.startBroadcast();
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Failed to start broadcast',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Get('broadcast/history')
+  async getBroadcastHistory(@Query('limit') limit?: string) {
+    return this.notificationService.getBroadcastLogs(limit ? parseInt(limit) : 10);
+  }
+
+  @Get('broadcast/:id')
+  async getBroadcastDetail(@Param('id') id: string) {
+    return this.notificationService.getBroadcastLog(id);
   }
 }

@@ -47,17 +47,13 @@
 //     />
 //   </svg>
 // )
-import Image from "next/image"
 import type { ComponentProps } from "react"
 
-export const Logo = (props: Partial<ComponentProps<typeof Image>>) => (
-  <div className={`relative ${props.className || ''}`}>
-    <Image
-      src="/wirabhakti.jpg"
-      alt="Wirabhakti Basketball Academy"
-      fill
-      className="object-contain"
-      sizes="(max-width: 768px) 100vw, 33vw"
-    />
-  </div>
+export const Logo = (props: Omit<ComponentProps<'img'>, 'src' | 'alt'>) => (
+  <img
+    src="/wirabhakti.jpg"
+    alt="Wirabhakti Basketball Academy"
+    {...props}
+    className={`w-full h-full object-contain ${props.className || ''}`}
+  />
 )

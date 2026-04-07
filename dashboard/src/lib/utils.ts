@@ -38,21 +38,7 @@ export const hasErrorInput = [
   "ring-red-200 dark:ring-red-700/30",
 ]
 
-interface CurrencyParams {
-  number: number
-  maxFractionDigits?: number
-  currency?: string
-}
-
-interface PercentageParams {
-  number: number
-  decimals?: number
-}
-
-interface MillionParams {
-  number: number
-  decimals?: number
-}
+import { CurrencyParams, PercentageParams, MillionParams } from '@/types/utils';
 
 type FormatterFunctions = {
   currency: (params: CurrencyParams) => string

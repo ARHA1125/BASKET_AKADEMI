@@ -12,9 +12,22 @@ import {
   Printer
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 
 export default function InvoiceDetailView({ params }: { params: { id: string } }) {
   const { invoice, loading, error } = useInvoice(params.id);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  useGSAP(() => {
+    if (!loading && invoice) {
+      gsap.fromTo(".gsap-invoice-stagger",
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: "power3.out" }
+      );
+    }
+  }, { scope: containerRef, dependencies: [loading, invoice] });
 
   if (loading) {
     return (
@@ -27,8 +40,8 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
   if (error || !invoice) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-500">
-         <p>Failed to load invoice</p>
-         <Link href="/admin" className="text-blue-600 hover:underline mt-2">Back to Invoices</Link>
+         <p>Gagal memuat tagihan</p>
+         <Link href="/admin" className="text-blue-600 hover:underline mt-2">Kembali ke Daftar Tagihan</Link>
       </div>
     );
   }
@@ -36,8 +49,8 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
   const invoiceData = {
     id: invoice.id,
     status: invoice.status.toLowerCase(), 
-    issueDate: new Date(invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-    dueDate: new Date(invoice.dueDate || invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+    issueDate: new Date(invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }),
+    dueDate: new Date(invoice.dueDate || invoice.createdAt || invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }),
     student: {
       name: invoice.parent?.user?.fullName || 'Parent', 
       id: invoice.parent?.user?.email || '-', 
@@ -56,8 +69,6 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
     items: invoice.items?.map((item: any, idx: number) => ({
         id: idx + 1,
         desc: item.description,
-        qty: 1,
-        price: Number(item.amount),
         total: Number(item.amount)
     })) || [],
     subtotal: Number(invoice.amount),
@@ -69,7 +80,7 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
   };
 
   return (
-    <div className="min-h-screen font-sans text-slate-900 py-8 px-4 sm:px-6 relative">
+    <div ref={containerRef} className="min-h-screen font-sans text-slate-900 py-8 px-4 sm:px-6 relative">
       <style>{`
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
@@ -100,16 +111,16 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
         }} />
       </div>
 
-      <div className="max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+      <div className="gsap-invoice-stagger max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
         <Link href="/admin" className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition-colors self-start sm:self-auto bg-white/50 backdrop-blur-sm border border-white/60 px-4 py-2 rounded-xl shadow-sm font-medium">
-          <ChevronLeft size={16} /> Back to Invoices
+          <ChevronLeft size={16} /> Kembali ke Daftar Tagihan
         </Link>
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
             onClick={() => window.print()}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-white/50 backdrop-blur-sm border border-white/60 text-sm text-slate-600 hover:text-blue-600 hover:bg-white transition-all rounded-xl shadow-sm font-medium"
           >
-            <Printer size={16} />Print
+            <Printer size={16} />Cetak
           </button>
         </div>
       </div>
@@ -117,7 +128,7 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
         
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
+          <div className="gsap-invoice-stagger bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
             
             <InvoiceHeader data={invoiceData} />
             
@@ -138,18 +149,18 @@ export default function InvoiceDetailView({ params }: { params: { id: string } }
         <div className="lg:col-span-1">
            <div className="sticky top-6 space-y-6">
               
-              <PaymentCard invoiceId={invoiceData.id} existingProofUrl={invoiceData.photoUrl} />
+              <div className="gsap-invoice-stagger"><PaymentCard invoiceId={invoiceData.id} existingProofUrl={invoiceData.photoUrl} /></div>
 
-              <SupportCard 
+              <div className="gsap-invoice-stagger"><SupportCard 
                 email={invoiceData.school.email} 
                 phone={invoiceData.school.phone} 
-              />
+              /></div>
               
-              <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg p-4 rounded-2xl">
-                  <h3 className="text-sm font-semibold mb-2 text-slate-900">Invoice Details</h3>
+              <div className="gsap-invoice-stagger bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg p-4 rounded-2xl">
+                  <h3 className="text-sm font-semibold mb-2 text-slate-900">Rincian Tagihan</h3>
                   <div className="text-xs text-slate-500 space-y-1">
-                      <p>Month: <span className="font-mono text-slate-700">{invoiceData.month || '-'}</span></p>
-                      <p>Delivery: <span className={`font-mono ${invoiceData.deliveryStatus === 'SUDAH_TERKIRIM' ? 'text-green-600' : 'text-amber-600'}`}>{invoiceData.deliveryStatus || '-'}</span></p>
+                      <p>Bulan: <span className="font-mono text-slate-700">{invoiceData.month || '-'}</span></p>
+                      <p>Pengiriman: <span className={`font-mono ${invoiceData.deliveryStatus === 'SUDAH_TERKIRIM' ? 'text-green-600' : 'text-amber-600'}`}>{invoiceData.deliveryStatus || '-'}</span></p>
                   </div>
               </div>
 

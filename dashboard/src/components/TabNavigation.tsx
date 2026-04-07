@@ -2,6 +2,7 @@
 
 import * as NavigationMenuPrimitives from "@radix-ui/react-navigation-menu"
 import React from "react"
+import { useSpring, animated } from "@react-spring/web"
 
 import { cx, focusRing } from "@/lib/utils"
 
@@ -65,7 +66,13 @@ const TabNavigationLink = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitives.Link>,
     "onSelect"
   > & { disabled?: boolean }
->(({ asChild, disabled, className, children, ...props }, forwardedRef) => (
+>(({ asChild, disabled, className, children, ...props }, forwardedRef) => {
+  const [hoverProps, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 20 },
+  }))
+
+  return (
   <NavigationMenuPrimitives.Item className="flex" aria-disabled={disabled}>
     <NavigationMenuPrimitives.Link
       aria-disabled={disabled}
@@ -79,7 +86,12 @@ const TabNavigationLink = React.forwardRef<
       {...props}
     >
       {getSubtree({ asChild, children }, (children) => (
-        <span
+        <animated.span
+          style={hoverProps}
+          onMouseEnter={() => !disabled && api.start({ scale: 1.05 })}
+          onMouseLeave={() => !disabled && api.start({ scale: 1 })}
+          onMouseDown={() => !disabled && api.start({ scale: 0.95 })}
+          onMouseUp={() => !disabled && api.start({ scale: 1.05 })}
           className={cx(
             // base
             "-mb-px flex items-center justify-center whitespace-nowrap border-b-2 border-transparent px-3 pb-2 text-sm transition-all",
@@ -101,11 +113,12 @@ const TabNavigationLink = React.forwardRef<
           )}
         >
           {children}
-        </span>
+        </animated.span>
       ))}
     </NavigationMenuPrimitives.Link>
   </NavigationMenuPrimitives.Item>
-))
+  )
+})
 
 TabNavigationLink.displayName = "TabNavigationLink"
 

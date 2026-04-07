@@ -104,6 +104,7 @@ const TableRow = React.forwardRef<
     className={cx(
       "sm:[&_td:last-child]:pr-6 sm:[&_th:last-child]:pr-6",
       "sm:[&_td:first-child]:pl-6 sm:[&_th:first-child]:pl-6",
+      "hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200",
       className,
     )}
     {...props}

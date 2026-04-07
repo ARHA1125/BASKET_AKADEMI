@@ -4,16 +4,20 @@ import { Invoice } from '../types/invoices';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export function useBilling(activeTab: 'current' | 'history') {
+export function useBilling(activeTab: 'current' | 'history', selectedMonth?: number, selectedYear?: number) {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(false);
     const [scheduleDay, setScheduleDay] = useState(1);
     const [scheduleTime, setScheduleTime] = useState('00:00');
+    const [reminderScheduleDay, setReminderScheduleDay] = useState(1);
+    const [reminderScheduleTime, setReminderScheduleTime] = useState('00:00');
 
     useEffect(() => {
         fetchInvoices();
         fetchSchedule();
-    }, [activeTab]);
+        fetchReminderSchedule();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, selectedMonth, selectedYear]);
 
     const getAuthHeaders = () => {
         const token = getToken();
@@ -26,7 +30,12 @@ export function useBilling(activeTab: 'current' | 'history') {
     const fetchInvoices = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/payment-module/invoices?filter=${activeTab}`, {
+            let url = `${API_URL}/payment-module/invoices?filter=${activeTab}`;
+            if (selectedMonth && selectedYear) {
+                url += `&month=${selectedMonth}&year=${selectedYear}`;
+            }
+            
+            const res = await fetch(url, {
                 headers: getAuthHeaders()
             });
             
@@ -83,6 +92,45 @@ export function useBilling(activeTab: 'current' | 'history') {
         }
     };
 
+    const fetchReminderSchedule = async () => {
+        try {
+            const res = await fetch(`${API_URL}/payment-module/reminder-schedule`, {
+                headers: getAuthHeaders()
+            });
+
+            if (!res.ok) {
+                 const text = await res.text();
+                 throw new Error(`Error ${res.status}: ${res.statusText} - ${text}`);
+            }
+
+            const data = await res.json();
+            setReminderScheduleDay(data.day);
+            setReminderScheduleTime(data.time || '00:00');
+        } catch (error) {
+            console.error("Failed to fetch reminder schedule", error);
+        }
+    };
+
+    const saveReminderSchedule = async (newDay: number, newTime: string) => {
+        try {
+            const res = await fetch(`${API_URL}/payment-module/reminder-schedule`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ day: newDay, time: newTime })
+            });
+
+            if (!res.ok) {
+                 const text = await res.text();
+                 throw new Error(`Error ${res.status}: ${res.statusText} - ${text}`);
+            }
+
+            setReminderScheduleDay(newDay);
+            setReminderScheduleTime(newTime);
+        } catch (error) {
+            console.error("Failed to save reminder schedule", error);
+        }
+    };
+
     const manualGenerate = async () => {
         try {
             const res = await fetch(`${API_URL}/payment-module/generate-now`, {
@@ -120,6 +168,27 @@ export function useBilling(activeTab: 'current' | 'history') {
         }
     };
 
+    const deleteAllInvoices = async () => {
+        try {
+            const res = await fetch(`${API_URL}/payment-module/invoices/all?filter=${activeTab}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+
+            if (!res.ok) {
+                 const text = await res.text();
+                 throw new Error(`Error ${res.status}: ${res.statusText} - ${text}`);
+            }
+
+            // Immediately refresh list
+            fetchInvoices();
+            return await res.json();
+        } catch (error) {
+            console.error("Failed to delete all invoices", error);
+            throw error;
+        }
+    };
+
     const sendManualReminders = async () => {
         try {
             const res = await fetch(`${API_URL}/notifications/invoices/send-manual`, {
@@ -144,9 +213,13 @@ export function useBilling(activeTab: 'current' | 'history') {
         loading,
         scheduleDay,
         scheduleTime,
+        reminderScheduleDay,
+        reminderScheduleTime,
         saveSchedule,
+        saveReminderSchedule,
         manualGenerate,
         deleteInvoice,
+        deleteAllInvoices,
         sendManualReminders,
         refreshInvoices: fetchInvoices
     };

@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 
 import { Attendance } from './entities/attendance.entity';
 import { Curriculum } from './entities/curriculum.entity';
+import { CurriculumLevel } from './entities/curriculum-level.entity';
+import { CurriculumMonth } from './entities/curriculum-month.entity';
+import { CurriculumWeekMaterial } from './entities/curriculum-week-material.entity';
 import { Parent } from './entities/parent.entity';
 import { PlayerAssessment } from './entities/player-assessment.entity';
 import { Student } from './entities/student.entity';
@@ -35,6 +38,9 @@ export class AcademicModuleService {
   constructor(
     @InjectRepository(Attendance) private attendanceRepo: Repository<Attendance>,
     @InjectRepository(Curriculum) private curriculumRepo: Repository<Curriculum>,
+    @InjectRepository(CurriculumLevel) private curriculumLevelRepo: Repository<CurriculumLevel>,
+    @InjectRepository(CurriculumMonth) private curriculumMonthRepo: Repository<CurriculumMonth>,
+    @InjectRepository(CurriculumWeekMaterial) private curriculumWeekRepo: Repository<CurriculumWeekMaterial>,
     @InjectRepository(Parent) private parentRepo: Repository<Parent>,
     @InjectRepository(PlayerAssessment) private assessmentRepo: Repository<PlayerAssessment>,
     @InjectRepository(Student) private studentRepo: Repository<Student>,
@@ -154,6 +160,61 @@ export class AcademicModuleService {
     return this.curriculumRepo.delete(id);
   }
 
+  // --- Curriculum Hierarchy CRUD ---
+
+  async createCurriculumLevel(data: { name: string; description?: string; colorCode?: string }) {
+    const level = this.curriculumLevelRepo.create(data);
+    return this.curriculumLevelRepo.save(level);
+  }
+
+  findAllCurriculumLevels() {
+    return this.curriculumLevelRepo.find({ relations: ['months', 'months.weekMaterials'] });
+  }
+
+  findOneCurriculumLevel(id: string) {
+    return this.curriculumLevelRepo.findOne({ where: { id }, relations: ['months', 'months.weekMaterials'] });
+  }
+
+  updateCurriculumLevel(id: string, data: Partial<{ name: string; description: string; colorCode: string }>) {
+    return this.curriculumLevelRepo.update(id, data);
+  }
+
+  removeCurriculumLevel(id: string) {
+    return this.curriculumLevelRepo.delete(id);
+  }
+
+  async createCurriculumMonth(data: { levelId: string; monthNumber: number; title?: string }) {
+    const month = this.curriculumMonthRepo.create({
+      ...data,
+      level: { id: data.levelId },
+    });
+    return this.curriculumMonthRepo.save(month);
+  }
+
+  updateCurriculumMonth(id: string, data: Partial<{ monthNumber: number; title: string }>) {
+    return this.curriculumMonthRepo.update(id, data);
+  }
+
+  removeCurriculumMonth(id: string) {
+    return this.curriculumMonthRepo.delete(id);
+  }
+
+  async createCurriculumWeekMaterial(data: { monthId: string; weekNumber: number; category: string; materialDescription: string }) {
+    const material = this.curriculumWeekRepo.create({
+      ...data,
+      month: { id: data.monthId },
+    });
+    return this.curriculumWeekRepo.save(material);
+  }
+
+  updateCurriculumWeekMaterial(id: string, data: Partial<{ weekNumber: number; category: string; materialDescription: string }>) {
+    return this.curriculumWeekRepo.update(id, data);
+  }
+
+  removeCurriculumWeekMaterial(id: string) {
+    return this.curriculumWeekRepo.delete(id);
+  }
+
   async createUnifiedParent(dto: CreateUnifiedParentDto) {
     const existingUser = await this.userRepo.findOne({ where: { email: dto.email } });
     if (existingUser) {
@@ -214,8 +275,8 @@ export class AcademicModuleService {
   async updateParent(id: string, dto: UpdateParentDto & { fullName?: string; email?: string; status?: string; phoneNumber?: string }) {
     const { fullName, email, status, phoneNumber, ...rest } = dto;
 
-
-    if (fullName || email || status || phoneNumber) {
+    // Update User fields (fullName, email, phoneNumber)
+    if (fullName || email || phoneNumber) {
       const parent = await this.parentRepo.findOne({
         where: { id },
         relations: ['user'],
@@ -225,22 +286,24 @@ export class AcademicModuleService {
         await this.userRepo.update(parent.user.id, {
           ...(fullName && { fullName }),
           ...(email && { email }),
-          ...(status && { status }),
           ...(phoneNumber && { phoneNumber }),
         });
       }
     }
 
-
+    // Update Parent fields (phoneNumber, status, etc.)
     const parentUpdateData: any = { ...rest };
   
     if (phoneNumber) {
         parentUpdateData.phoneNumber = phoneNumber;
     }
 
+    if (status) {
+        parentUpdateData.status = status;
+    }
+
     delete parentUpdateData.fullName;
     delete parentUpdateData.email;
-    delete parentUpdateData.status;
 
     if (Object.keys(parentUpdateData).length > 0) {
       return this.parentRepo.update(id, parentUpdateData);
@@ -254,10 +317,11 @@ export class AcademicModuleService {
   }
 
   async createPlayerAssessment(dto: CreatePlayerAssessmentDto) {
-    const { studentId, ...rest } = dto;
+    const { studentId, weekMaterialId, ...rest } = dto;
     const assessment = this.assessmentRepo.create({
       ...rest,
       student: { id: studentId },
+      weekMaterial: { id: weekMaterialId },
     });
     return this.assessmentRepo.save(assessment);
   }
@@ -335,12 +399,14 @@ export class AcademicModuleService {
     return this.studentRepo.save(student);
   }
 
-  async findAllStudent(page = 1, limit = 10, search = '') {
+  async findAllStudent(page = 1, limit = 10, search = '', applicationOrder: 'ASC' | 'DESC' = 'DESC') {
     const query = this.studentRepo.createQueryBuilder('student')
       .leftJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('parent.user', 'parentUser')
       .leftJoinAndSelect('student.trainingClass', 'trainingClass');
+
+    const normalizedOrder = applicationOrder === 'ASC' ? 'ASC' : 'DESC';
 
     if (search) {
       query.where(
@@ -350,16 +416,85 @@ export class AcademicModuleService {
     }
 
     const [data, total] = await query
+      .clone()
+      .orderBy('user.createdAt', normalizedOrder)
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
+
+    const rawStats = await query
+      .clone()
+      .select('COUNT(student.id)', 'total')
+      .addSelect("COUNT(student.id) FILTER (WHERE user.status = :pendingStatus)", 'pending')
+      .addSelect("COUNT(student.id) FILTER (WHERE user.status = :activeStatus)", 'active')
+      .setParameters({
+        pendingStatus: 'Pending',
+        activeStatus: 'Active',
+      })
+      .getRawOne<{ total: string; pending: string; active: string }>();
 
     const mappedData = data.map(student => ({
       ...student,
       parentName: student.parent?.user?.fullName || '-',
     }));
 
-    return { data: mappedData, total, page, limit };
+    return {
+      data: mappedData,
+      total,
+      page,
+      limit,
+      stats: {
+        total: Number(rawStats?.total ?? total),
+        pending: Number(rawStats?.pending ?? 0),
+        active: Number(rawStats?.active ?? 0),
+      },
+    };
+  }
+
+  async bulkApprovePendingStudents(search = '') {
+    const query = this.studentRepo.createQueryBuilder('student')
+      .leftJoinAndSelect('student.user', 'user')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('parent.user', 'parentUser')
+      .where('user.status = :pendingStatus', { pendingStatus: 'Pending' });
+
+    if (search) {
+      query.andWhere(
+        '(user.fullName ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const pendingStudents = await query.getMany();
+
+    if (pendingStudents.length === 0) {
+      return { updated: 0 };
+    }
+
+    const studentUserIds = pendingStudents.map(student => student.user?.id).filter(Boolean);
+    const parentUserIds = [...new Set(
+      pendingStudents
+        .map(student => student.parent?.user?.id)
+        .filter(Boolean)
+    )];
+
+    if (studentUserIds.length > 0) {
+      await this.userRepo.createQueryBuilder()
+        .update(User)
+        .set({ status: 'Active' })
+        .where('id IN (:...ids)', { ids: studentUserIds })
+        .execute();
+    }
+
+    if (parentUserIds.length > 0) {
+      await this.userRepo.createQueryBuilder()
+        .update(User)
+        .set({ status: 'Active' })
+        .where('id IN (:...ids)', { ids: parentUserIds })
+        .execute();
+    }
+
+    return { updated: pendingStudents.length };
   }
 
   findOneStudent(id: string) {
@@ -413,10 +548,12 @@ export class AcademicModuleService {
   }
 
   async createTrainingClass(dto: CreateTrainingClassDto) {
-    const { coachId, ...rest } = dto;
+    const { coachId, curriculumLevelId, activeMonthId, ...rest } = dto;
     const trainingClass = this.trainingClassRepo.create({
       ...rest,
       coach: coachId ? { id: coachId } : undefined,
+      curriculumLevel: curriculumLevelId ? { id: curriculumLevelId } : undefined,
+      activeMonth: activeMonthId ? { id: activeMonthId } : undefined,
     });
     return this.trainingClassRepo.save(trainingClass);
   }

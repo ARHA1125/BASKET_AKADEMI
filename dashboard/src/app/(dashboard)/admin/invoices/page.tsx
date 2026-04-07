@@ -5,22 +5,11 @@ import { ProofViewerModal } from '@/components/ui/admin/ProofViewerModal';
 import { CheckCircle, Eye, Search, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Invoice } from '@/types/invoices';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
 
-interface Invoice {
-  id: string;
-  student: string;
-  category: string;
-  date: string;
-  amount: number;
-  status: string;
-  method: string;
-  photoUrl?: string;
-  isVerified: boolean;
-  verifiedAt?: string;
-  verifiedBy?: string;
-}
+
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);

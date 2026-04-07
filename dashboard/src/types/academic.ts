@@ -3,6 +3,7 @@ export interface UserProfile {
     email: string;
     phoneNumber?: string;
     status?: string; 
+    createdAt?: string;
 }
 
 export interface Student {
@@ -23,6 +24,7 @@ export interface Parent {
     id: string;
     user: UserProfile;
     studentsCount: number;
+    status: string; // 'approved' | 'pending'
 }
 
 export interface Coach {

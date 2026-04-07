@@ -12,4 +12,12 @@ export class CreateTrainingClassDto {
   @IsUUID()
   @IsOptional()
   coachId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  curriculumLevelId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  activeMonthId?: string;
 }

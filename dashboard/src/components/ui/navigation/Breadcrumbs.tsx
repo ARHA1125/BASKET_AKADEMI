@@ -3,8 +3,9 @@
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import React from "react"
-
+import React, { useRef } from "react"
+import { useGSAP } from "@gsap/react"
+import { gsap } from "gsap"
 
 const routeMapping: Record<string, string> = {
   admin: "Admin",
@@ -21,9 +22,21 @@ const routeMapping: Record<string, string> = {
 export function Breadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter((item) => item !== "")
+  const containerRef = useRef<HTMLElement>(null)
+
+  useGSAP(
+    () => {
+      gsap.fromTo(
+        ".gsap-breadcrumb-item",
+        { opacity: 0, x: -10 },
+        { opacity: 1, x: 0, stagger: 0.1, duration: 0.5, ease: "power2.out" }
+      )
+    },
+    { scope: containerRef }
+  )
 
   return (
-    <nav aria-label="Breadcrumb" className="ml-2">
+    <nav ref={containerRef} aria-label="Breadcrumb" className="ml-2">
       <ol role="list" className="flex items-center space-x-3 text-sm">
         {segments.map((segment, index) => {
           const href = `/${segments.slice(0, index + 1).join("/")}`
@@ -34,10 +47,10 @@ export function Breadcrumbs() {
           return (
             <React.Fragment key={href}>
               <ChevronRight
-                className="size-4 shrink-0 text-gray-600 dark:text-gray-400"
+                className="size-4 shrink-0 text-gray-600 dark:text-gray-400 gsap-breadcrumb-item opacity-0"
                 aria-hidden="true"
               />
-              <li className="flex">
+              <li className="flex gsap-breadcrumb-item opacity-0">
                 <Link
                   href={href}
                   className={`${

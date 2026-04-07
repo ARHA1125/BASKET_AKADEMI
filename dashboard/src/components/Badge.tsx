@@ -2,6 +2,8 @@ import { cx } from "@/lib/utils"
 import * as React from "react"
 // import { type VariantProps } from "class-variance-authority"
 
+import { useSpring, animated } from "@react-spring/web"
+
 // Simplified Badge without CVA for now to avoid dependency checks, or match shadcn styles
 const Badge = React.forwardRef<
   HTMLDivElement,
@@ -21,11 +23,26 @@ const Badge = React.forwardRef<
     purple: "border-transparent bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50",
     gold: "border-transparent bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-200 dark:hover:bg-yellow-900/50",
   }
+
+  const [hoverProps, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 15 },
+  }))
+
   return (
-    <div
+    <animated.div
       ref={ref}
+      style={{ ...hoverProps, ...(props.style as object) }}
+      onMouseEnter={(e: any) => {
+        api.start({ scale: 1.05 })
+        if (props.onMouseEnter) props.onMouseEnter(e)
+      }}
+      onMouseLeave={(e: any) => {
+        api.start({ scale: 1 })
+        if (props.onMouseLeave) props.onMouseLeave(e)
+      }}
       className={cx(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 dark:border-gray-800 dark:focus:ring-gray-300",
+        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 dark:border-gray-800 dark:focus:ring-gray-300 cursor-default",
         variants[variant],
         className
       )}

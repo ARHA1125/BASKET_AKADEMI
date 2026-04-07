@@ -1,14 +1,7 @@
 import { Users } from 'lucide-react';
 import Image from "next/image";
 
-interface Stats {
-  spd: number;
-  dri: number;
-  sho: number;
-  def: number;
-  pas: number;
-  phy: number;
-}
+import { Stats } from '@/types/admin';
 
 interface PlayerCardProps {
   name: string;
