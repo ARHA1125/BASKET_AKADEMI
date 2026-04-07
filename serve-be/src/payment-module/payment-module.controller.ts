@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Res } from '@nestjs/common';
 import { PaymentModuleService } from './payment-module.service';
 import { CreatePaymentModuleDto } from './dto/create-payment-module.dto';
 import { UpdatePaymentModuleDto } from './dto/update-payment-module.dto';
@@ -10,6 +10,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
+import { Response } from 'express';
 
 @Roles(UserRole.ADMIN)
 @Controller('payment-module')
@@ -17,8 +18,33 @@ export class PaymentModuleController {
   constructor(private readonly paymentModuleService: PaymentModuleService) {}
 
   @Get('overview')
-  getOverview() {
-    return this.paymentModuleService.getOverviewData();
+  getOverview(
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+  ) {
+    return this.paymentModuleService.getOverviewData(
+      month ? parseInt(month, 10) : undefined,
+      year ? parseInt(year, 10) : undefined,
+    );
+  }
+
+  @Get('reports/monthly')
+  async downloadMonthlyReport(
+    @Res() res: Response,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+  ) {
+    const report = await this.paymentModuleService.generateMonthlyReport(
+      month ? parseInt(month, 10) : undefined,
+      year ? parseInt(year, 10) : undefined,
+    );
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
+    res.send(report.buffer);
   }
 
   @Get('invoices')

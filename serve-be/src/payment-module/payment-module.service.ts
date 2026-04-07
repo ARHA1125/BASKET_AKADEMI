@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
+import * as ExcelJS from 'exceljs';
 import { CreatePaymentModuleDto } from './dto/create-payment-module.dto';
 import { UpdatePaymentModuleDto } from './dto/update-payment-module.dto';
 import { Invoice, InvoiceStatus } from './entities/invoice.entity';
@@ -20,6 +21,119 @@ export class PaymentModuleService {
     @InjectRepository(SystemSetting)
     private systemSettingRepository: Repository<SystemSetting>,
   ) {}
+
+  private getJakartaNow() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  }
+
+  private resolveSelectedMonth(month?: number, year?: number) {
+    const now = this.getJakartaNow();
+    const resolvedMonth = month && month >= 1 && month <= 12 ? month : now.getMonth() + 1;
+    const resolvedYear = year && year > 0 ? year : now.getFullYear();
+
+    return {
+      month: resolvedMonth,
+      year: resolvedYear,
+      label: new Date(resolvedYear, resolvedMonth - 1, 1).toLocaleString('id-ID', {
+        month: 'long',
+        year: 'numeric',
+      }),
+    };
+  }
+
+  private getMonthRange(month?: number, year?: number) {
+    const selected = this.resolveSelectedMonth(month, year);
+
+    return {
+      ...selected,
+      start: new Date(selected.year, selected.month - 1, 1, 0, 0, 0, 0),
+      end: new Date(selected.year, selected.month, 0, 23, 59, 59, 999),
+    };
+  }
+
+  private getPreviousMonthRange(month?: number, year?: number) {
+    const current = this.getMonthRange(month, year);
+    const previousDate = new Date(current.year, current.month - 2, 1);
+
+    return this.getMonthRange(previousDate.getMonth() + 1, previousDate.getFullYear());
+  }
+
+  private getInvoiceAmount(invoice: Invoice) {
+    return Number(invoice.uniqueAmount || invoice.amount || 0);
+  }
+
+  private isOutstandingStatus(status: InvoiceStatus) {
+    return status === InvoiceStatus.UNPAID || status === InvoiceStatus.OVERDUE;
+  }
+
+  private mapInvoiceStatus(status: InvoiceStatus) {
+    switch (status) {
+      case InvoiceStatus.PAID:
+        return 'Sudah Bayar';
+      case InvoiceStatus.OVERDUE:
+        return 'Terlambat';
+      case InvoiceStatus.CANCELLED:
+        return 'Dibatalkan';
+      case InvoiceStatus.UNPAID:
+      default:
+        return 'Belum Bayar';
+    }
+  }
+
+  private getInvoiceStudentLabel(invoice: Invoice) {
+    const uniqueStudents = [
+      ...new Set(
+        (invoice.items || [])
+          .map((item) => item.student?.user?.fullName)
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ];
+
+    if (uniqueStudents.length === 0) {
+      return invoice.parent?.user?.fullName || 'Unknown';
+    }
+
+    if (uniqueStudents.length === 1) {
+      return uniqueStudents[0];
+    }
+
+    return `${uniqueStudents[0]} (+${uniqueStudents.length - 1})`;
+  }
+
+  private getInvoiceDescription(invoice: Invoice) {
+    const descriptions = [
+      ...new Set(
+        (invoice.items || [])
+          .map((item) => item.description)
+          .filter((description): description is string => Boolean(description)),
+      ),
+    ];
+
+    if (descriptions.length === 0) {
+      return 'Invoice Bulanan';
+    }
+
+    return descriptions.join('; ');
+  }
+
+  private async findInvoicesForMonthEntities(month?: number, year?: number) {
+    const range = this.getMonthRange(month, year);
+
+    return this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoinAndSelect('invoice.parent', 'parent')
+      .leftJoinAndSelect('parent.user', 'parentUser')
+      .leftJoinAndSelect('invoice.items', 'items')
+      .leftJoinAndSelect('items.student', 'student')
+      .leftJoinAndSelect('student.user', 'studentUser')
+      .leftJoinAndSelect('student.trainingClass', 'trainingClass')
+      .where('invoice.createdAt >= :start AND invoice.createdAt <= :end', {
+        start: range.start,
+        end: range.end,
+      })
+      .orderBy('invoice.createdAt', 'DESC')
+      .getMany();
+  }
 
   create(createPaymentModuleDto: CreatePaymentModuleDto) {
     return 'This action adds a new paymentModule';
@@ -326,143 +440,292 @@ export class PaymentModuleService {
     return { deleted: true, id };
   }
 
-  async getOverviewData() {
-    // 1. Total Revenue & Target (Current Month)
-    const startOfCurrentMonth = new Date();
-    startOfCurrentMonth.setDate(1);
-    startOfCurrentMonth.setHours(0, 0, 0, 0);
+  async getOverviewData(month?: number, year?: number) {
+    const currentRange = this.getMonthRange(month, year);
+    const previousRange = this.getPreviousMonthRange(month, year);
 
-    const endOfCurrentMonth = new Date();
-    endOfCurrentMonth.setMonth(endOfCurrentMonth.getMonth() + 1);
-    endOfCurrentMonth.setDate(0); 
-    endOfCurrentMonth.setHours(23, 59, 59, 999);
-
-    const currentMonthInvoices = await this.invoiceRepository.find({
+    const [currentMonthInvoices, previousMonthPaidInvoices] = await Promise.all([
+      this.invoiceRepository.find({
         where: {
-            createdAt: Between(startOfCurrentMonth, endOfCurrentMonth)
-        }
-    });
+          createdAt: Between(currentRange.start, currentRange.end),
+        },
+      }),
+      this.invoiceRepository.find({
+        where: {
+          createdAt: Between(previousRange.start, previousRange.end),
+          status: InvoiceStatus.PAID,
+        },
+      }),
+    ]);
 
     const totalRevenue = currentMonthInvoices
-        .filter(inv => inv.status === InvoiceStatus.PAID)
-        .reduce((sum, inv) => sum + Number(inv.uniqueAmount || inv.amount || 0), 0);
-        
-    const targetRevenue = currentMonthInvoices
-        .reduce((sum, inv) => sum + Number(inv.amount || 0), 0) || 70000000;
+      .filter((invoice) => invoice.status === InvoiceStatus.PAID)
+      .reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
 
-    // Revenue Growth
-    const lastMonthStart = new Date();
-    lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
-    lastMonthStart.setDate(1);
-    lastMonthStart.setHours(0, 0, 0, 0);
+    const targetRevenue = currentMonthInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0) || 70000000;
 
-    const lastMonthEnd = new Date();
-    lastMonthEnd.setDate(0); 
-    lastMonthEnd.setHours(23, 59, 59, 999);
-
-    const lastMonthInvoices = await this.invoiceRepository.find({
-        where: {
-            createdAt: Between(lastMonthStart, lastMonthEnd),
-            status: InvoiceStatus.PAID
-        }
-    });
-
-    const lastMonthRevenue = lastMonthInvoices
-        .reduce((sum, inv) => sum + Number(inv.uniqueAmount || inv.amount || 0), 0);
+    const lastMonthRevenue = previousMonthPaidInvoices.reduce(
+      (sum, invoice) => sum + this.getInvoiceAmount(invoice),
+      0,
+    );
 
     let revenueGrowth = 0;
     if (lastMonthRevenue > 0) {
-        revenueGrowth = Math.round(((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+      revenueGrowth = Math.round(((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
     } else if (totalRevenue > 0) {
-        revenueGrowth = 100;
+      revenueGrowth = 100;
     }
 
-    // 2. Aging AR (Outstanding)
-    const unpaidInvoices = await this.invoiceRepository.find({
-        where: {
-             status: InvoiceStatus.UNPAID
-        }
-    });
-    
-    const agingAR = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-    const agingStudents = unpaidInvoices.length;
-    
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const overdueInvoices = unpaidInvoices.filter(inv => inv.dueDate && new Date(inv.dueDate) < thirtyDaysAgo);
-    const overdueAmount = overdueInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+    const outstandingInvoices = currentMonthInvoices.filter((invoice) => this.isOutstandingStatus(invoice.status));
+    const agingAR = outstandingInvoices.reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
+    const agingStudents = outstandingInvoices.length;
 
-    // 3. Net Profit Estimate & Expenses
-    const payrolls = await this.calculatePayroll('current');
-    const estimatedExpenses = payrolls.reduce((sum, p) => sum + Number(p.total || 0), 0); 
+    const overdueThreshold = new Date(currentRange.end);
+    overdueThreshold.setDate(overdueThreshold.getDate() - 30);
+
+    const overdueInvoices = outstandingInvoices.filter(
+      (invoice) => invoice.dueDate && new Date(invoice.dueDate) < overdueThreshold,
+    );
+    const overdueAmount = overdueInvoices.reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
+
+    const payrolls = await this.calculatePayroll(`${currentRange.year}-${String(currentRange.month).padStart(2, '0')}`);
+    const estimatedExpenses = payrolls.reduce((sum, payroll) => sum + Number(payroll.total || 0), 0);
 
     const netProfit = totalRevenue - estimatedExpenses;
     let grossMargin = 0;
     if (totalRevenue > 0) {
-        grossMargin = Math.round((netProfit / totalRevenue) * 100);
+      grossMargin = Math.round((netProfit / totalRevenue) * 100);
     } else if (netProfit < 0) {
-        grossMargin = -100;
+      grossMargin = -100;
     }
 
-    // 4. Cash Flow Trends (Last 6 Months)
-    const cashFlow: any[] = [];
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        
-        const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-        
-        const monthInvoices = await this.invoiceRepository.find({
-            where: {
-                createdAt: Between(monthStart, monthEnd)
-            }
-        });
-        
-        const income = monthInvoices
-            .filter(inv => inv.status === InvoiceStatus.PAID)
-            .reduce((sum, inv) => sum + Number(inv.uniqueAmount || inv.amount || 0), 0);
-            
-        const expense = monthInvoices
-            .filter(inv => inv.status === InvoiceStatus.UNPAID)
-            .reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-        
-        cashFlow.push({
-            month: d.toLocaleString('id-ID', { month: 'short' }),
-            income: income,
-            expense: expense
-        });
-    }
+    const cashFlow: { month: string; income: number; expense: number }[] = [];
+    for (let i = 5; i >= 0; i -= 1) {
+      const referenceDate = new Date(currentRange.year, currentRange.month - 1 - i, 1);
+      const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1, 0, 0, 0, 0);
+      const monthEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    // 5. Recent Transactions
-    const recentDbInvoices = await this.invoiceRepository.find({
-        where: { status: InvoiceStatus.PAID },
-        order: {
-            verifiedAt: 'DESC'
+      const monthInvoices = await this.invoiceRepository.find({
+        where: {
+          createdAt: Between(monthStart, monthEnd),
         },
-        take: 5
-    });
-    
-    const recentTransactions = recentDbInvoices.map((inv, idx) => ({
-        id: inv.id,
-        title: 'Pembayaran SPP',
-        date: inv.verifiedAt ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).format(inv.verifiedAt) : '-',
-        amount: Number(inv.uniqueAmount || inv.amount || 0),
-        type: 'income'
-    }));
+      });
+
+      const income = monthInvoices
+        .filter((invoice) => invoice.status === InvoiceStatus.PAID)
+        .reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
+
+      const expense = monthInvoices
+        .filter((invoice) => this.isOutstandingStatus(invoice.status))
+        .reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
+
+      cashFlow.push({
+        month: referenceDate.toLocaleString('id-ID', { month: 'short' }),
+        income,
+        expense,
+      });
+    }
+
+    const recentTransactions = currentMonthInvoices
+      .filter((invoice) => invoice.status === InvoiceStatus.PAID)
+      .sort((left, right) => {
+        const leftTime = left.verifiedAt ? new Date(left.verifiedAt).getTime() : 0;
+        const rightTime = right.verifiedAt ? new Date(right.verifiedAt).getTime() : 0;
+        return rightTime - leftTime;
+      })
+      .slice(0, 5)
+      .map((invoice) => ({
+        id: invoice.id,
+        title: this.getInvoiceDescription(invoice),
+        date: invoice.verifiedAt
+          ? new Intl.DateTimeFormat('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Asia/Jakarta',
+            }).format(invoice.verifiedAt)
+          : '-',
+        amount: this.getInvoiceAmount(invoice),
+        type: 'income' as const,
+      }));
 
     return {
-        totalRevenue,
-        targetRevenue,
-        revenueGrowth,
-        agingAR,
-        agingStudents,
-        overdueAmount,
-        netProfit,
-        grossMargin,
-        cashFlow,
-        recentTransactions
+      totalRevenue,
+      targetRevenue,
+      revenueGrowth,
+      agingAR,
+      agingStudents,
+      overdueAmount,
+      netProfit,
+      grossMargin,
+      cashFlow,
+      recentTransactions,
+      selectedMonth: currentRange.month,
+      selectedYear: currentRange.year,
+      selectedMonthLabel: currentRange.label,
+    };
+  }
+
+  async generateMonthlyReport(month?: number, year?: number) {
+    const selected = this.getMonthRange(month, year);
+    const [overview, invoices] = await Promise.all([
+      this.getOverviewData(selected.month, selected.year),
+      this.findInvoicesForMonthEntities(selected.month, selected.year),
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'OpenCode';
+    workbook.created = new Date();
+
+    const dashboardSheet = workbook.addWorksheet('Dashboard');
+    const rawDataSheet = workbook.addWorksheet('Raw Data');
+
+    rawDataSheet.columns = [
+      { header: 'ID Transaksi', key: 'transactionId', width: 22 },
+      { header: 'Tanggal', key: 'date', width: 14 },
+      { header: 'Bulan', key: 'month', width: 12 },
+      { header: 'Nama Siswa', key: 'studentName', width: 28 },
+      { header: 'Keterangan', key: 'description', width: 48 },
+      { header: 'Jatuh Tempo', key: 'dueDate', width: 14 },
+      { header: 'Status', key: 'status', width: 16 },
+      { header: 'Nominal (Rp)', key: 'amount', width: 18 },
+    ];
+
+    rawDataSheet.getRow(1).font = { bold: true };
+    rawDataSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE2E8F0' },
+    };
+
+    const rawRows = invoices.map((invoice) => ({
+      transactionId: invoice.id,
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(invoice.createdAt),
+      month: new Date(selected.year, selected.month - 1, 1).toLocaleString('id-ID', { month: 'short' }),
+      studentName: this.getInvoiceStudentLabel(invoice),
+      description: this.getInvoiceDescription(invoice),
+      dueDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(invoice.dueDate),
+      status: this.mapInvoiceStatus(invoice.status),
+      amount: this.getInvoiceAmount(invoice),
+    }));
+
+    if (rawRows.length > 0) {
+      rawDataSheet.addRows(rawRows);
+      rawDataSheet.getColumn('amount').numFmt = '#,##0';
+    } else {
+      rawDataSheet.addRow({
+        transactionId: '-',
+        date: '-',
+        month: new Date(selected.year, selected.month - 1, 1).toLocaleString('id-ID', { month: 'short' }),
+        studentName: 'Belum ada transaksi',
+        description: '-',
+        dueDate: '-',
+        status: '-',
+        amount: 0,
+      });
+      rawDataSheet.getColumn('amount').numFmt = '#,##0';
+    }
+
+    dashboardSheet.columns = [
+      { width: 22 },
+      { width: 18 },
+      { width: 18 },
+      { width: 6 },
+      { width: 18 },
+      { width: 28 },
+      { width: 18 },
+    ];
+
+    dashboardSheet.mergeCells('A1:G1');
+    dashboardSheet.getCell('A1').value = `Dashboard - ${selected.label}`;
+    dashboardSheet.getCell('A1').font = { bold: true, size: 16 };
+
+    dashboardSheet.getCell('A2').value = 'Total Revenue (Bulan Ini)';
+    dashboardSheet.getCell('A3').value = overview.totalRevenue;
+    dashboardSheet.getCell('A3').numFmt = '"Rp" #,##0';
+    dashboardSheet.getCell('B3').value = `${overview.revenueGrowth > 0 ? '+' : ''}${overview.revenueGrowth}%`;
+    dashboardSheet.getCell('A4').value = `Target: Rp ${overview.targetRevenue.toLocaleString('id-ID')}`;
+
+    dashboardSheet.getCell('E2').value = 'Aging AR (Belum Lunas)';
+    dashboardSheet.getCell('E3').value = overview.agingAR;
+    dashboardSheet.getCell('E3').numFmt = '"Rp" #,##0';
+    dashboardSheet.getCell('F3').value = `${overview.agingStudents} Siswa`;
+    dashboardSheet.getCell('G3').value = '⚠️';
+    dashboardSheet.getCell('E4').value = `Jatuh Tempo > 30 hari: Rp ${overview.overdueAmount.toLocaleString('id-ID')}`;
+
+    ['A2', 'E2', 'A6', 'E6'].forEach((cellRef) => {
+      dashboardSheet.getCell(cellRef).font = { bold: true };
+    });
+
+    dashboardSheet.getCell('A6').value = 'Tren Arus Kas';
+    dashboardSheet.getCell('A7').value = 'Bulan';
+    dashboardSheet.getCell('B7').value = 'Sudah Bayar';
+    dashboardSheet.getCell('C7').value = 'Belum Bayar';
+
+    overview.cashFlow.forEach((item, index) => {
+      const row = 8 + index;
+      dashboardSheet.getCell(`A${row}`).value = item.month;
+      dashboardSheet.getCell(`B${row}`).value = item.income;
+      dashboardSheet.getCell(`C${row}`).value = item.expense;
+      dashboardSheet.getCell(`B${row}`).numFmt = '"Rp" #,##0';
+      dashboardSheet.getCell(`C${row}`).numFmt = '"Rp" #,##0';
+    });
+
+    dashboardSheet.getCell('E6').value = 'Transaksi Terkini';
+    dashboardSheet.getCell('E7').value = 'Tanggal';
+    dashboardSheet.getCell('F7').value = 'Nama Siswa';
+    dashboardSheet.getCell('G7').value = 'Nominal';
+
+    const transactions = overview.recentTransactions.length > 0
+      ? overview.recentTransactions
+      : [{ id: 'empty', date: 'Belum ada transaksi', title: '-', amount: 0, type: 'income' as const }];
+
+    transactions.forEach((transaction, index) => {
+      const row = 8 + index;
+      dashboardSheet.getCell(`E${row}`).value = transaction.date;
+      dashboardSheet.getCell(`F${row}`).value = transaction.title;
+      dashboardSheet.getCell(`G${row}`).value = transaction.amount;
+      dashboardSheet.getCell(`G${row}`).numFmt = '"Rp" #,##0';
+    });
+
+    dashboardSheet.getCell(`E${8 + transactions.length + 1}`).value = '[Lihat Semua Transaksi]';
+
+    const borderedAreas = ['A2:C4', 'E2:G4', 'A6:C13', 'E6:G15'];
+    borderedAreas.forEach((rangeRef) => {
+      const [startCell, endCell] = rangeRef.split(':');
+      const start = dashboardSheet.getCell(startCell);
+      const end = dashboardSheet.getCell(endCell);
+
+      for (let row = start.row; row <= end.row; row += 1) {
+        for (let col = start.col; col <= end.col; col += 1) {
+          dashboardSheet.getCell(row, col).border = {
+            top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+          };
+        }
+      }
+    });
+
+    const highlightedHeaders = ['A2', 'E2', 'A6', 'E6'];
+    highlightedHeaders.forEach((cellRef) => {
+      dashboardSheet.getCell(cellRef).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFEFF6FF' },
+      };
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return {
+      buffer: Buffer.from(buffer),
+      fileName: `monthly-report-${selected.year}-${String(selected.month).padStart(2, '0')}.xlsx`,
+      month: selected.month,
+      year: selected.year,
+      label: selected.label,
     };
   }
 
