@@ -1,11 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { PaymentModuleService } from './payment-module.service';
 import { CreatePaymentModuleDto } from './dto/create-payment-module.dto';
 import { UpdatePaymentModuleDto } from './dto/update-payment-module.dto';
 import { Roles } from '../common/decorators/role.decorator';
 import { UserRole } from '../auths-module/entities/user.entity';
 import { Public } from '../common/decorators/public.decorator';
-import { UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  UseInterceptors,
+  UploadedFile,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -18,10 +33,7 @@ export class PaymentModuleController {
   constructor(private readonly paymentModuleService: PaymentModuleService) {}
 
   @Get('overview')
-  getOverview(
-    @Query('month') month?: string,
-    @Query('year') year?: string,
-  ) {
+  getOverview(@Query('month') month?: string, @Query('year') year?: string) {
     return this.paymentModuleService.getOverviewData(
       month ? parseInt(month, 10) : undefined,
       year ? parseInt(year, 10) : undefined,
@@ -43,7 +55,10 @@ export class PaymentModuleController {
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
-    res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${report.fileName}"`,
+    );
     res.send(report.buffer);
   }
 
@@ -51,12 +66,12 @@ export class PaymentModuleController {
   findAllInvoices(
     @Query('filter') filter: 'current' | 'history',
     @Query('month') month?: string,
-    @Query('year') year?: string
+    @Query('year') year?: string,
   ) {
     return this.paymentModuleService.findAllInvoices(
-        filter || 'history', 
-        month ? parseInt(month) : undefined, 
-        year ? parseInt(year) : undefined
+      filter || 'history',
+      month ? parseInt(month) : undefined,
+      year ? parseInt(year) : undefined,
     );
   }
 
@@ -80,14 +95,36 @@ export class PaymentModuleController {
     return this.paymentModuleService.getReminderSchedule();
   }
 
+  @Get('manual-late-schedule')
+  getManualLateSchedule() {
+    return this.paymentModuleService.getManualLateInvoiceSchedule();
+  }
+
   @Post('reminder-schedule')
   setReminderSchedule(@Body('day') day: number, @Body('time') time: string) {
     return this.paymentModuleService.setReminderSchedule(day, time);
   }
 
+  @Post('manual-late-schedule')
+  setManualLateSchedule(
+    @Body('isActive') isActive: boolean,
+    @Body('targetMonth') targetMonth: number,
+    @Body('targetYear') targetYear: number,
+    @Body('executionDay') executionDay: number,
+    @Body('executionTime') executionTime: string,
+  ) {
+    return this.paymentModuleService.setManualLateInvoiceSchedule({
+      isActive,
+      targetMonth,
+      targetYear,
+      executionDay,
+      executionTime,
+    });
+  }
+
   @Post('generate-now')
   manualGenerate() {
-      return this.paymentModuleService.manualGenerate();
+    return this.paymentModuleService.manualGenerate();
   }
 
   @Post()
@@ -108,16 +145,24 @@ export class PaymentModuleController {
 
   @Patch('verify/:id')
   verifyPayment(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body('adminId') adminId: string,
     @Body('paymentMethod') paymentMethod: 'TRANSFER' | 'CASH',
-    @Body('paidAmount') paidAmount?: number
+    @Body('paidAmount') paidAmount?: number,
   ) {
-    return this.paymentModuleService.verifyInvoice(id, adminId, paymentMethod, paidAmount);
+    return this.paymentModuleService.verifyInvoice(
+      id,
+      adminId,
+      paymentMethod,
+      paidAmount,
+    );
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentModuleDto: UpdatePaymentModuleDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updatePaymentModuleDto: UpdatePaymentModuleDto,
+  ) {
     return this.paymentModuleService.update(id, updatePaymentModuleDto);
   }
 
@@ -128,34 +173,46 @@ export class PaymentModuleController {
 
   @Public()
   @Post('upload-proof/:id')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadDir = process.env.UPLOAD_DIR || './img';
-        const uploadPath = `${uploadDir}/invoice/transfer`;
-        if (!fs.existsSync(uploadPath)) {
-          fs.mkdirSync(uploadPath, { recursive: true });
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadDir = process.env.UPLOAD_DIR || './img';
+          const uploadPath = `${uploadDir}/invoice/transfer`;
+          if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          cb(null, uploadPath);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${req.params.id}-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return cb(
+            new HttpException(
+              'Only image files are allowed!',
+              HttpStatus.BAD_REQUEST,
+            ),
+            false,
+          );
         }
-        cb(null, uploadPath);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = extname(file.originalname);
-        cb(null, `${req.params.id}-${uniqueSuffix}${ext}`);
+        cb(null, true);
       },
     }),
-    fileFilter: (req, file, cb) => {
-       if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-           return cb(new HttpException('Only image files are allowed!', HttpStatus.BAD_REQUEST), false);
-       }
-       cb(null, true);
+  )
+  async uploadProof(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new HttpException('File is required', HttpStatus.BAD_REQUEST);
     }
-  }))
-  async uploadProof(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
-      if (!file) {
-          throw new HttpException('File is required', HttpStatus.BAD_REQUEST);
-      }
-      const photoUrl = `img/invoice/transfer/${file.filename}`;
-      return this.paymentModuleService.uploadProof(id, photoUrl);
+    const photoUrl = `img/invoice/transfer/${file.filename}`;
+    return this.paymentModuleService.uploadProof(id, photoUrl);
   }
 }

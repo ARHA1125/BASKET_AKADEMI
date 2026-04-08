@@ -8,6 +8,7 @@ import {
 
 export enum NotificationDeliveryKind {
   INVOICE = 'INVOICE',
+  MANUAL_LATE_INVOICE = 'MANUAL_LATE_INVOICE',
   REMINDER = 'REMINDER',
   BROADCAST = 'BROADCAST',
 }
@@ -28,7 +29,11 @@ export class NotificationDelivery {
   @Column({ type: 'enum', enum: NotificationDeliveryKind })
   kind: NotificationDeliveryKind;
 
-  @Column({ type: 'enum', enum: NotificationDeliveryStatus, default: NotificationDeliveryStatus.QUEUED })
+  @Column({
+    type: 'enum',
+    enum: NotificationDeliveryStatus,
+    default: NotificationDeliveryStatus.QUEUED,
+  })
   status: NotificationDeliveryStatus;
 
   @Column()
