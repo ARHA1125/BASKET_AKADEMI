@@ -3,9 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { Invoice } from '../payment-module/entities/invoice.entity';
+import {
+  Invoice,
+  InvoiceStatus,
+} from '../payment-module/entities/invoice.entity';
 import { User, UserRole } from '../auths-module/entities/user.entity';
-import { MessageTemplate, TemplateType } from './entities/message-template.entity';
+import {
+  MessageTemplate,
+  TemplateType,
+} from './entities/message-template.entity';
 import { BroadcastLog, BroadcastStatus } from './entities/broadcast-log.entity';
 import { Parent } from '../academic-module/entities/parent.entity';
 import {
@@ -20,23 +26,29 @@ type QueueSchedulePolicy = {
   batchPauseMs: number;
 };
 
-const DELIVERY_POLICIES: Record<NotificationDeliveryKind, QueueSchedulePolicy> = {
-  [NotificationDeliveryKind.INVOICE]: {
-    intervalMs: 60_000,
-    batchSize: 20,
-    batchPauseMs: 10 * 60_000,
-  },
-  [NotificationDeliveryKind.REMINDER]: {
-    intervalMs: 60_000,
-    batchSize: 20,
-    batchPauseMs: 10 * 60_000,
-  },
-  [NotificationDeliveryKind.BROADCAST]: {
-    intervalMs: 75_000,
-    batchSize: 15,
-    batchPauseMs: 12 * 60_000,
-  },
-};
+const DELIVERY_POLICIES: Record<NotificationDeliveryKind, QueueSchedulePolicy> =
+  {
+    [NotificationDeliveryKind.INVOICE]: {
+      intervalMs: 60_000,
+      batchSize: 20,
+      batchPauseMs: 10 * 60_000,
+    },
+    [NotificationDeliveryKind.MANUAL_LATE_INVOICE]: {
+      intervalMs: 75_000,
+      batchSize: 15,
+      batchPauseMs: 12 * 60_000,
+    },
+    [NotificationDeliveryKind.REMINDER]: {
+      intervalMs: 60_000,
+      batchSize: 20,
+      batchPauseMs: 10 * 60_000,
+    },
+    [NotificationDeliveryKind.BROADCAST]: {
+      intervalMs: 75_000,
+      batchSize: 15,
+      batchPauseMs: 12 * 60_000,
+    },
+  };
 
 @Injectable()
 export class NotificationService {
@@ -126,7 +138,10 @@ export class NotificationService {
     );
   }
 
-  private async hasActiveDelivery(invoiceId: string, kind: NotificationDeliveryKind) {
+  private async hasActiveDelivery(
+    invoiceId: string,
+    kind: NotificationDeliveryKind,
+  ) {
     const delivery = await this.notificationDeliveryRepository.findOne({
       where: {
         invoiceId,
@@ -143,7 +158,10 @@ export class NotificationService {
     return Boolean(delivery);
   }
 
-  private estimateDurationMinutes(kind: NotificationDeliveryKind, queuedCount: number) {
+  private estimateDurationMinutes(
+    kind: NotificationDeliveryKind,
+    queuedCount: number,
+  ) {
     if (queuedCount <= 0) {
       return 0;
     }
@@ -151,35 +169,36 @@ export class NotificationService {
     return Math.ceil(this.calculateDelayMs(kind, queuedCount - 1) / 60_000);
   }
 
-  async getInvoiceRecipientUsers(): Promise<User[]> {
-    const invoices = await this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.parent', 'parent')
-      .leftJoinAndSelect('parent.user', 'user')
-      .getMany();
-      
-    const uniqueUsers = new Map<string, User>();
-    for (const inv of invoices) {
-       if (inv.parent && inv.parent.user && inv.parent.user.phoneNumber) {
-           if (inv.parent.user.phoneNumber.trim().length > 0) {
-               uniqueUsers.set(inv.parent.user.id, inv.parent.user);
-           }
-       }
+  private getInvoiceMonthYear(invoice: Invoice) {
+    if (invoice.month) {
+      const [month, year] = invoice.month
+        .split('-')
+        .map((value) => parseInt(value, 10));
+      if (!Number.isNaN(month) && !Number.isNaN(year)) {
+        return new Date(year, month - 1, 1).toLocaleString('id-ID', {
+          month: 'long',
+          year: 'numeric',
+        });
+      }
     }
-    return Array.from(uniqueUsers.values());
-  }
 
-
-
-  async sendInvoiceReminders(invoices: Invoice[]) {
-    this.logger.log(`Queueing invoice sends for ${invoices.length} invoices...`);
-
-    const monthYear = new Date().toLocaleString('id-ID', {
+    return invoice.createdAt.toLocaleString('id-ID', {
       month: 'long',
       year: 'numeric',
+      timeZone: 'Asia/Jakarta',
     });
+  }
 
-    // Fetch active template
+  private async queueInvoiceMessages(
+    invoices: Invoice[],
+    kind:
+      | NotificationDeliveryKind.INVOICE
+      | NotificationDeliveryKind.MANUAL_LATE_INVOICE,
+  ) {
+    this.logger.log(
+      `Queueing ${kind.toLowerCase()} sends for ${invoices.length} invoices...`,
+    );
+
     const activeTemplate = await this.templateRepository.findOne({
       where: { type: TemplateType.INVOICE, isActive: true },
       order: { createdAt: 'DESC' },
@@ -203,7 +222,6 @@ Hormat kami,
 {{invoiceUrl}}`;
 
     const templateContent = activeTemplate?.content || defaultMessageTemplate;
-
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -211,7 +229,7 @@ Hormat kami,
         continue;
       }
 
-      if (await this.hasActiveDelivery(invoice.id, NotificationDeliveryKind.INVOICE)) {
+      if (await this.hasActiveDelivery(invoice.id, kind)) {
         continue;
       }
 
@@ -227,11 +245,10 @@ Hormat kami,
         })
         .join('\n\n');
       const invoiceBaseUrl =
-        process.env.INVOICE_BASE_URL ??
-        'https://app.wirabhakti.my.id/invoice';
+        process.env.INVOICE_BASE_URL ?? 'https://app.wirabhakti.my.id/invoice';
       const variables = {
-        studentDetails: studentDetails,
-        monthYear: monthYear,
+        studentDetails,
+        monthYear: this.getInvoiceMonthYear(invoice),
         invoiceAmount: new Intl.NumberFormat('id-ID').format(invoice.amount),
         invoiceUrl: `${invoiceBaseUrl}/${invoice.id}`,
       };
@@ -241,12 +258,9 @@ Hormat kami,
         message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
       }
 
-      const delayMs = this.calculateDelayMs(
-        NotificationDeliveryKind.INVOICE,
-        queuedCount,
-      );
+      const delayMs = this.calculateDelayMs(kind, queuedCount);
       const delivery = await this.createDelivery(
-        NotificationDeliveryKind.INVOICE,
+        kind,
         chatId,
         delayMs,
         invoice.id,
@@ -262,11 +276,40 @@ Hormat kami,
 
     return {
       queued: queuedCount,
-      estimatedDurationMinutes: this.estimateDurationMinutes(
-        NotificationDeliveryKind.INVOICE,
-        queuedCount,
-      ),
+      estimatedDurationMinutes: this.estimateDurationMinutes(kind, queuedCount),
     };
+  }
+
+  async getInvoiceRecipientUsers(): Promise<User[]> {
+    const invoices = await this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoinAndSelect('invoice.parent', 'parent')
+      .leftJoinAndSelect('parent.user', 'user')
+      .getMany();
+
+    const uniqueUsers = new Map<string, User>();
+    for (const inv of invoices) {
+      if (inv.parent && inv.parent.user && inv.parent.user.phoneNumber) {
+        if (inv.parent.user.phoneNumber.trim().length > 0) {
+          uniqueUsers.set(inv.parent.user.id, inv.parent.user);
+        }
+      }
+    }
+    return Array.from(uniqueUsers.values());
+  }
+
+  async sendInvoiceReminders(invoices: Invoice[]) {
+    return this.queueInvoiceMessages(
+      invoices,
+      NotificationDeliveryKind.INVOICE,
+    );
+  }
+
+  async sendManualLateInvoiceReminders(invoices: Invoice[]) {
+    return this.queueInvoiceMessages(
+      invoices,
+      NotificationDeliveryKind.MANUAL_LATE_INVOICE,
+    );
   }
 
   async sendInvoiceDueReminders(invoices: Invoice[]) {
@@ -301,9 +344,14 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     let queuedCount = 0;
 
     for (const invoice of invoices) {
-      if (invoice.status === 'PAID') continue; // Extra safety check
+      if (invoice.status === InvoiceStatus.PAID) continue; // Extra safety check
 
-      if (await this.hasActiveDelivery(invoice.id, NotificationDeliveryKind.REMINDER)) {
+      if (
+        await this.hasActiveDelivery(
+          invoice.id,
+          NotificationDeliveryKind.REMINDER,
+        )
+      ) {
         continue;
       }
 
@@ -319,11 +367,10 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
           return `${index + 1}. *Nama Siswa:* ${name}\n   *Kelas:* ${grade}`;
         })
         .join('\n\n');
-      
+
       const invoiceBaseUrl =
-        process.env.INVOICE_BASE_URL ??
-        'https://app.wirabhakti.my.id/invoice';
-      
+        process.env.INVOICE_BASE_URL ?? 'https://app.wirabhakti.my.id/invoice';
+
       const variables = {
         studentDetails: studentDetails,
         monthYear: monthYear,
@@ -347,7 +394,12 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
         invoice.id,
       );
 
-      await this.enqueueDeliveryJob('send-reminder', delivery, message, delayMs);
+      await this.enqueueDeliveryJob(
+        'send-reminder',
+        delivery,
+        message,
+        delayMs,
+      );
 
       queuedCount++;
     }
@@ -365,7 +417,12 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 
   async getApprovedParents() {
     const parents = await this.parentRepository.find({
-      relations: ['user', 'students', 'students.user', 'students.trainingClass'],
+      relations: [
+        'user',
+        'students',
+        'students.user',
+        'students.trainingClass',
+      ],
       where: {
         user: {
           role: UserRole.PARENT,
@@ -375,7 +432,7 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     });
 
     // Filter to only those with a valid phone number (on User or Parent)
-    return parents.filter(p => {
+    return parents.filter((p) => {
       const phone = p.user?.phoneNumber?.trim() || p.phoneNumber?.trim();
       return phone && phone.length > 0;
     });
@@ -396,7 +453,9 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     });
 
     if (!activeTemplate) {
-      throw new Error('No active broadcast template found. Please save a template first.');
+      throw new Error(
+        'No active broadcast template found. Please save a template first.',
+      );
     }
 
     // 2. Fetch all approved parents with students
@@ -414,24 +473,28 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     });
     const savedLog = await this.broadcastLogRepository.save(broadcastLog);
 
-    this.logger.log(`Broadcasting to ${parents.length} approved parents (log: ${savedLog.id})`);
+    this.logger.log(
+      `Broadcasting to ${parents.length} approved parents (log: ${savedLog.id})`,
+    );
 
     // 4. Queue messages per parent with personalized variables
     let queuedCount = 0;
     for (const parent of parents) {
-      const phone = parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
+      const phone =
+        parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
       if (!phone) continue;
 
       const chatId = this.formatChatId(phone);
 
       // Build personalized variables
-      const studentNames = parent.students
-        ?.map((s, i) => {
-          const name = s.user?.fullName ?? 'Siswa';
-          const className = s.trainingClass?.name ?? '-';
-          return `${i + 1}. ${name} (${className})`;
-        })
-        .join('\\n') || '-';
+      const studentNames =
+        parent.students
+          ?.map((s, i) => {
+            const name = s.user?.fullName ?? 'Siswa';
+            const className = s.trainingClass?.name ?? '-';
+            return `${i + 1}. ${name} (${className})`;
+          })
+          .join('\\n') || '-';
 
       const variables: Record<string, string> = {
         fullName: parent.user?.fullName || 'Bapak/Ibu',
@@ -462,7 +525,12 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
         savedLog.id,
       );
 
-      await this.enqueueDeliveryJob('send-broadcast', delivery, message, delayMs);
+      await this.enqueueDeliveryJob(
+        'send-broadcast',
+        delivery,
+        message,
+        delayMs,
+      );
 
       queuedCount++;
     }
@@ -495,4 +563,3 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     return this.broadcastLogRepository.findOne({ where: { id } });
   }
 }
-

@@ -11,6 +11,17 @@ import { SystemSetting } from './entities/system-setting.entity';
 
 @Injectable()
 export class PaymentModuleService {
+  private static readonly MANUAL_LATE_INVOICE_ACTIVE =
+    'MANUAL_LATE_INVOICE_ACTIVE';
+  private static readonly MANUAL_LATE_INVOICE_TARGET_MONTH =
+    'MANUAL_LATE_INVOICE_TARGET_MONTH';
+  private static readonly MANUAL_LATE_INVOICE_TARGET_YEAR =
+    'MANUAL_LATE_INVOICE_TARGET_YEAR';
+  private static readonly MANUAL_LATE_INVOICE_EXEC_DAY =
+    'MANUAL_LATE_INVOICE_EXEC_DAY';
+  private static readonly MANUAL_LATE_INVOICE_EXEC_TIME =
+    'MANUAL_LATE_INVOICE_EXEC_TIME';
+
   constructor(
     @InjectRepository(Invoice)
     private invoiceRepository: Repository<Invoice>,
@@ -23,21 +34,97 @@ export class PaymentModuleService {
   ) {}
 
   private getJakartaNow() {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    return new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+  }
+
+  private async getSetting(key: string) {
+    const setting = await this.systemSettingRepository.findOne({
+      where: { key },
+    });
+    return setting?.value ?? null;
+  }
+
+  private async setSetting(key: string, value: string) {
+    let setting = await this.systemSettingRepository.findOne({
+      where: { key },
+    });
+    if (!setting) {
+      setting = this.systemSettingRepository.create({ key });
+    }
+
+    setting.value = value;
+    await this.systemSettingRepository.save(setting);
+  }
+
+  private getMonthKey(month: number, year: number) {
+    return `${String(month).padStart(2, '0')}-${year}`;
+  }
+
+  private getMonthLabel(month: number, year: number) {
+    return new Date(year, month - 1, 1).toLocaleString('id-ID', {
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  private getTargetInvoiceDate(
+    targetMonth: number,
+    targetYear: number,
+    invoiceDay: number,
+  ) {
+    return this.getTargetInvoiceDateTime(
+      targetMonth,
+      targetYear,
+      invoiceDay,
+      '00:00',
+    );
+  }
+
+  private getTargetInvoiceDateTime(
+    targetMonth: number,
+    targetYear: number,
+    invoiceDay: number,
+    invoiceTime: string,
+  ) {
+    const maxDay = new Date(targetYear, targetMonth, 0).getDate();
+    const normalizedDay = Math.min(Math.max(invoiceDay, 1), maxDay);
+    const [rawHour, rawMinute] = invoiceTime
+      .split(':')
+      .map((value) => parseInt(value, 10));
+    const hour = Number.isNaN(rawHour) ? 0 : Math.min(Math.max(rawHour, 0), 23);
+    const minute = Number.isNaN(rawMinute)
+      ? 0
+      : Math.min(Math.max(rawMinute, 0), 59);
+
+    return new Date(
+      targetYear,
+      targetMonth - 1,
+      normalizedDay,
+      hour,
+      minute,
+      0,
+      0,
+    );
   }
 
   private resolveSelectedMonth(month?: number, year?: number) {
     const now = this.getJakartaNow();
-    const resolvedMonth = month && month >= 1 && month <= 12 ? month : now.getMonth() + 1;
+    const resolvedMonth =
+      month && month >= 1 && month <= 12 ? month : now.getMonth() + 1;
     const resolvedYear = year && year > 0 ? year : now.getFullYear();
 
     return {
       month: resolvedMonth,
       year: resolvedYear,
-      label: new Date(resolvedYear, resolvedMonth - 1, 1).toLocaleString('id-ID', {
-        month: 'long',
-        year: 'numeric',
-      }),
+      label: new Date(resolvedYear, resolvedMonth - 1, 1).toLocaleString(
+        'id-ID',
+        {
+          month: 'long',
+          year: 'numeric',
+        },
+      ),
     };
   }
 
@@ -55,7 +142,10 @@ export class PaymentModuleService {
     const current = this.getMonthRange(month, year);
     const previousDate = new Date(current.year, current.month - 2, 1);
 
-    return this.getMonthRange(previousDate.getMonth() + 1, previousDate.getFullYear());
+    return this.getMonthRange(
+      previousDate.getMonth() + 1,
+      previousDate.getFullYear(),
+    );
   }
 
   private getInvoiceAmount(invoice: Invoice) {
@@ -139,20 +229,43 @@ export class PaymentModuleService {
     return 'This action adds a new paymentModule';
   }
 
-  async generateMonthlyInvoices() {
+  async generateMonthlyInvoices(options?: {
+    targetMonth?: number;
+    targetYear?: number;
+    invoiceDay?: number;
+    invoiceTime?: string;
+  }) {
     const parents = await this.parentRepository.find({
-      relations: ['students', 'students.user', 'students.trainingClass', 'user'],
+      relations: [
+        'students',
+        'students.user',
+        'students.trainingClass',
+        'user',
+      ],
     });
     const invoices: Invoice[] = [];
 
+    const jakartaDate = this.getJakartaNow();
+    const targetMonth = options?.targetMonth ?? jakartaDate.getMonth() + 1;
+    const targetYear = options?.targetYear ?? jakartaDate.getFullYear();
+    const invoiceDay = options?.invoiceDay ?? jakartaDate.getDate();
+    const invoiceTime =
+      options?.invoiceTime ??
+      jakartaDate.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    const invoiceDate = this.getTargetInvoiceDateTime(
+      targetMonth,
+      targetYear,
+      invoiceDay,
+      invoiceTime,
+    );
+    const monthStr = this.getMonthKey(targetMonth, targetYear);
+    const monthNameId = this.getMonthLabel(targetMonth, targetYear);
+
     for (const parent of parents) {
       if (!parent.students || parent.students.length === 0) continue;
-
-      // Force Jakarta time to calculate correct month/year
-      const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
-      const jakartaDate = new Date(jakartaTimeStr);
-      
-      const monthStr = `${String(jakartaDate.getMonth() + 1).padStart(2, '0')}-${jakartaDate.getFullYear()}`;
 
       const existingInvoice = await this.invoiceRepository.findOne({
         where: {
@@ -166,19 +279,18 @@ export class PaymentModuleService {
       }
 
       const activeStudents = parent.students.filter(
-        student => student.user?.status === 'Active'
+        (student) => student.user?.status === 'Active',
       );
 
       if (activeStudents.length === 0) continue;
 
       const invoice = new Invoice();
       invoice.parent = parent;
-      
-      // Force createdAt to exactly match the evaluated Jakarta Date
-      invoice.createdAt = jakartaDate;
 
-      // Determine due date dynamically based on the exact Jakarta Date
-      const dueDate = new Date(jakartaDate);
+      // Store the invoice inside the configured target period so history/report filters match.
+      invoice.createdAt = invoiceDate;
+
+      const dueDate = new Date(invoiceDate);
       dueDate.setDate(dueDate.getDate() + 7);
       invoice.dueDate = dueDate;
 
@@ -188,8 +300,7 @@ export class PaymentModuleService {
       invoice.items = [];
       let totalAmount = 0;
 
-      const monthNameId = new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'Asia/Jakarta' }).format(new Date());
-      const fullYear = jakartaDate.getFullYear();
+      const fullYear = targetYear;
 
       for (const student of activeStudents) {
         const item = new InvoiceItem();
@@ -202,12 +313,18 @@ export class PaymentModuleService {
       }
 
       invoice.amount = totalAmount;
-      
+
       const uniqueCode = Math.floor(Math.random() * 900) + 100;
       invoice.uniqueCode = uniqueCode;
       invoice.uniqueAmount = totalAmount + uniqueCode;
-      
+
       const savedInvoice = await this.invoiceRepository.save(invoice);
+      await this.invoiceRepository.update(savedInvoice.id, {
+        createdAt: invoiceDate,
+        dueDate,
+      });
+      savedInvoice.createdAt = invoiceDate;
+      savedInvoice.dueDate = dueDate;
       invoices.push(savedInvoice);
     }
 
@@ -217,7 +334,12 @@ export class PaymentModuleService {
   async calculatePayroll(period: string) {
     return [
       { coach: 'Coach Shin', sessions: 24, total: 4100000, status: 'PAID' },
-      { coach: 'Coach Indra', sessions: 18, total: 2160000, status: 'PROCESSING' },
+      {
+        coach: 'Coach Indra',
+        sessions: 18,
+        total: 2160000,
+        status: 'PROCESSING',
+      },
     ];
   }
 
@@ -237,9 +359,10 @@ export class PaymentModuleService {
   async findOne(id: string) {
     // Sanitize the ID to fix links containing trailing punctuation (e.g. `; or backticks)
     const cleanId = id.replace(/[^a-fA-F0-9-]/g, '');
-    
+
     // Validate UUID format before querying to prevent Postgres QueryFailedError
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i;
     if (!uuidRegex.test(cleanId)) {
       return null;
     }
@@ -255,7 +378,7 @@ export class PaymentModuleService {
         'parent.user',
       ],
     });
-    
+
     return invoice;
   }
 
@@ -339,11 +462,97 @@ export class PaymentModuleService {
     return this.systemSettingRepository.save(timeSetting);
   }
 
+  async getManualLateInvoiceSchedule() {
+    const [isActive, targetMonth, targetYear, executionDay, executionTime] =
+      await Promise.all([
+        this.getSetting(PaymentModuleService.MANUAL_LATE_INVOICE_ACTIVE),
+        this.getSetting(PaymentModuleService.MANUAL_LATE_INVOICE_TARGET_MONTH),
+        this.getSetting(PaymentModuleService.MANUAL_LATE_INVOICE_TARGET_YEAR),
+        this.getSetting(PaymentModuleService.MANUAL_LATE_INVOICE_EXEC_DAY),
+        this.getSetting(PaymentModuleService.MANUAL_LATE_INVOICE_EXEC_TIME),
+      ]);
+
+    return {
+      isActive: isActive === 'true',
+      targetMonth: targetMonth ? parseInt(targetMonth, 10) : null,
+      targetYear: targetYear ? parseInt(targetYear, 10) : null,
+      executionDay: executionDay ? parseInt(executionDay, 10) : null,
+      executionTime: executionTime || '00:00',
+    };
+  }
+
+  async setManualLateInvoiceSchedule(config: {
+    isActive: boolean;
+    targetMonth: number;
+    targetYear: number;
+    executionDay: number;
+    executionTime: string;
+  }) {
+    if (config.targetMonth < 1 || config.targetMonth > 12) {
+      throw new Error('Target month must be between 1 and 12');
+    }
+
+    if (config.targetYear < 2000) {
+      throw new Error('Target year is invalid');
+    }
+
+    if (config.executionDay < 1 || config.executionDay > 31) {
+      throw new Error('Execution day must be between 1 and 31');
+    }
+
+    const now = this.getJakartaNow();
+    const currentMonthIndex = now.getFullYear() * 12 + now.getMonth();
+    const targetMonthIndex = config.targetYear * 12 + (config.targetMonth - 1);
+
+    if (targetMonthIndex > currentMonthIndex) {
+      throw new Error(
+        'Manual late invoice can only target the current or a past month',
+      );
+    }
+
+    await Promise.all([
+      this.setSetting(
+        PaymentModuleService.MANUAL_LATE_INVOICE_ACTIVE,
+        String(config.isActive),
+      ),
+      this.setSetting(
+        PaymentModuleService.MANUAL_LATE_INVOICE_TARGET_MONTH,
+        String(config.targetMonth),
+      ),
+      this.setSetting(
+        PaymentModuleService.MANUAL_LATE_INVOICE_TARGET_YEAR,
+        String(config.targetYear),
+      ),
+      this.setSetting(
+        PaymentModuleService.MANUAL_LATE_INVOICE_EXEC_DAY,
+        String(config.executionDay),
+      ),
+      this.setSetting(
+        PaymentModuleService.MANUAL_LATE_INVOICE_EXEC_TIME,
+        config.executionTime,
+      ),
+    ]);
+
+    return this.getManualLateInvoiceSchedule();
+  }
+
+  async disableManualLateInvoiceSchedule() {
+    await this.setSetting(
+      PaymentModuleService.MANUAL_LATE_INVOICE_ACTIVE,
+      'false',
+    );
+    return this.getManualLateInvoiceSchedule();
+  }
+
   async manualGenerate() {
     return this.generateMonthlyInvoices();
   }
 
-  async findAllInvoices(filter: 'current' | 'history', month?: number, year?: number) {
+  async findAllInvoices(
+    filter: 'current' | 'history',
+    month?: number,
+    year?: number,
+  ) {
     const query = this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.parent', 'parent')
@@ -356,30 +565,43 @@ export class PaymentModuleService {
     if (month && year) {
       const startOfMonth = new Date(year, month - 1, 1);
       const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-      query.where('invoice.createdAt >= :start AND invoice.createdAt <= :end', { start: startOfMonth, end: endOfMonth });
-      
+      query.where('invoice.createdAt >= :start AND invoice.createdAt <= :end', {
+        start: startOfMonth,
+        end: endOfMonth,
+      });
+
       if (filter === 'current') {
-          // If they are on "Aktif" tab but select a month, maybe keep only unpaid ones
-          query.andWhere('invoice.status = :status', { status: InvoiceStatus.UNPAID });
+        // If they are on "Aktif" tab but select a month, maybe keep only unpaid ones
+        query.andWhere('invoice.status = :status', {
+          status: InvoiceStatus.UNPAID,
+        });
       }
     } else if (filter === 'current') {
-      const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+      const jakartaTimeStr = new Date().toLocaleString('en-US', {
+        timeZone: 'Asia/Jakarta',
+      });
       const jakartaDate = new Date(jakartaTimeStr);
-      
-      const startOfMonth = new Date(jakartaDate.getFullYear(), jakartaDate.getMonth(), 1);
-      
+
+      const startOfMonth = new Date(
+        jakartaDate.getFullYear(),
+        jakartaDate.getMonth(),
+        1,
+      );
+
       // Allow unpaid invoices from previous months to be shown in 'current'
-      query.where('(invoice.createdAt >= :start OR invoice.status = :status)', { 
-          start: startOfMonth, 
-          status: InvoiceStatus.UNPAID 
+      query.where('(invoice.createdAt >= :start OR invoice.status = :status)', {
+        start: startOfMonth,
+        status: InvoiceStatus.UNPAID,
       });
     }
 
     const invoices = await query.getMany();
 
-    return invoices.map(inv => {
+    return invoices.map((inv) => {
       const uniqueStudents = [
-        ...new Set(inv.items.map(i => i.student?.user?.fullName || 'Unknown')),
+        ...new Set(
+          inv.items.map((i) => i.student?.user?.fullName || 'Unknown'),
+        ),
       ];
       const studentName =
         uniqueStudents.length > 1
@@ -390,7 +612,9 @@ export class PaymentModuleService {
         id: inv.id,
         student: studentName || 'Unknown',
         category: 'SPP Bulanan',
-        date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(inv.createdAt),
+        date: new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Jakarta',
+        }).format(inv.createdAt),
         amount: inv.amount,
         uniqueCode: inv.uniqueCode,
         uniqueAmount: inv.uniqueAmount,
@@ -400,7 +624,7 @@ export class PaymentModuleService {
         photoUrl: inv.photo_url,
         isVerified: inv.isVerified || false,
         verifiedAt: inv.verifiedAt,
-        verifiedBy: inv.verifiedBy
+        verifiedBy: inv.verifiedBy,
       };
     });
   }
@@ -419,9 +643,13 @@ export class PaymentModuleService {
     }
 
     const invoicesToDelete = await query.getMany();
-    
+
     if (invoicesToDelete.length === 0) {
-      return { deleted: false, count: 0, message: 'No invoices found to delete.' };
+      return {
+        deleted: false,
+        count: 0,
+        message: 'No invoices found to delete.',
+      };
     }
 
     await this.invoiceRepository.remove(invoicesToDelete);
@@ -444,25 +672,31 @@ export class PaymentModuleService {
     const currentRange = this.getMonthRange(month, year);
     const previousRange = this.getPreviousMonthRange(month, year);
 
-    const [currentMonthInvoices, previousMonthPaidInvoices] = await Promise.all([
-      this.invoiceRepository.find({
-        where: {
-          createdAt: Between(currentRange.start, currentRange.end),
-        },
-      }),
-      this.invoiceRepository.find({
-        where: {
-          createdAt: Between(previousRange.start, previousRange.end),
-          status: InvoiceStatus.PAID,
-        },
-      }),
-    ]);
+    const [currentMonthInvoices, previousMonthPaidInvoices] = await Promise.all(
+      [
+        this.invoiceRepository.find({
+          where: {
+            createdAt: Between(currentRange.start, currentRange.end),
+          },
+        }),
+        this.invoiceRepository.find({
+          where: {
+            createdAt: Between(previousRange.start, previousRange.end),
+            status: InvoiceStatus.PAID,
+          },
+        }),
+      ],
+    );
 
     const totalRevenue = currentMonthInvoices
       .filter((invoice) => invoice.status === InvoiceStatus.PAID)
       .reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
 
-    const targetRevenue = currentMonthInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0) || 70000000;
+    const targetRevenue =
+      currentMonthInvoices.reduce(
+        (sum, invoice) => sum + Number(invoice.amount || 0),
+        0,
+      ) || 70000000;
 
     const lastMonthRevenue = previousMonthPaidInvoices.reduce(
       (sum, invoice) => sum + this.getInvoiceAmount(invoice),
@@ -471,25 +705,41 @@ export class PaymentModuleService {
 
     let revenueGrowth = 0;
     if (lastMonthRevenue > 0) {
-      revenueGrowth = Math.round(((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+      revenueGrowth = Math.round(
+        ((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100,
+      );
     } else if (totalRevenue > 0) {
       revenueGrowth = 100;
     }
 
-    const outstandingInvoices = currentMonthInvoices.filter((invoice) => this.isOutstandingStatus(invoice.status));
-    const agingAR = outstandingInvoices.reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
+    const outstandingInvoices = currentMonthInvoices.filter((invoice) =>
+      this.isOutstandingStatus(invoice.status),
+    );
+    const agingAR = outstandingInvoices.reduce(
+      (sum, invoice) => sum + this.getInvoiceAmount(invoice),
+      0,
+    );
     const agingStudents = outstandingInvoices.length;
 
     const overdueThreshold = new Date(currentRange.end);
     overdueThreshold.setDate(overdueThreshold.getDate() - 30);
 
     const overdueInvoices = outstandingInvoices.filter(
-      (invoice) => invoice.dueDate && new Date(invoice.dueDate) < overdueThreshold,
+      (invoice) =>
+        invoice.dueDate && new Date(invoice.dueDate) < overdueThreshold,
     );
-    const overdueAmount = overdueInvoices.reduce((sum, invoice) => sum + this.getInvoiceAmount(invoice), 0);
+    const overdueAmount = overdueInvoices.reduce(
+      (sum, invoice) => sum + this.getInvoiceAmount(invoice),
+      0,
+    );
 
-    const payrolls = await this.calculatePayroll(`${currentRange.year}-${String(currentRange.month).padStart(2, '0')}`);
-    const estimatedExpenses = payrolls.reduce((sum, payroll) => sum + Number(payroll.total || 0), 0);
+    const payrolls = await this.calculatePayroll(
+      `${currentRange.year}-${String(currentRange.month).padStart(2, '0')}`,
+    );
+    const estimatedExpenses = payrolls.reduce(
+      (sum, payroll) => sum + Number(payroll.total || 0),
+      0,
+    );
 
     const netProfit = totalRevenue - estimatedExpenses;
     let grossMargin = 0;
@@ -501,9 +751,29 @@ export class PaymentModuleService {
 
     const cashFlow: { month: string; income: number; expense: number }[] = [];
     for (let i = 5; i >= 0; i -= 1) {
-      const referenceDate = new Date(currentRange.year, currentRange.month - 1 - i, 1);
-      const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1, 0, 0, 0, 0);
-      const monthEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      const referenceDate = new Date(
+        currentRange.year,
+        currentRange.month - 1 - i,
+        1,
+      );
+      const monthStart = new Date(
+        referenceDate.getFullYear(),
+        referenceDate.getMonth(),
+        1,
+        0,
+        0,
+        0,
+        0,
+      );
+      const monthEnd = new Date(
+        referenceDate.getFullYear(),
+        referenceDate.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
 
       const monthInvoices = await this.invoiceRepository.find({
         where: {
@@ -529,8 +799,12 @@ export class PaymentModuleService {
     const recentTransactions = currentMonthInvoices
       .filter((invoice) => invoice.status === InvoiceStatus.PAID)
       .sort((left, right) => {
-        const leftTime = left.verifiedAt ? new Date(left.verifiedAt).getTime() : 0;
-        const rightTime = right.verifiedAt ? new Date(right.verifiedAt).getTime() : 0;
+        const leftTime = left.verifiedAt
+          ? new Date(left.verifiedAt).getTime()
+          : 0;
+        const rightTime = right.verifiedAt
+          ? new Date(right.verifiedAt).getTime()
+          : 0;
         return rightTime - leftTime;
       })
       .slice(0, 5)
@@ -601,11 +875,18 @@ export class PaymentModuleService {
 
     const rawRows = invoices.map((invoice) => ({
       transactionId: invoice.id,
-      date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(invoice.createdAt),
-      month: new Date(selected.year, selected.month - 1, 1).toLocaleString('id-ID', { month: 'short' }),
+      date: new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Jakarta',
+      }).format(invoice.createdAt),
+      month: new Date(selected.year, selected.month - 1, 1).toLocaleString(
+        'id-ID',
+        { month: 'short' },
+      ),
       studentName: this.getInvoiceStudentLabel(invoice),
       description: this.getInvoiceDescription(invoice),
-      dueDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(invoice.dueDate),
+      dueDate: new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Jakarta',
+      }).format(invoice.dueDate),
       status: this.mapInvoiceStatus(invoice.status),
       amount: this.getInvoiceAmount(invoice),
     }));
@@ -617,7 +898,10 @@ export class PaymentModuleService {
       rawDataSheet.addRow({
         transactionId: '-',
         date: '-',
-        month: new Date(selected.year, selected.month - 1, 1).toLocaleString('id-ID', { month: 'short' }),
+        month: new Date(selected.year, selected.month - 1, 1).toLocaleString(
+          'id-ID',
+          { month: 'short' },
+        ),
         studentName: 'Belum ada transaksi',
         description: '-',
         dueDate: '-',
@@ -644,15 +928,18 @@ export class PaymentModuleService {
     dashboardSheet.getCell('A2').value = 'Total Revenue (Bulan Ini)';
     dashboardSheet.getCell('A3').value = overview.totalRevenue;
     dashboardSheet.getCell('A3').numFmt = '"Rp" #,##0';
-    dashboardSheet.getCell('B3').value = `${overview.revenueGrowth > 0 ? '+' : ''}${overview.revenueGrowth}%`;
-    dashboardSheet.getCell('A4').value = `Target: Rp ${overview.targetRevenue.toLocaleString('id-ID')}`;
+    dashboardSheet.getCell('B3').value =
+      `${overview.revenueGrowth > 0 ? '+' : ''}${overview.revenueGrowth}%`;
+    dashboardSheet.getCell('A4').value =
+      `Target: Rp ${overview.targetRevenue.toLocaleString('id-ID')}`;
 
     dashboardSheet.getCell('E2').value = 'Aging AR (Belum Lunas)';
     dashboardSheet.getCell('E3').value = overview.agingAR;
     dashboardSheet.getCell('E3').numFmt = '"Rp" #,##0';
     dashboardSheet.getCell('F3').value = `${overview.agingStudents} Siswa`;
     dashboardSheet.getCell('G3').value = '⚠️';
-    dashboardSheet.getCell('E4').value = `Jatuh Tempo > 30 hari: Rp ${overview.overdueAmount.toLocaleString('id-ID')}`;
+    dashboardSheet.getCell('E4').value =
+      `Jatuh Tempo > 30 hari: Rp ${overview.overdueAmount.toLocaleString('id-ID')}`;
 
     ['A2', 'E2', 'A6', 'E6'].forEach((cellRef) => {
       dashboardSheet.getCell(cellRef).font = { bold: true };
@@ -677,9 +964,18 @@ export class PaymentModuleService {
     dashboardSheet.getCell('F7').value = 'Nama Siswa';
     dashboardSheet.getCell('G7').value = 'Nominal';
 
-    const transactions = overview.recentTransactions.length > 0
-      ? overview.recentTransactions
-      : [{ id: 'empty', date: 'Belum ada transaksi', title: '-', amount: 0, type: 'income' as const }];
+    const transactions =
+      overview.recentTransactions.length > 0
+        ? overview.recentTransactions
+        : [
+            {
+              id: 'empty',
+              date: 'Belum ada transaksi',
+              title: '-',
+              amount: 0,
+              type: 'income' as const,
+            },
+          ];
 
     transactions.forEach((transaction, index) => {
       const row = 8 + index;
@@ -689,7 +985,8 @@ export class PaymentModuleService {
       dashboardSheet.getCell(`G${row}`).numFmt = '"Rp" #,##0';
     });
 
-    dashboardSheet.getCell(`E${8 + transactions.length + 1}`).value = '[Lihat Semua Transaksi]';
+    dashboardSheet.getCell(`E${8 + transactions.length + 1}`).value =
+      '[Lihat Semua Transaksi]';
 
     const borderedAreas = ['A2:C4', 'E2:G4', 'A6:C13', 'E6:G15'];
     borderedAreas.forEach((rangeRef) => {
@@ -730,10 +1027,16 @@ export class PaymentModuleService {
   }
 
   async findCurrentMonthInvoicesEntities() {
-    const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+    const jakartaTimeStr = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Jakarta',
+    });
     const jakartaDate = new Date(jakartaTimeStr);
-    
-    const startOfMonth = new Date(jakartaDate.getFullYear(), jakartaDate.getMonth(), 1);
+
+    const startOfMonth = new Date(
+      jakartaDate.getFullYear(),
+      jakartaDate.getMonth(),
+      1,
+    );
 
     return this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -743,16 +1046,25 @@ export class PaymentModuleService {
       .leftJoinAndSelect('items.student', 'student')
       .leftJoinAndSelect('student.user', 'studentUser')
       .leftJoinAndSelect('student.trainingClass', 'trainingClass')
-      .where('(invoice.createdAt >= :start OR invoice.status = :status)', { start: startOfMonth, status: InvoiceStatus.UNPAID })
+      .where('(invoice.createdAt >= :start OR invoice.status = :status)', {
+        start: startOfMonth,
+        status: InvoiceStatus.UNPAID,
+      })
       .orderBy('invoice.createdAt', 'DESC')
       .getMany();
   }
 
   async findUnsentInvoicesForCurrentMonth() {
-    const jakartaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+    const jakartaTimeStr = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Jakarta',
+    });
     const jakartaDate = new Date(jakartaTimeStr);
-    
-    const startOfMonth = new Date(jakartaDate.getFullYear(), jakartaDate.getMonth(), 1);
+
+    const startOfMonth = new Date(
+      jakartaDate.getFullYear(),
+      jakartaDate.getMonth(),
+      1,
+    );
 
     return this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -762,8 +1074,13 @@ export class PaymentModuleService {
       .leftJoinAndSelect('items.student', 'student')
       .leftJoinAndSelect('student.user', 'studentUser')
       .leftJoinAndSelect('student.trainingClass', 'trainingClass')
-      .where('(invoice.createdAt >= :start OR invoice.status = :unpaidStatus)', { start: startOfMonth, unpaidStatus: InvoiceStatus.UNPAID })
-      .andWhere('invoice.deliveryStatus = :status', { status: 'BELUM_TERKIRIM' })
+      .where(
+        '(invoice.createdAt >= :start OR invoice.status = :unpaidStatus)',
+        { start: startOfMonth, unpaidStatus: InvoiceStatus.UNPAID },
+      )
+      .andWhere('invoice.deliveryStatus = :status', {
+        status: 'BELUM_TERKIRIM',
+      })
       .orderBy('invoice.createdAt', 'DESC')
       .getMany();
   }
@@ -771,42 +1088,50 @@ export class PaymentModuleService {
   async uploadProof(id: string, photoUrl: string) {
     const invoice = await this.invoiceRepository.findOne({ where: { id } });
     if (!invoice) {
-        throw new Error('Invoice not found');
+      throw new Error('Invoice not found');
     }
     invoice.photo_url = photoUrl;
     return this.invoiceRepository.save(invoice);
   }
 
   async verifyInvoice(
-    id: string, 
-    adminId: string, 
+    id: string,
+    adminId: string,
     paymentMethod: 'TRANSFER' | 'CASH',
-    paidAmount?: number
+    paidAmount?: number,
   ) {
     const invoice = await this.invoiceRepository.findOne({ where: { id } });
     if (!invoice) {
       throw new Error('Invoice not found');
     }
-    
+
     if (paymentMethod === 'TRANSFER') {
       if (!invoice.photo_url) {
         throw new Error('No payment proof uploaded for transfer');
       }
-      if (paidAmount && invoice.uniqueAmount && paidAmount !== invoice.uniqueAmount) {
-        throw new Error(`Amount mismatch. Expected: ${invoice.uniqueAmount}, Received: ${paidAmount}`);
+      if (
+        paidAmount &&
+        invoice.uniqueAmount &&
+        paidAmount !== invoice.uniqueAmount
+      ) {
+        throw new Error(
+          `Amount mismatch. Expected: ${invoice.uniqueAmount}, Received: ${paidAmount}`,
+        );
       }
     } else if (paymentMethod === 'CASH') {
       if (paidAmount && paidAmount < invoice.amount) {
-        throw new Error(`Insufficient amount. Expected at least: ${invoice.amount}, Received: ${paidAmount}`);
+        throw new Error(
+          `Insufficient amount. Expected at least: ${invoice.amount}, Received: ${paidAmount}`,
+        );
       }
     }
-    
+
     invoice.isVerified = true;
     invoice.verifiedAt = new Date();
     invoice.verifiedBy = adminId;
     invoice.status = InvoiceStatus.PAID;
     invoice.paymentMethod = paymentMethod;
-    
+
     return this.invoiceRepository.save(invoice);
   }
 }

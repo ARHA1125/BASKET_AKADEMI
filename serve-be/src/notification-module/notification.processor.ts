@@ -67,10 +67,15 @@ export class NotificationProcessor extends WorkerHost {
       broadcastLog.lastError = errorMessage ?? broadcastLog.lastError;
     }
 
-    if (broadcastLog.sentCount + broadcastLog.failedCount >= broadcastLog.queuedCount) {
+    if (
+      broadcastLog.sentCount + broadcastLog.failedCount >=
+      broadcastLog.queuedCount
+    ) {
       broadcastLog.completedAt = new Date();
       broadcastLog.status =
-        broadcastLog.failedCount > 0 ? BroadcastStatus.FAILED : BroadcastStatus.COMPLETED;
+        broadcastLog.failedCount > 0
+          ? BroadcastStatus.FAILED
+          : BroadcastStatus.COMPLETED;
     }
 
     await this.broadcastLogRepository.save(broadcastLog);
@@ -84,7 +89,9 @@ export class NotificationProcessor extends WorkerHost {
     });
 
     if (!delivery) {
-      this.logger.warn(`Skipping job ${job.id} because delivery ${deliveryId} was not found`);
+      this.logger.warn(
+        `Skipping job ${job.id} because delivery ${deliveryId} was not found`,
+      );
       return;
     }
 
@@ -92,7 +99,11 @@ export class NotificationProcessor extends WorkerHost {
 
     try {
       if (type === 'text') {
-        const response = await this.wahaService.sendMessage(chatId, message, job.data.session);
+        const response = await this.wahaService.sendMessage(
+          chatId,
+          message,
+          job.data.session,
+        );
         const externalMessageId = this.extractExternalMessageId(response);
 
         delivery.status = NotificationDeliveryStatus.SENT;
@@ -111,7 +122,10 @@ export class NotificationProcessor extends WorkerHost {
           if (invoice) {
             invoice.deliveryAttempts = attempts;
             invoice.deliveryError = null;
-            if (delivery.kind === NotificationDeliveryKind.INVOICE) {
+            if (
+              delivery.kind === NotificationDeliveryKind.INVOICE ||
+              delivery.kind === NotificationDeliveryKind.MANUAL_LATE_INVOICE
+            ) {
               invoice.deliveryStatus = 'SUDAH_TERKIRIM';
               invoice.deliverySentAt = delivery.sentAt;
             }
@@ -129,7 +143,8 @@ export class NotificationProcessor extends WorkerHost {
         return response;
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const maxAttempts = job.opts.attempts ?? 1;
       const isFinalAttempt = attempts >= maxAttempts;
 
@@ -153,8 +168,15 @@ export class NotificationProcessor extends WorkerHost {
         }
       }
 
-      if (isFinalAttempt && delivery.kind === NotificationDeliveryKind.BROADCAST) {
-        await this.updateBroadcastProgress(delivery.broadcastLogId, 'failed', errorMessage);
+      if (
+        isFinalAttempt &&
+        delivery.kind === NotificationDeliveryKind.BROADCAST
+      ) {
+        await this.updateBroadcastProgress(
+          delivery.broadcastLogId,
+          'failed',
+          errorMessage,
+        );
       }
 
       throw error;

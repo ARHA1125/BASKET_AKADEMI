@@ -104,12 +104,12 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
                            <p className="text-xs text-slate-500 mb-2">Transfer ke Rekening:</p>
                            <div className="flex justify-between items-center">
                               <div>
-                                 <p className="font-bold text-slate-800">BCA</p>
-                                 <p className="text-xs text-slate-500">a.n. Faizal</p>
+                                 <p className="font-bold text-slate-800">BRI</p>
+                                 <p className="text-xs text-slate-500">a.n Gerald Arnov Carl</p>
                               </div>
                               <div className="text-right">
-                                 <p className="font-mono font-bold text-lg text-blue-600">1234 5678 90</p>
-                                 <button onClick={() => { navigator.clipboard.writeText('1234567890'); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-colors">
+                                 <p className="font-mono font-bold text-lg text-blue-600">0044 0111 9291 500</p>
+                                 <button onClick={() => { navigator.clipboard.writeText('0044 0111 9291 500'); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-colors">
                                     {copied ? '✓ Disalin!' : 'Salin No. Rek'}
                                  </button>
                               </div>

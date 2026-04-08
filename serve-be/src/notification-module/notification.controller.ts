@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, HttpException, HttpStatus, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  HttpException,
+  HttpStatus,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { PaymentModuleService } from '../payment-module/payment-module.service';
 import { Roles } from '../common/decorators/role.decorator';
@@ -9,13 +18,38 @@ import { UserRole } from '../auths-module/entities/user.entity';
 export class NotificationController {
   constructor(
     private readonly notificationService: NotificationService,
-    private readonly paymentService: PaymentModuleService
+    private readonly paymentService: PaymentModuleService,
   ) {}
 
   @Post('invoices/send-manual')
   async sendManualReminders() {
-    const pendingInvoices = await this.paymentService.findUnsentInvoicesForCurrentMonth();
+    const pendingInvoices =
+      await this.paymentService.findUnsentInvoicesForCurrentMonth();
     return this.notificationService.sendInvoiceReminders(pendingInvoices);
+  }
+
+  @Post('invoices/send-manual-late')
+  async sendManualLateInvoices(
+    @Body('targetMonth') targetMonth: number,
+    @Body('targetYear') targetYear: number,
+    @Body('invoiceDay') invoiceDay: number,
+    @Body('invoiceTime') invoiceTime: string,
+  ) {
+    const invoices = await this.paymentService.generateMonthlyInvoices({
+      targetMonth,
+      targetYear,
+      invoiceDay,
+      invoiceTime,
+    });
+    const deliveryResult =
+      await this.notificationService.sendManualLateInvoiceReminders(invoices);
+    await this.paymentService.disableManualLateInvoiceSchedule();
+
+    return {
+      generated: invoices.length,
+      queued: deliveryResult.queued,
+      estimatedDurationMinutes: deliveryResult.estimatedDurationMinutes,
+    };
   }
 
   // ─── BROADCAST ENDPOINTS ───
@@ -30,9 +64,9 @@ export class NotificationController {
   async startBroadcast() {
     try {
       return await this.notificationService.startBroadcast();
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new HttpException(
-        error.message || 'Failed to start broadcast',
+        error instanceof Error ? error.message : 'Failed to start broadcast',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -40,7 +74,9 @@ export class NotificationController {
 
   @Get('broadcast/history')
   async getBroadcastHistory(@Query('limit') limit?: string) {
-    return this.notificationService.getBroadcastLogs(limit ? parseInt(limit) : 10);
+    return this.notificationService.getBroadcastLogs(
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get('broadcast/:id')
