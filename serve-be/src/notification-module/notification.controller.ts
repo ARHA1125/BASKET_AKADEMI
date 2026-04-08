@@ -14,8 +14,7 @@ export class NotificationController {
 
   @Post('invoices/send-manual')
   async sendManualReminders() {
-    const invoices = await this.paymentService.findAllInvoices('current');
-    const pendingInvoices = await this.paymentService.findCurrentMonthInvoicesEntities();
+    const pendingInvoices = await this.paymentService.findUnsentInvoicesForCurrentMonth();
     return this.notificationService.sendInvoiceReminders(pendingInvoices);
   }
 

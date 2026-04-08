@@ -62,6 +62,21 @@ export class Invoice {
   @Column({ type: 'enum', enum: ['SUDAH_TERKIRIM', 'BELUM_TERKIRIM'], default: 'BELUM_TERKIRIM' })
   deliveryStatus: 'SUDAH_TERKIRIM' | 'BELUM_TERKIRIM';
 
+  @Column({ type: 'timestamp', nullable: true })
+  deliveryQueuedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deliverySentAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastReminderSentAt: Date | null;
+
+  @Column({ default: 0 })
+  deliveryAttempts: number;
+
+  @Column({ type: 'text', nullable: true })
+  deliveryError: string | null;
+
   @OneToMany(() => InvoiceItem, (item) => item.invoice, { cascade: true })
   items: InvoiceItem[];
 

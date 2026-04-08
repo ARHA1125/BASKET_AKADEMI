@@ -22,10 +22,22 @@ export class BroadcastLog {
   sentCount: number;
 
   @Column({ default: 0 })
+  queuedCount: number;
+
+  @Column({ default: 0 })
   failedCount: number;
 
   @Column({ type: 'enum', enum: BroadcastStatus, default: BroadcastStatus.QUEUED })
   status: BroadcastStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  startedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date;
+
+  @Column({ type: 'text', nullable: true })
+  lastError: string;
 
   @CreateDateColumn()
   createdAt: Date;

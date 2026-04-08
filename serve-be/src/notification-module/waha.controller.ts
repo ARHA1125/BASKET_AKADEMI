@@ -1,19 +1,27 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Controller, Get, Post, Res, Body, Query, Param } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { WahaService } from './waha.service';
 import { NotificationRulesService } from './notification-rules.service';
 import { Response } from 'express';
 import { Roles } from '../common/decorators/role.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { UserRole } from '../auths-module/entities/user.entity';
+import {
+  NotificationDelivery,
+  NotificationDeliveryStatus,
+} from './entities/notification-delivery.entity';
 
 @Roles(UserRole.ADMIN)
 @Controller('notifications/waha')
 export class WahaController {
   constructor(
     private readonly wahaService: WahaService,
-    private readonly rulesService: NotificationRulesService
+    private readonly rulesService: NotificationRulesService,
+    @InjectRepository(NotificationDelivery)
+    private readonly notificationDeliveryRepository: Repository<NotificationDelivery>,
   ) {}
 
   @Get('status')
@@ -64,6 +72,22 @@ export class WahaController {
     
     // console.log(`[Webhook] Event: ${event}, ID: ${data?.id}`);
     log(`Event: ${event}, ID: ${data?.id}`);
+
+    if (event === 'message.ack' && data?.id) {
+      const delivery = await this.notificationDeliveryRepository.findOne({
+        where: { externalMessageId: data.id },
+      });
+
+      if (delivery && delivery.status === NotificationDeliveryStatus.SENT) {
+        delivery.status = NotificationDeliveryStatus.ACKED;
+        delivery.ackedAt = new Date();
+        delivery.error = null;
+        await this.notificationDeliveryRepository.save(delivery);
+        log(`ACK received for delivery ${delivery.id}`);
+      }
+
+      return { status: 'ok' };
+    }
 
     if (event === 'message' || event === 'message.any') {
         if (data.fromMe) {

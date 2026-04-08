@@ -17,6 +17,7 @@ import { PaymentModuleModule } from '../payment-module/payment-module.module';
 import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
 import { MessageTemplate } from './entities/message-template.entity';
+import { NotificationDelivery } from './entities/notification-delivery.entity';
 import { MessageTemplateController } from './message-template.controller';
 import { MessageTemplateService } from './message-template.service';
 
@@ -33,7 +34,15 @@ import { Parent } from '../academic-module/entities/parent.entity';
     HttpModule,
     ScheduleModule.forRoot(),
     ConfigModule,
-    TypeOrmModule.forFeature([NotificationRule, Invoice, MessageTemplate, User, BroadcastLog, Parent]),
+    TypeOrmModule.forFeature([
+      NotificationRule,
+      Invoice,
+      MessageTemplate,
+      User,
+      BroadcastLog,
+      Parent,
+      NotificationDelivery,
+    ]),
     PaymentModuleModule
   ],
   controllers: [
