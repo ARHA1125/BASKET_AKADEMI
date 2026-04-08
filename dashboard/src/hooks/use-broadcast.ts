@@ -37,7 +37,10 @@ export function useBroadcast() {
         throw new Error(errorData.message || 'Failed to send broadcast');
       }
       const data = await response.json();
-      toast.success(`Broadcast queued for ${data.queued} recipients!`);
+      const eta = data.estimatedDurationMinutes
+        ? ` Estimated duration: ~${data.estimatedDurationMinutes} minutes.`
+        : '';
+      toast.success(`Broadcast queued for ${data.queued} recipients!${eta}`);
       return data;
     } catch (err: any) {
       toast.error(err.message || 'Error sending broadcast');

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Invoice } from '../payment-module/entities/invoice.entity';
@@ -8,6 +8,35 @@ import { User, UserRole } from '../auths-module/entities/user.entity';
 import { MessageTemplate, TemplateType } from './entities/message-template.entity';
 import { BroadcastLog, BroadcastStatus } from './entities/broadcast-log.entity';
 import { Parent } from '../academic-module/entities/parent.entity';
+import {
+  NotificationDelivery,
+  NotificationDeliveryKind,
+  NotificationDeliveryStatus,
+} from './entities/notification-delivery.entity';
+
+type QueueSchedulePolicy = {
+  intervalMs: number;
+  batchSize: number;
+  batchPauseMs: number;
+};
+
+const DELIVERY_POLICIES: Record<NotificationDeliveryKind, QueueSchedulePolicy> = {
+  [NotificationDeliveryKind.INVOICE]: {
+    intervalMs: 60_000,
+    batchSize: 20,
+    batchPauseMs: 10 * 60_000,
+  },
+  [NotificationDeliveryKind.REMINDER]: {
+    intervalMs: 60_000,
+    batchSize: 20,
+    batchPauseMs: 10 * 60_000,
+  },
+  [NotificationDeliveryKind.BROADCAST]: {
+    intervalMs: 75_000,
+    batchSize: 15,
+    batchPauseMs: 12 * 60_000,
+  },
+};
 
 @Injectable()
 export class NotificationService {
@@ -26,7 +55,101 @@ export class NotificationService {
     private readonly broadcastLogRepository: Repository<BroadcastLog>,
     @InjectRepository(Parent)
     private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(NotificationDelivery)
+    private readonly notificationDeliveryRepository: Repository<NotificationDelivery>,
   ) {}
+
+  private formatChatId(phone: string) {
+    let chatId = phone.trim();
+    if (chatId.startsWith('08')) {
+      chatId = '62' + chatId.slice(1);
+    }
+    if (!chatId.endsWith('@c.us')) {
+      chatId = `${chatId}@c.us`;
+    }
+    return chatId;
+  }
+
+  private calculateDelayMs(kind: NotificationDeliveryKind, queueIndex: number) {
+    const policy = DELIVERY_POLICIES[kind];
+    const batchBreaks = Math.floor(queueIndex / policy.batchSize);
+    return queueIndex * policy.intervalMs + batchBreaks * policy.batchPauseMs;
+  }
+
+  private async createDelivery(
+    kind: NotificationDeliveryKind,
+    recipientChatId: string,
+    delayMs: number,
+    invoiceId?: string,
+    broadcastLogId?: string,
+  ) {
+    const scheduledFor = new Date(Date.now() + delayMs);
+    const delivery = this.notificationDeliveryRepository.create({
+      kind,
+      status: NotificationDeliveryStatus.QUEUED,
+      recipientChatId,
+      invoiceId: invoiceId ?? null,
+      broadcastLogId: broadcastLogId ?? null,
+      scheduledFor,
+    });
+    return this.notificationDeliveryRepository.save(delivery);
+  }
+
+  private async enqueueDeliveryJob(
+    jobName: string,
+    delivery: NotificationDelivery,
+    message: string,
+    delayMs: number,
+  ) {
+    await this.notificationQueue.add(
+      jobName,
+      {
+        deliveryId: delivery.id,
+        chatId: delivery.recipientChatId,
+        message,
+        type: 'text',
+        kind: delivery.kind,
+        invoiceId: delivery.invoiceId,
+        broadcastLogId: delivery.broadcastLogId,
+      },
+      {
+        jobId: delivery.id,
+        delay: delayMs,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2 * 60_000,
+        },
+        removeOnComplete: 200,
+        removeOnFail: false,
+      },
+    );
+  }
+
+  private async hasActiveDelivery(invoiceId: string, kind: NotificationDeliveryKind) {
+    const delivery = await this.notificationDeliveryRepository.findOne({
+      where: {
+        invoiceId,
+        kind,
+        status: In([
+          NotificationDeliveryStatus.QUEUED,
+          NotificationDeliveryStatus.SENT,
+          NotificationDeliveryStatus.ACKED,
+        ]),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return Boolean(delivery);
+  }
+
+  private estimateDurationMinutes(kind: NotificationDeliveryKind, queuedCount: number) {
+    if (queuedCount <= 0) {
+      return 0;
+    }
+
+    return Math.ceil(this.calculateDelayMs(kind, queuedCount - 1) / 60_000);
+  }
 
   async getInvoiceRecipientUsers(): Promise<User[]> {
     const invoices = await this.invoiceRepository
@@ -49,7 +172,7 @@ export class NotificationService {
 
 
   async sendInvoiceReminders(invoices: Invoice[]) {
-    this.logger.log(`Sending reminders for ${invoices.length} invoices...`);
+    this.logger.log(`Queueing invoice sends for ${invoices.length} invoices...`);
 
     const monthYear = new Date().toLocaleString('id-ID', {
       month: 'long',
@@ -81,22 +204,20 @@ Hormat kami,
 
     const templateContent = activeTemplate?.content || defaultMessageTemplate;
 
-    let sentCount = 0;
+    let queuedCount = 0;
 
     for (const invoice of invoices) {
       if (invoice.deliveryStatus === 'SUDAH_TERKIRIM') {
-          continue; // Skip if already sent
+        continue;
+      }
+
+      if (await this.hasActiveDelivery(invoice.id, NotificationDeliveryKind.INVOICE)) {
+        continue;
       }
 
       const phone = invoice.parent?.user?.phoneNumber;
       if (!phone) continue;
-      let chatId = phone.trim();
-      if (chatId.startsWith('08')) {
-        chatId = '62' + chatId.slice(1);
-      }
-      if (!chatId.endsWith('@c.us')) {
-        chatId = `${chatId}@c.us`;
-      }
+      const chatId = this.formatChatId(phone);
       const studentDetails = invoice.items
         .map((item, index) => {
           const name = item.student?.user?.fullName ?? 'Siswa';
@@ -120,19 +241,32 @@ Hormat kami,
         message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
       }
 
-      await this.notificationQueue.add('send-invoice', {
+      const delayMs = this.calculateDelayMs(
+        NotificationDeliveryKind.INVOICE,
+        queuedCount,
+      );
+      const delivery = await this.createDelivery(
+        NotificationDeliveryKind.INVOICE,
         chatId,
-        message,
-        type: 'text',
-      });
+        delayMs,
+        invoice.id,
+      );
 
-      // Update status
-      invoice.deliveryStatus = 'SUDAH_TERKIRIM';
+      await this.enqueueDeliveryJob('send-invoice', delivery, message, delayMs);
+
+      invoice.deliveryQueuedAt = delivery.scheduledFor;
+      invoice.deliveryError = null;
       await this.invoiceRepository.save(invoice);
-      sentCount++;
+      queuedCount++;
     }
 
-    return { sent: sentCount };
+    return {
+      queued: queuedCount,
+      estimatedDurationMinutes: this.estimateDurationMinutes(
+        NotificationDeliveryKind.INVOICE,
+        queuedCount,
+      ),
+    };
   }
 
   async sendInvoiceDueReminders(invoices: Invoice[]) {
@@ -164,21 +298,19 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 {{invoiceUrl}}`;
 
     const templateContent = activeTemplate?.content || defaultMessageTemplate;
-    let sentCount = 0;
+    let queuedCount = 0;
 
     for (const invoice of invoices) {
       if (invoice.status === 'PAID') continue; // Extra safety check
 
+      if (await this.hasActiveDelivery(invoice.id, NotificationDeliveryKind.REMINDER)) {
+        continue;
+      }
+
       const phone = invoice.parent?.user?.phoneNumber;
       if (!phone) continue;
-      
-      let chatId = phone.trim();
-      if (chatId.startsWith('08')) {
-        chatId = '62' + chatId.slice(1);
-      }
-      if (!chatId.endsWith('@c.us')) {
-        chatId = `${chatId}@c.us`;
-      }
+
+      const chatId = this.formatChatId(phone);
       const studentDetails = invoice.items
         .map((item, index) => {
           const name = item.student?.user?.fullName ?? 'Siswa';
@@ -204,16 +336,29 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
         message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
       }
 
-      await this.notificationQueue.add('send-invoice', {
+      const delayMs = this.calculateDelayMs(
+        NotificationDeliveryKind.REMINDER,
+        queuedCount,
+      );
+      const delivery = await this.createDelivery(
+        NotificationDeliveryKind.REMINDER,
         chatId,
-        message,
-        type: 'text',
-      });
+        delayMs,
+        invoice.id,
+      );
 
-      sentCount++;
+      await this.enqueueDeliveryJob('send-reminder', delivery, message, delayMs);
+
+      queuedCount++;
     }
 
-    return { sent: sentCount };
+    return {
+      queued: queuedCount,
+      estimatedDurationMinutes: this.estimateDurationMinutes(
+        NotificationDeliveryKind.REMINDER,
+        queuedCount,
+      ),
+    };
   }
 
   // ─── BROADCAST FEATURE ───
@@ -265,7 +410,7 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     const broadcastLog = this.broadcastLogRepository.create({
       templateContent: activeTemplate.content,
       totalRecipients: parents.length,
-      status: BroadcastStatus.SENDING,
+      status: BroadcastStatus.QUEUED,
     });
     const savedLog = await this.broadcastLogRepository.save(broadcastLog);
 
@@ -277,13 +422,7 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
       const phone = parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
       if (!phone) continue;
 
-      let chatId = phone.trim();
-      if (chatId.startsWith('08')) {
-        chatId = '62' + chatId.slice(1);
-      }
-      if (!chatId.endsWith('@c.us')) {
-        chatId = `${chatId}@c.us`;
-      }
+      const chatId = this.formatChatId(phone);
 
       // Build personalized variables
       const studentNames = parent.students
@@ -311,25 +450,37 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
         message = message.replace(new RegExp(`{{${key}}}`, 'g'), value);
       }
 
-      await this.notificationQueue.add('send-broadcast', {
+      const delayMs = this.calculateDelayMs(
+        NotificationDeliveryKind.BROADCAST,
+        queuedCount,
+      );
+      const delivery = await this.createDelivery(
+        NotificationDeliveryKind.BROADCAST,
         chatId,
-        message,
-        type: 'text',
-        broadcastLogId: savedLog.id,
-      });
+        delayMs,
+        undefined,
+        savedLog.id,
+      );
+
+      await this.enqueueDeliveryJob('send-broadcast', delivery, message, delayMs);
 
       queuedCount++;
     }
 
     // 5. Update log
-    savedLog.sentCount = queuedCount;
-    savedLog.status = BroadcastStatus.QUEUED;
+    savedLog.queuedCount = queuedCount;
+    savedLog.sentCount = 0;
+    savedLog.failedCount = 0;
     await this.broadcastLogRepository.save(savedLog);
 
     return {
       broadcastId: savedLog.id,
       queued: queuedCount,
       totalRecipients: parents.length,
+      estimatedDurationMinutes: this.estimateDurationMinutes(
+        NotificationDeliveryKind.BROADCAST,
+        queuedCount,
+      ),
     };
   }
 

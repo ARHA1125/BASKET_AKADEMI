@@ -430,13 +430,16 @@ Salam Olahraga,
                            action: {
                              label: 'Kirim Sekarang',
                              onClick: async () => {
-                               toast.info('Mengirim broadcast messages...');
-                               const result = await sendBroadcast();
-                               if (result) {
-                                 toast.success(`Broadcast messages berhasil dikirim ke ${result.queued} penerima!`);
-                               }
-                             },
-                           },
+                                toast.info('Mengirim broadcast messages...');
+                                const result = await sendBroadcast();
+                                if (result) {
+                                  const eta = result.estimatedDurationMinutes
+                                    ? ` Estimasi selesai sekitar ${result.estimatedDurationMinutes} menit.`
+                                    : '';
+                                  toast.success(`Broadcast messages berhasil diantrekan ke ${result.queued} penerima!${eta}`);
+                                }
+                              },
+                            },
                          });
                        }}
                        disabled={broadcasting || recipientCount === 0 || !currentTemplate.trim()}
