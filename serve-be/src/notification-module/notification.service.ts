@@ -53,6 +53,36 @@ const DELIVERY_POLICIES: Record<NotificationDeliveryKind, QueueSchedulePolicy> =
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
+  private readonly defaultInvoiceTemplate = `*Tagihan Online*
+Wirabhakti Basketball Club
+
+Kepada Yth. Bapak / Ibu Wali Murid,
+Kami informasikan tagihan kursus basket dengan detail berikut:
+*Daftar Siswa:*
+{{studentDetails}}
+
+*Bulan:* {{monthYear}}
+*Total Biaya:* Rp {{invoiceAmount}}
+
+Terima kasih atas kepercayaan Anda.
+Hormat kami,
+*Wirabhakti Basketball Club*
+*Cek Nota Tagihan:*
+{{invoiceUrl}}`;
+  private readonly defaultReminderTemplate = `*Peringatan Jatuh Tempo Tagihan*
+Wirabhakti Basketball Club
+
+Yth. Bapak / Ibu Wali Murid,
+Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus basket yang belum lunas:
+*Daftar Siswa:*
+{{studentDetails}}
+
+*Bulan:* {{monthYear}}
+*Total Biaya:* Rp {{invoiceAmount}}
+
+Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
+*Cek Nota Tagihan:*
+{{invoiceUrl}}`;
 
   constructor(
     @InjectQueue('notification')
@@ -169,6 +199,78 @@ export class NotificationService {
     return Math.ceil(this.calculateDelayMs(kind, queuedCount - 1) / 60_000);
   }
 
+  private buildInvoiceVariables(invoice: Invoice, monthYear?: string) {
+    const studentDetails = invoice.items
+      .map((item, index) => {
+        const name = item.student?.user?.fullName ?? 'Siswa';
+        const grade = item.student?.trainingClass?.name ?? '-';
+
+        return `${index + 1}. *Nama Siswa:* ${name}\n   *Kelas:* ${grade}`;
+      })
+      .join('\n\n');
+    const invoiceBaseUrl =
+      process.env.INVOICE_BASE_URL ?? 'https://app.wirabhakti.my.id/invoice';
+
+    return {
+      studentDetails,
+      monthYear: monthYear ?? this.getInvoiceMonthYear(invoice),
+      invoiceAmount: new Intl.NumberFormat('id-ID').format(
+        invoice.uniqueAmount || invoice.amount,
+      ),
+      invoiceUrl: `${invoiceBaseUrl}/${invoice.id}`,
+    };
+  }
+
+  private applyTemplate(
+    templateContent: string,
+    variables: Record<string, string>,
+  ) {
+    let message = templateContent;
+    for (const [key, value] of Object.entries(variables)) {
+      message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+    }
+    return message;
+  }
+
+  private async queueSingleDelivery(
+    kind: NotificationDeliveryKind,
+    recipientChatId: string,
+    message: string,
+    invoiceId?: string,
+    broadcastLogId?: string,
+  ) {
+    const delivery = await this.createDelivery(
+      kind,
+      recipientChatId,
+      0,
+      invoiceId,
+      broadcastLogId,
+    );
+
+    const jobName =
+      kind === NotificationDeliveryKind.REMINDER
+        ? 'send-reminder'
+        : kind === NotificationDeliveryKind.BROADCAST
+          ? 'send-broadcast'
+          : 'send-invoice';
+
+    await this.enqueueDeliveryJob(jobName, delivery, message, 0);
+    return delivery;
+  }
+
+  private async findParentByChatId(chatId: string) {
+    const parents = await this.parentRepository.find({
+      relations: ['user', 'students', 'students.user', 'students.trainingClass'],
+    });
+
+    return (
+      parents.find((parent) => {
+        const phone = parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
+        return phone ? this.formatChatId(phone) === chatId : false;
+      }) ?? null
+    );
+  }
+
   private getInvoiceMonthYear(invoice: Invoice) {
     if (invoice.month) {
       const [month, year] = invoice.month
@@ -204,24 +306,7 @@ export class NotificationService {
       order: { createdAt: 'DESC' },
     });
 
-    const defaultMessageTemplate = `*Tagihan Online*
-Wirabhakti Basketball Club
-
-Kepada Yth. Bapak / Ibu Wali Murid,
-Kami informasikan tagihan kursus basket dengan detail berikut:
-*Daftar Siswa:*
-{{studentDetails}}
-
-*Bulan:* {{monthYear}}
-*Total Biaya:* Rp {{invoiceAmount}}
-
-Terima kasih atas kepercayaan Anda.
-Hormat kami,
-*Wirabhakti Basketball Club*
-*Cek Nota Tagihan:*
-{{invoiceUrl}}`;
-
-    const templateContent = activeTemplate?.content || defaultMessageTemplate;
+    const templateContent = activeTemplate?.content || this.defaultInvoiceTemplate;
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -236,27 +321,8 @@ Hormat kami,
       const phone = invoice.parent?.user?.phoneNumber;
       if (!phone) continue;
       const chatId = this.formatChatId(phone);
-      const studentDetails = invoice.items
-        .map((item, index) => {
-          const name = item.student?.user?.fullName ?? 'Siswa';
-          const grade = item.student?.trainingClass?.name ?? '-';
-
-          return `${index + 1}. *Nama Siswa:* ${name}\n   *Kelas:* ${grade}`;
-        })
-        .join('\n\n');
-      const invoiceBaseUrl =
-        process.env.INVOICE_BASE_URL ?? 'https://app.wirabhakti.my.id/invoice';
-      const variables = {
-        studentDetails,
-        monthYear: this.getInvoiceMonthYear(invoice),
-        invoiceAmount: new Intl.NumberFormat('id-ID').format(invoice.amount),
-        invoiceUrl: `${invoiceBaseUrl}/${invoice.id}`,
-      };
-
-      let message = templateContent;
-      for (const [key, value] of Object.entries(variables)) {
-        message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
-      }
+      const variables = this.buildInvoiceVariables(invoice);
+      const message = this.applyTemplate(templateContent, variables);
 
       const delayMs = this.calculateDelayMs(kind, queuedCount);
       const delivery = await this.createDelivery(
@@ -325,22 +391,7 @@ Hormat kami,
       order: { createdAt: 'DESC' },
     });
 
-    const defaultMessageTemplate = `*Peringatan Jatuh Tempo Tagihan*
-Wirabhakti Basketball Club
-
-Yth. Bapak / Ibu Wali Murid,
-Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus basket yang belum lunas:
-*Daftar Siswa:*
-{{studentDetails}}
-
-*Bulan:* {{monthYear}}
-*Total Biaya:* Rp {{invoiceAmount}}
-
-Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
-*Cek Nota Tagihan:*
-{{invoiceUrl}}`;
-
-    const templateContent = activeTemplate?.content || defaultMessageTemplate;
+    const templateContent = activeTemplate?.content || this.defaultReminderTemplate;
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -359,29 +410,8 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
       if (!phone) continue;
 
       const chatId = this.formatChatId(phone);
-      const studentDetails = invoice.items
-        .map((item, index) => {
-          const name = item.student?.user?.fullName ?? 'Siswa';
-          const grade = item.student?.trainingClass?.name ?? '-';
-
-          return `${index + 1}. *Nama Siswa:* ${name}\n   *Kelas:* ${grade}`;
-        })
-        .join('\n\n');
-
-      const invoiceBaseUrl =
-        process.env.INVOICE_BASE_URL ?? 'https://app.wirabhakti.my.id/invoice';
-
-      const variables = {
-        studentDetails: studentDetails,
-        monthYear: monthYear,
-        invoiceAmount: new Intl.NumberFormat('id-ID').format(invoice.amount),
-        invoiceUrl: `${invoiceBaseUrl}/${invoice.id}`,
-      };
-
-      let message = templateContent;
-      for (const [key, value] of Object.entries(variables)) {
-        message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
-      }
+      const variables = this.buildInvoiceVariables(invoice, monthYear);
+      const message = this.applyTemplate(templateContent, variables);
 
       const delayMs = this.calculateDelayMs(
         NotificationDeliveryKind.REMINDER,
@@ -561,5 +591,268 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 
   async getBroadcastLog(id: string) {
     return this.broadcastLogRepository.findOne({ where: { id } });
+  }
+
+  async getDeliveryOverview(limit = 20) {
+    const deliveries = await this.notificationDeliveryRepository.find({
+      order: { createdAt: 'DESC' },
+      take: 500,
+    });
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const activeStatuses = new Set<NotificationDeliveryStatus>([
+      NotificationDeliveryStatus.QUEUED,
+      NotificationDeliveryStatus.SENT,
+    ]);
+
+    const summary = {
+      queued: deliveries.filter(
+        (item) => item.status === NotificationDeliveryStatus.QUEUED,
+      ).length,
+      sent: deliveries.filter(
+        (item) => item.status === NotificationDeliveryStatus.SENT,
+      ).length,
+      acked: deliveries.filter(
+        (item) => item.status === NotificationDeliveryStatus.ACKED,
+      ).length,
+      failed: deliveries.filter(
+        (item) => item.status === NotificationDeliveryStatus.FAILED,
+      ).length,
+      completedToday: deliveries.filter((item) => {
+        const completedAt = item.ackedAt || item.sentAt;
+        return completedAt ? new Date(completedAt) >= startOfToday : false;
+      }).length,
+    };
+
+    const kinds = Object.values(NotificationDeliveryKind);
+    const activeByKind = kinds
+      .map((kind) => {
+        const kindItems = deliveries.filter((item) => item.kind === kind);
+        const activeItems = kindItems.filter((item) => activeStatuses.has(item.status));
+        const queuedItems = kindItems.filter(
+          (item) => item.status === NotificationDeliveryStatus.QUEUED,
+        );
+        const latestScheduledFor = queuedItems
+          .map((item) => item.scheduledFor)
+          .filter((value): value is Date => Boolean(value))
+          .sort((left, right) => right.getTime() - left.getTime())[0] || null;
+        const nextScheduledFor = queuedItems
+          .map((item) => item.scheduledFor)
+          .filter((value): value is Date => Boolean(value))
+          .sort((left, right) => left.getTime() - right.getTime())[0] || null;
+
+        const estimatedMinutesRemaining = latestScheduledFor
+          ? Math.max(
+              0,
+              Math.ceil(
+                (new Date(latestScheduledFor).getTime() - Date.now()) / 60_000,
+              ),
+            )
+          : 0;
+
+        return {
+          kind,
+          active: activeItems.length,
+          queued: queuedItems.length,
+          sent: kindItems.filter(
+            (item) => item.status === NotificationDeliveryStatus.SENT,
+          ).length,
+          acked: kindItems.filter(
+            (item) => item.status === NotificationDeliveryStatus.ACKED,
+          ).length,
+          failed: kindItems.filter(
+            (item) => item.status === NotificationDeliveryStatus.FAILED,
+          ).length,
+          nextScheduledFor,
+          latestScheduledFor,
+          estimatedMinutesRemaining,
+          isRunning: activeItems.length > 0,
+        };
+      })
+      .filter(
+        (item) =>
+          item.active > 0 || item.failed > 0 || item.acked > 0 || item.sent > 0,
+      );
+
+    const recent = deliveries.slice(0, limit).map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      status: item.status,
+      recipientChatId: item.recipientChatId,
+      invoiceId: item.invoiceId,
+      broadcastLogId: item.broadcastLogId,
+      scheduledFor: item.scheduledFor,
+      sentAt: item.sentAt,
+      ackedAt: item.ackedAt,
+      failedAt: item.failedAt,
+      attempts: item.attempts,
+      error: item.error,
+      createdAt: item.createdAt,
+    }));
+
+    const runningBatches = activeByKind.reduce(
+      (acc, item) => {
+        acc[item.kind] = item.isRunning;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+
+    return {
+      summary,
+      activeByKind,
+      runningBatches,
+      recent,
+    };
+  }
+
+  async getDeliveryHistory(
+    kind?: NotificationDeliveryKind,
+    status?: NotificationDeliveryStatus,
+    limit = 50,
+  ) {
+    const where = {
+      ...(kind ? { kind } : {}),
+      ...(status ? { status } : {}),
+    };
+
+    return this.notificationDeliveryRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+  }
+
+  async retryFailedDelivery(id: string) {
+    const delivery = await this.notificationDeliveryRepository.findOne({
+      where: { id },
+    });
+
+    if (!delivery) {
+      throw new Error('Delivery not found.');
+    }
+
+    if (delivery.status !== NotificationDeliveryStatus.FAILED) {
+      throw new Error('Only failed deliveries can be retried.');
+    }
+
+    if (
+      delivery.kind === NotificationDeliveryKind.INVOICE ||
+      delivery.kind === NotificationDeliveryKind.MANUAL_LATE_INVOICE ||
+      delivery.kind === NotificationDeliveryKind.REMINDER
+    ) {
+      if (!delivery.invoiceId) {
+        throw new Error('Invoice delivery has no invoice reference.');
+      }
+
+      const invoice = await this.invoiceRepository.findOne({
+        where: { id: delivery.invoiceId },
+        relations: [
+          'parent',
+          'parent.user',
+          'items',
+          'items.student',
+          'items.student.user',
+          'items.student.trainingClass',
+        ],
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found for retry.');
+      }
+
+      const activeTemplate = await this.templateRepository.findOne({
+        where: {
+          type:
+            delivery.kind === NotificationDeliveryKind.REMINDER
+              ? TemplateType.REMINDER
+              : TemplateType.INVOICE,
+          isActive: true,
+        },
+        order: { createdAt: 'DESC' },
+      });
+
+      const templateContent =
+        activeTemplate?.content ||
+        (delivery.kind === NotificationDeliveryKind.REMINDER
+          ? this.defaultReminderTemplate
+          : this.defaultInvoiceTemplate);
+      const message = this.applyTemplate(
+        templateContent,
+        this.buildInvoiceVariables(
+          invoice,
+          delivery.kind === NotificationDeliveryKind.REMINDER
+            ? new Date().toLocaleString('id-ID', {
+                month: 'long',
+                year: 'numeric',
+              })
+            : undefined,
+        ),
+      );
+      const retryDelivery = await this.queueSingleDelivery(
+        delivery.kind,
+        delivery.recipientChatId,
+        message,
+        delivery.invoiceId ?? undefined,
+      );
+
+      invoice.deliveryQueuedAt = retryDelivery.scheduledFor;
+      invoice.deliveryError = null;
+      await this.invoiceRepository.save(invoice);
+
+      return { retried: true, deliveryId: retryDelivery.id };
+    }
+
+    if (delivery.kind === NotificationDeliveryKind.BROADCAST) {
+      if (!delivery.broadcastLogId) {
+        throw new Error('Broadcast delivery has no batch reference.');
+      }
+
+      const broadcastLog = await this.broadcastLogRepository.findOne({
+        where: { id: delivery.broadcastLogId },
+      });
+
+      if (!broadcastLog) {
+        throw new Error('Broadcast log not found for retry.');
+      }
+
+      const parent = await this.findParentByChatId(delivery.recipientChatId);
+      if (!parent) {
+        throw new Error('Parent recipient could not be resolved for retry.');
+      }
+
+      const variables: Record<string, string> = {
+        fullName: parent.user?.fullName || 'Bapak/Ibu',
+        studentNames:
+          parent.students
+            ?.map((s, i) => {
+              const name = s.user?.fullName ?? 'Siswa';
+              const className = s.trainingClass?.name ?? '-';
+              return `${i + 1}. ${name} (${className})`;
+            })
+            .join('\n') || '-',
+        studentCount: String(parent.students?.length || 0),
+        date: new Date().toLocaleDateString('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+      };
+      const message = this.applyTemplate(broadcastLog.templateContent, variables);
+      const retryDelivery = await this.queueSingleDelivery(
+        NotificationDeliveryKind.BROADCAST,
+        delivery.recipientChatId,
+        message,
+        undefined,
+        delivery.broadcastLogId,
+      );
+
+      return { retried: true, deliveryId: retryDelivery.id };
+    }
+
+    throw new Error('Unsupported delivery type for retry.');
   }
 }
