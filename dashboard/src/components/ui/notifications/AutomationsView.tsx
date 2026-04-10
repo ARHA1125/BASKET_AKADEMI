@@ -18,13 +18,75 @@ import {
 import { useState, useEffect } from 'react';
 import { Badge, Card, Text, Title } from './Common';
 import { useBroadcast } from '@/hooks/use-broadcast';
+import { useDeliveryMonitor } from '@/hooks/use-delivery-monitor';
 import { toast } from 'sonner';
 
 export default function AutomationsView() {
   const { rules, loading: rulesLoading, addRule, removeRule } = useAutomationRules();
   const { status, qrCodeUrl: qrCode, refreshStatus: checkStatus } = useWahaStatus(); 
+  const {
+    overview: deliveryOverview,
+    loading: deliveryLoading,
+    retryingId,
+    refreshOverview,
+    retryDelivery,
+  } = useDeliveryMonitor();
 
   const [newRule, setNewRule] = useState({ keyword: '', response: '' });
+  const [queueKindFilter, setQueueKindFilter] = useState<'ALL' | 'INVOICE' | 'MANUAL_LATE_INVOICE' | 'REMINDER' | 'BROADCAST'>('ALL');
+  const [queueStatusFilter, setQueueStatusFilter] = useState<'ALL' | 'QUEUED' | 'SENT' | 'ACKED' | 'FAILED'>('ALL');
+
+  const formatDateTime = (value: string | null) => {
+    if (!value) return '-';
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta',
+    }).format(new Date(value));
+  };
+
+  const kindLabel: Record<string, string> = {
+    INVOICE: 'Invoice',
+    MANUAL_LATE_INVOICE: 'Late Invoice',
+    REMINDER: 'Reminder',
+    BROADCAST: 'Broadcast',
+  };
+
+  const kindBadgeColor: Record<string, string> = {
+    INVOICE: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+    MANUAL_LATE_INVOICE:
+      'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    REMINDER: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    BROADCAST: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  };
+
+  const statusBadgeColor: Record<string, string> = {
+    QUEUED: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    SENT: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+    ACKED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    FAILED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+    SKIPPED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  };
+
+  const runningKinds = (deliveryOverview?.activeByKind || [])
+    .filter((item) => item.isRunning)
+    .map((item) => kindLabel[item.kind] || item.kind);
+
+  const queueWarning = runningKinds.length
+    ? `Batch aktif: ${runningKinds.join(', ')}`
+    : null;
+
+  const filteredActiveByKind = (deliveryOverview?.activeByKind || []).filter((item) =>
+    queueKindFilter === 'ALL' ? true : item.kind === queueKindFilter,
+  );
+
+  const filteredRecent = (deliveryOverview?.recent || []).filter((item) => {
+    const kindMatch = queueKindFilter === 'ALL' ? true : item.kind === queueKindFilter;
+    const statusMatch = queueStatusFilter === 'ALL' ? true : item.status === queueStatusFilter;
+    return kindMatch && statusMatch;
+  });
 
   const handleAddRule = async () => {
     if (!newRule.response) return;
@@ -302,6 +364,204 @@ Salam Olahraga,
          </div>
       </Card>
 
+      <Card>
+         <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+               <Title className="mb-1">Send Queue</Title>
+               <Text>Monitor semua antrean pengiriman dari invoice, manual late invoice, reminder, dan broadcast.</Text>
+            </div>
+            <button
+               onClick={() => refreshOverview().catch(() => toast.error('Gagal refresh send queue.'))}
+               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+               <RefreshCw size={16} className={deliveryLoading ? 'animate-spin' : ''} />
+               Refresh Queue
+            </button>
+         </div>
+
+         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+            {[
+              { label: 'Queued', value: deliveryOverview?.summary.queued ?? 0 },
+              { label: 'Sent', value: deliveryOverview?.summary.sent ?? 0 },
+              { label: 'Acked', value: deliveryOverview?.summary.acked ?? 0 },
+              { label: 'Failed', value: deliveryOverview?.summary.failed ?? 0 },
+              { label: 'Completed Today', value: deliveryOverview?.summary.completedToday ?? 0 },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-4 py-3">
+                 <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.label}</p>
+                 <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">{item.value}</p>
+              </div>
+            ))}
+         </div>
+
+         <div className="mb-4 flex flex-wrap items-center gap-2">
+            {[
+              { label: 'All Kinds', value: 'ALL' },
+              { label: 'Invoice', value: 'INVOICE' },
+              { label: 'Late Invoice', value: 'MANUAL_LATE_INVOICE' },
+              { label: 'Reminder', value: 'REMINDER' },
+              { label: 'Broadcast', value: 'BROADCAST' },
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setQueueKindFilter(item.value as typeof queueKindFilter)}
+                className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  queueKindFilter === item.value
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+            {[
+              { label: 'All Status', value: 'ALL' },
+              { label: 'Queued', value: 'QUEUED' },
+              { label: 'Sent', value: 'SENT' },
+              { label: 'Acked', value: 'ACKED' },
+              { label: 'Failed', value: 'FAILED' },
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setQueueStatusFilter(item.value as typeof queueStatusFilter)}
+                className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  queueStatusFilter === item.value
+                    ? 'bg-slate-900 text-white dark:bg-slate-700'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+         </div>
+
+         {queueWarning && (
+           <div className="mb-6 rounded-lg border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+             {queueWarning}. Pastikan batch sebelumnya sudah selesai sebelum memulai batch besar berikutnya.
+           </div>
+         )}
+
+         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div>
+               <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-50">Active Queue By Kind</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">ETA berdasarkan jadwal antrean yang sudah dibuat.</p>
+               </div>
+               <div className="space-y-3">
+                  {filteredActiveByKind.length ? (
+                    filteredActiveByKind.map((item) => (
+                      <div key={item.kind} className="rounded-lg border border-slate-200 dark:border-slate-800 p-4">
+                         <div className="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                               <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${kindBadgeColor[item.kind] || kindBadgeColor.INVOICE}`}>
+                                  {kindLabel[item.kind] || item.kind}
+                               </span>
+                               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                                  {item.isRunning ? 'Batch masih berjalan' : 'Tidak ada batch aktif'}
+                               </p>
+                            </div>
+                            <div className="text-right">
+                               <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">{item.queued}</p>
+                               <p className="text-xs text-slate-500 dark:text-slate-400">queued</p>
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="rounded-lg bg-slate-50 dark:bg-slate-900/60 px-3 py-2">
+                               <p className="text-xs text-slate-500 dark:text-slate-400">Next Send</p>
+                               <p className="mt-1 font-medium text-slate-900 dark:text-slate-50">{formatDateTime(item.nextScheduledFor)}</p>
+                            </div>
+                            <div className="rounded-lg bg-slate-50 dark:bg-slate-900/60 px-3 py-2">
+                               <p className="text-xs text-slate-500 dark:text-slate-400">Estimated Finish</p>
+                               <p className="mt-1 font-medium text-slate-900 dark:text-slate-50">{formatDateTime(item.latestScheduledFor)}</p>
+                            </div>
+                         </div>
+                         <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-1 text-slate-600 dark:text-slate-300">active {item.active}</span>
+                            <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/30 px-2 py-1 text-indigo-700 dark:text-indigo-300">sent {item.sent}</span>
+                            <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 text-emerald-700 dark:text-emerald-300">acked {item.acked}</span>
+                            <span className="rounded-full bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-rose-700 dark:text-rose-300">failed {item.failed}</span>
+                            <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-1 text-amber-700 dark:text-amber-300">ETA {item.estimatedMinutesRemaining} min</span>
+                         </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                       Tidak ada antrean aktif saat ini.
+                    </div>
+                  )}
+               </div>
+            </div>
+
+            <div>
+               <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-50">Recent Send Activity</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">20 aktivitas terbaru.</p>
+               </div>
+               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  {filteredRecent.length ? (
+                    filteredRecent.map((item) => (
+                      <div key={item.id} className="rounded-lg border border-slate-200 dark:border-slate-800 p-4">
+                         <div className="flex items-start justify-between gap-3">
+                            <div>
+                               <div className="flex flex-wrap items-center gap-2">
+                                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${kindBadgeColor[item.kind] || kindBadgeColor.INVOICE}`}>
+                                     {kindLabel[item.kind] || item.kind}
+                                  </span>
+                                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusBadgeColor[item.status] || statusBadgeColor.SKIPPED}`}>
+                                     {item.status}
+                                  </span>
+                               </div>
+                               <p className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-50">{item.recipientChatId}</p>
+                               <p className="text-xs text-slate-500 dark:text-slate-400">Created {formatDateTime(item.createdAt)}</p>
+                            </div>
+                            <div className="text-right text-xs text-slate-500 dark:text-slate-400">
+                               <p>Attempts: {item.attempts}</p>
+                               <p>Scheduled: {formatDateTime(item.scheduledFor)}</p>
+                            </div>
+                         </div>
+                         {(item.sentAt || item.ackedAt || item.failedAt) && (
+                           <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-500 dark:text-slate-400 md:grid-cols-3">
+                              <div>Sent: {formatDateTime(item.sentAt)}</div>
+                              <div>Acked: {formatDateTime(item.ackedAt)}</div>
+                              <div>Failed: {formatDateTime(item.failedAt)}</div>
+                           </div>
+                         )}
+                         {item.error && (
+                           <div className="mt-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                              {item.error}
+                           </div>
+                          )}
+                         {item.status === 'FAILED' && (
+                           <div className="mt-3 flex justify-end">
+                              <button
+                                onClick={() =>
+                                  toast.promise(retryDelivery(item.id), {
+                                    loading: 'Mengantrekan ulang delivery...',
+                                    success: 'Delivery berhasil dimasukkan ulang ke antrean.',
+                                    error: (error) =>
+                                      error instanceof Error ? error.message : 'Gagal retry delivery',
+                                  })
+                                }
+                                disabled={retryingId === item.id}
+                                className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <RefreshCw size={14} className={retryingId === item.id ? 'animate-spin' : ''} />
+                                Retry Failed Delivery
+                              </button>
+                           </div>
+                         )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                       Belum ada riwayat pengiriman.
+                    </div>
+                  )}
+               </div>
+            </div>
+         </div>
+      </Card>
+
       {/* MESSAGE TEMPLATES SECTION */}
       <Title className="mt-8 mb-4">Message Templates</Title>
       
@@ -418,16 +678,16 @@ Salam Olahraga,
                     Save {activeTab === 'INVOICE' ? 'Invoice' : activeTab === 'REMINDER' ? 'Reminder' : 'Broadcast'} Template
                  </button>
 
-                 {activeTab === 'BROADCAST' && (
-                    <button 
-                       onClick={async () => {
-                         if (!currentTemplateId) {
-                           await handleSaveTemplate();
-                           toast.info('Template disimpan otomatis sebelum mengirim.');
-                         }
-                         toast(`Kirim broadcast messages ke ${recipientCount} penerima?`, {
-                           duration: 10000,
-                           action: {
+                  {activeTab === 'BROADCAST' && (
+                     <button 
+                        onClick={async () => {
+                          if (!currentTemplateId) {
+                            await handleSaveTemplate();
+                            toast.info('Template disimpan otomatis sebelum mengirim.');
+                          }
+                          toast(`${queueWarning ? `${queueWarning} ` : ''}Kirim broadcast messages ke ${recipientCount} penerima?`, {
+                            duration: 10000,
+                            action: {
                              label: 'Kirim Sekarang',
                              onClick: async () => {
                                 toast.info('Mengirim broadcast messages...');

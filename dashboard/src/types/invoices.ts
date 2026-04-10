@@ -43,3 +43,31 @@ export interface Invoice {
     uniqueAmount?: number;
     paymentMethod?: 'TRANSFER' | 'CASH';
 }
+
+export type InvoiceCheckAction =
+    | 'NONE'
+    | 'GENERATE'
+    | 'GENERATE_AND_SEND'
+    | 'SEND';
+
+export type InvoiceCheckScopeStatus =
+    | 'READY'
+    | 'MISSING'
+    | 'EXISTS_UNSENT'
+    | 'EXISTS_SENT';
+
+export interface InvoiceCheckScope {
+    monthKey: string | null;
+    label: string | null;
+    status: InvoiceCheckScopeStatus;
+    invoiceId?: string | null;
+}
+
+export interface InvoiceCheckItem {
+    parentId: string;
+    parentName: string;
+    phoneNumber: string | null;
+    activeStudentCount: number;
+    current: InvoiceCheckScope;
+    manualLate: InvoiceCheckScope;
+}
