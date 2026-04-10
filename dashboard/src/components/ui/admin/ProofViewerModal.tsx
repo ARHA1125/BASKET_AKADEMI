@@ -43,7 +43,7 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
   const handleVerify = async () => {
     setIsVerifying(true);
     try {
-      await onVerify(invoice.id, 'TRANSFER', invoice.amount);
+      await onVerify(invoice.id, 'TRANSFER', invoice.uniqueAmount || invoice.amount);
       onClose();
     } catch (error) {
       console.error('Verification failed:', error);

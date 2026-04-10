@@ -1,6 +1,10 @@
 import { getToken } from "@/lib/auth"
 import { useEffect, useState } from "react"
-import { Invoice } from "../types/invoices"
+import {
+  Invoice,
+  InvoiceCheckAction,
+  InvoiceCheckItem,
+} from "../types/invoices"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
@@ -27,6 +31,10 @@ export function useBilling(
   const [manualLateExecutionTime, setManualLateExecutionTime] =
     useState("00:00")
   const [manualLateIsActive, setManualLateIsActive] = useState(false)
+  const [invoiceCheckItems, setInvoiceCheckItems] = useState<InvoiceCheckItem[]>(
+    [],
+  )
+  const [invoiceCheckLoading, setInvoiceCheckLoading] = useState(false)
 
   useEffect(() => {
     fetchInvoices()
@@ -323,6 +331,86 @@ export function useBilling(
     }
   }
 
+  const fetchInvoiceCheck = async () => {
+    setInvoiceCheckLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/notifications/invoices/check`, {
+        headers: getAuthHeaders(),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Error ${res.status}: ${text}`)
+      }
+
+      const data = await res.json()
+      setInvoiceCheckItems(data)
+      return data
+    } catch (error) {
+      console.error("Failed to fetch invoice check items", error)
+      throw error
+    } finally {
+      setInvoiceCheckLoading(false)
+    }
+  }
+
+  const executeInvoiceCheckOne = async (
+    parentId: string,
+    currentAction: InvoiceCheckAction,
+    manualLateAction: InvoiceCheckAction,
+  ) => {
+    try {
+      const res = await fetch(`${API_URL}/notifications/invoices/check/execute-one`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ parentId, currentAction, manualLateAction }),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Error ${res.status}: ${text}`)
+      }
+
+      const data = await res.json()
+      setInvoiceCheckItems(data.items || [])
+      await fetchInvoices()
+      return data
+    } catch (error) {
+      console.error("Failed to execute invoice check action", error)
+      throw error
+    }
+  }
+
+  const executeInvoiceCheckBulk = async (
+    parentIds: string[],
+    currentAction: InvoiceCheckAction,
+    manualLateAction: InvoiceCheckAction,
+  ) => {
+    try {
+      const res = await fetch(
+        `${API_URL}/notifications/invoices/check/execute-bulk`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ parentIds, currentAction, manualLateAction }),
+        },
+      )
+
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Error ${res.status}: ${text}`)
+      }
+
+      const data = await res.json()
+      setInvoiceCheckItems(data.items || [])
+      await fetchInvoices()
+      return data
+    } catch (error) {
+      console.error("Failed to execute bulk invoice check action", error)
+      throw error
+    }
+  }
+
   return {
     invoices,
     loading,
@@ -342,6 +430,11 @@ export function useBilling(
     deleteInvoice,
     deleteAllInvoices,
     sendManualReminders,
+    invoiceCheckItems,
+    invoiceCheckLoading,
+    fetchInvoiceCheck,
+    executeInvoiceCheckOne,
+    executeInvoiceCheckBulk,
     refreshInvoices: fetchInvoices,
   }
 }

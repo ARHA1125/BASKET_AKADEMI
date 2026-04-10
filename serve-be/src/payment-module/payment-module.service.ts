@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { CreatePaymentModuleDto } from './dto/create-payment-module.dto';
 import { UpdatePaymentModuleDto } from './dto/update-payment-module.dto';
@@ -8,6 +8,37 @@ import { Invoice, InvoiceStatus } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice-item.entity';
 import { Parent } from '../academic-module/entities/parent.entity';
 import { SystemSetting } from './entities/system-setting.entity';
+
+type InvoiceCheckScopeStatus =
+  | 'READY'
+  | 'MISSING'
+  | 'EXISTS_UNSENT'
+  | 'EXISTS_SENT';
+
+type InvoiceCheckScope = {
+  monthKey: string | null;
+  label: string | null;
+  status: InvoiceCheckScopeStatus;
+  invoiceId: string | null;
+};
+
+type InvoiceCheckTarget = {
+  month: number;
+  year: number;
+  monthKey: string;
+  label: string;
+  invoiceDay: number;
+  invoiceTime: string;
+};
+
+type InvoiceCheckItem = {
+  parentId: string;
+  parentName: string;
+  phoneNumber: string | null;
+  activeStudentCount: number;
+  current: InvoiceCheckScope;
+  manualLate: InvoiceCheckScope;
+};
 
 @Injectable()
 export class PaymentModuleService {
@@ -234,8 +265,13 @@ export class PaymentModuleService {
     targetYear?: number;
     invoiceDay?: number;
     invoiceTime?: string;
+    parentIds?: string[];
   }) {
+    const parentFilter = options?.parentIds?.length
+      ? { id: In(options.parentIds) }
+      : undefined;
     const parents = await this.parentRepository.find({
+      where: parentFilter,
       relations: [
         'students',
         'students.user',
@@ -329,6 +365,171 @@ export class PaymentModuleService {
     }
 
     return invoices;
+  }
+
+  async getInvoiceCheckTargets() {
+    const now = this.getJakartaNow();
+    const schedule = await this.getSchedule();
+    const manualLateSchedule = await this.getManualLateInvoiceSchedule();
+
+    const current: InvoiceCheckTarget = {
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      monthKey: this.getMonthKey(now.getMonth() + 1, now.getFullYear()),
+      label: this.getMonthLabel(now.getMonth() + 1, now.getFullYear()),
+      invoiceDay: schedule.day,
+      invoiceTime: schedule.time,
+    };
+
+    const manualLate =
+      manualLateSchedule.targetMonth && manualLateSchedule.targetYear
+        ? {
+            month: manualLateSchedule.targetMonth,
+            year: manualLateSchedule.targetYear,
+            monthKey: this.getMonthKey(
+              manualLateSchedule.targetMonth,
+              manualLateSchedule.targetYear,
+            ),
+            label: this.getMonthLabel(
+              manualLateSchedule.targetMonth,
+              manualLateSchedule.targetYear,
+            ),
+            invoiceDay: manualLateSchedule.executionDay || 1,
+            invoiceTime: manualLateSchedule.executionTime || '00:00',
+          }
+        : null;
+
+    return { current, manualLate };
+  }
+
+  async findInvoicesForParentsAndMonth(
+    parentIds: string[],
+    month: number,
+    year: number,
+  ) {
+    if (parentIds.length === 0) {
+      return [];
+    }
+
+    const monthKey = this.getMonthKey(month, year);
+
+    return this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoinAndSelect('invoice.parent', 'parent')
+      .leftJoinAndSelect('parent.user', 'parentUser')
+      .leftJoinAndSelect('invoice.items', 'items')
+      .leftJoinAndSelect('items.student', 'student')
+      .leftJoinAndSelect('student.user', 'studentUser')
+      .leftJoinAndSelect('student.trainingClass', 'trainingClass')
+      .where('parent.id IN (:...parentIds)', { parentIds })
+      .andWhere('invoice.month = :monthKey', { monthKey })
+      .orderBy('invoice.createdAt', 'DESC')
+      .getMany();
+  }
+
+  async getInvoiceCheckItems(): Promise<InvoiceCheckItem[]> {
+    const { current, manualLate } = await this.getInvoiceCheckTargets();
+    const parents = await this.parentRepository.find({
+      relations: ['user', 'students', 'students.user'],
+    });
+
+    const actionableParents = parents
+      .map((parent) => {
+        const activeStudents = (parent.students || []).filter(
+          (student) => student.user?.status === 'Active',
+        );
+
+        return {
+          parent,
+          activeStudents,
+        };
+      })
+      .filter(({ activeStudents }) => activeStudents.length > 0);
+
+    if (actionableParents.length === 0) {
+      return [];
+    }
+
+    const parentIds = actionableParents.map(({ parent }) => parent.id);
+    const monthKeys = [current.monthKey, manualLate?.monthKey].filter(
+      (value): value is string => Boolean(value),
+    );
+
+    const invoices = monthKeys.length
+      ? await this.invoiceRepository
+          .createQueryBuilder('invoice')
+          .leftJoinAndSelect('invoice.parent', 'parent')
+          .leftJoinAndSelect('parent.user', 'parentUser')
+          .where('parent.id IN (:...parentIds)', { parentIds })
+          .andWhere('invoice.month IN (:...monthKeys)', { monthKeys })
+          .orderBy('invoice.createdAt', 'DESC')
+          .getMany()
+      : [];
+
+    const invoiceMap = new Map<string, Invoice>();
+    for (const invoice of invoices) {
+      const key = `${invoice.parent?.id}:${invoice.month}`;
+      if (!invoiceMap.has(key)) {
+        invoiceMap.set(key, invoice);
+      }
+    }
+
+    const toScope = (
+      target: InvoiceCheckTarget | null,
+      invoice?: Invoice,
+    ): InvoiceCheckScope => {
+      if (!target) {
+        return {
+          monthKey: null,
+          label: null,
+          status: 'READY',
+          invoiceId: null,
+        };
+      }
+
+      if (!invoice) {
+        return {
+          monthKey: target.monthKey,
+          label: target.label,
+          status: 'MISSING',
+          invoiceId: null,
+        };
+      }
+
+      return {
+        monthKey: target.monthKey,
+        label: target.label,
+        status:
+          invoice.deliveryStatus === 'BELUM_TERKIRIM'
+            ? 'EXISTS_UNSENT'
+            : 'EXISTS_SENT',
+        invoiceId: invoice.id,
+      };
+    };
+
+    return actionableParents
+      .map(({ parent, activeStudents }) => {
+        const currentInvoice = invoiceMap.get(`${parent.id}:${current.monthKey}`);
+        const manualLateInvoice = manualLate
+          ? invoiceMap.get(`${parent.id}:${manualLate.monthKey}`)
+          : undefined;
+
+        return {
+          parentId: parent.id,
+          parentName: parent.user?.fullName || 'Unknown Parent',
+          phoneNumber: parent.user?.phoneNumber || parent.phoneNumber || null,
+          activeStudentCount: activeStudents.length,
+          current: toScope(current, currentInvoice),
+          manualLate: toScope(manualLate, manualLateInvoice),
+        };
+      })
+      .filter(
+        (item) =>
+          item.current.status === 'MISSING' ||
+          item.current.status === 'EXISTS_UNSENT' ||
+          item.manualLate.status === 'MISSING' ||
+          item.manualLate.status === 'EXISTS_UNSENT',
+      );
   }
 
   async calculatePayroll(period: string) {

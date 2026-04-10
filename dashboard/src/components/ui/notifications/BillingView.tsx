@@ -2,6 +2,11 @@ import { InvoiceStatusBadge } from "@/components/ui/admin/InvoiceStatusBadge"
 import { ProofViewerModal } from "@/components/ui/admin/ProofViewerModal"
 import { SwipeableVerificationModal } from "@/components/ui/admin/SwipeableVerificationModal"
 import { useBilling } from "@/hooks/use-billing"
+import { useDeliveryMonitor } from "@/hooks/use-delivery-monitor"
+import {
+  InvoiceCheckAction,
+  InvoiceCheckItem,
+} from "@/types/invoices"
 import { UniqueAmountDisplay } from "@/utils/formatUniqueAmount"
 import Cookies from "js-cookie"
 import {
@@ -46,6 +51,12 @@ export default function BillingView() {
   >("all")
   const [selectedMonth, setSelectedMonth] = useState<number | "">("")
   const [selectedYear, setSelectedYear] = useState<number | "">("")
+  const [showInvoiceCheckModal, setShowInvoiceCheckModal] = useState(false)
+  const [invoiceCheckFilter, setInvoiceCheckFilter] = useState<
+    "all" | "missing-current" | "missing-late" | "missing-both" | "unsent"
+  >("all")
+  const [selectedInvoiceCheckParentIds, setSelectedInvoiceCheckParentIds] =
+    useState<string[]>([])
 
   useEffect(() => {
     setMounted(true)
@@ -70,12 +81,18 @@ export default function BillingView() {
     deleteInvoice,
     deleteAllInvoices,
     sendManualReminders,
+    invoiceCheckItems,
+    invoiceCheckLoading,
+    fetchInvoiceCheck,
+    executeInvoiceCheckOne,
+    executeInvoiceCheckBulk,
     refreshInvoices,
   } = useBilling(
     activeTab,
     selectedMonth || undefined,
     selectedYear || undefined,
   )
+  const { overview: deliveryOverview } = useDeliveryMonitor()
 
   const [selectedTime, setSelectedTime] = useState(scheduleTime)
   const [selectedDay, setSelectedDay] = useState(scheduleDay)
@@ -127,6 +144,13 @@ export default function BillingView() {
     return new Date().getMonth() + 1
   }
 
+  const runningKinds = (deliveryOverview?.activeByKind || [])
+    .filter((item) => item.isRunning)
+    .map((item) => item.kind)
+  const batchWarning = runningKinds.length
+    ? `Batch aktif saat ini: ${runningKinds.join(", ")}. Pastikan batch sebelumnya sudah sesuai sebelum menjalankan batch baru.`
+    : null
+
   const handleSaveSchedule = async () => {
     await saveSchedule(selectedDay, selectedTime)
     setShowScheduleModal(false)
@@ -162,7 +186,7 @@ export default function BillingView() {
   const handleGenerateNow = async () => {
     toast("Pembuatan Tagihan Manual", {
       description:
-        "Apakah Anda yakin? Hal ini dapat membuat tagihan ganda jika dieksekusi secara tidak tepat.",
+        `${batchWarning ? `${batchWarning} ` : ""}Apakah Anda yakin? Hal ini dapat membuat tagihan ganda jika dieksekusi secara tidak tepat.`,
       action: {
         label: "Konfirmasi",
         onClick: () => {
@@ -185,7 +209,7 @@ export default function BillingView() {
   const handleSendManual = async () => {
     toast("Kirim Pengingat WhatsApp", {
       description:
-        "Kirim pengingat WhatsApp ke semua tagihan bulan ini yang statusnya tertunda?",
+        `${batchWarning ? `${batchWarning} ` : ""}Kirim pengingat WhatsApp ke semua tagihan bulan ini yang statusnya tertunda?`,
       action: {
         label: "Kirim",
         onClick: () => {
@@ -313,6 +337,95 @@ export default function BillingView() {
     setSwipeableModalOpen(true)
   }
 
+  const formatInvoiceCheckResult = (result: {
+    generatedCurrent?: number
+    queuedCurrent?: number
+    generatedManualLate?: number
+    queuedManualLate?: number
+  }) => {
+    const parts = [
+      result.generatedCurrent
+        ? `${result.generatedCurrent} current generated`
+        : null,
+      result.queuedCurrent ? `${result.queuedCurrent} current queued` : null,
+      result.generatedManualLate
+        ? `${result.generatedManualLate} late generated`
+        : null,
+      result.queuedManualLate
+        ? `${result.queuedManualLate} late queued`
+        : null,
+    ].filter(Boolean)
+
+    return parts.length > 0 ? parts.join(" • ") : "Tidak ada perubahan"
+  }
+
+  const handleOpenInvoiceCheck = async () => {
+    const promise = fetchInvoiceCheck().then((items) => {
+      setSelectedInvoiceCheckParentIds([])
+      setShowInvoiceCheckModal(true)
+      return items
+    })
+
+    toast.promise(promise, {
+      loading: "Memeriksa invoice yang tertinggal...",
+      success: (items) => `${items.length} parent perlu tindakan`,
+      error: (error) =>
+        error instanceof Error ? error.message : "Gagal memeriksa invoice",
+    })
+  }
+
+  const executeInvoiceCheckAction = async (
+    parentId: string,
+    currentAction: InvoiceCheckAction,
+    manualLateAction: InvoiceCheckAction,
+    loadingLabel: string,
+  ) => {
+    const promise = executeInvoiceCheckOne(
+      parentId,
+      currentAction,
+      manualLateAction,
+    )
+
+    toast.promise(promise, {
+      loading: loadingLabel,
+      success: (result) => formatInvoiceCheckResult(result),
+      error: (error) =>
+        error instanceof Error ? error.message : "Aksi invoice gagal",
+    })
+
+    return promise
+  }
+
+  const executeInvoiceCheckBulkAction = async (
+    parentIds: string[],
+    currentAction: InvoiceCheckAction,
+    manualLateAction: InvoiceCheckAction,
+    loadingLabel: string,
+  ) => {
+    const promise = executeInvoiceCheckBulk(
+      parentIds,
+      currentAction,
+      manualLateAction,
+    )
+
+    toast.promise(promise, {
+      loading: loadingLabel,
+      success: (result) => formatInvoiceCheckResult(result),
+      error: (error) =>
+        error instanceof Error ? error.message : "Aksi bulk invoice gagal",
+    })
+
+    return promise
+  }
+
+  const toggleInvoiceCheckSelection = (parentId: string) => {
+    setSelectedInvoiceCheckParentIds((prev) =>
+      prev.includes(parentId)
+        ? prev.filter((id) => id !== parentId)
+        : [...prev, parentId],
+    )
+  }
+
   const today = new Date()
   const daysInMonth = new Date(
     today.getFullYear(),
@@ -350,6 +463,39 @@ export default function BillingView() {
     unpaid: (invoices || []).filter((inv) => !inv.photoUrl && !inv.isVerified)
       .length,
   }
+
+  const verifiableInvoices = invoices.filter(
+    (inv) => inv.photoUrl && !inv.isVerified,
+  )
+
+  const filteredInvoiceCheckItems = invoiceCheckItems.filter((item) => {
+    const missingCurrent = item.current.status === "MISSING"
+    const missingLate = item.manualLate.status === "MISSING"
+    const unsentAny =
+      item.current.status === "EXISTS_UNSENT" ||
+      item.manualLate.status === "EXISTS_UNSENT"
+
+    if (invoiceCheckFilter === "missing-current") return missingCurrent
+    if (invoiceCheckFilter === "missing-late") return missingLate
+    if (invoiceCheckFilter === "missing-both") return missingCurrent && missingLate
+    if (invoiceCheckFilter === "unsent") return unsentAny
+    return true
+  })
+
+  const allVisibleInvoiceCheckParentIds = filteredInvoiceCheckItems.map(
+    (item) => item.parentId,
+  )
+  const invoiceCheckMissingCurrentCount = invoiceCheckItems.filter(
+    (item) => item.current.status === "MISSING",
+  ).length
+  const invoiceCheckMissingLateCount = invoiceCheckItems.filter(
+    (item) => item.manualLate.status === "MISSING",
+  ).length
+  const invoiceCheckUnsentCount = invoiceCheckItems.filter(
+    (item) =>
+      item.current.status === "EXISTS_UNSENT" ||
+      item.manualLate.status === "EXISTS_UNSENT",
+  ).length
 
   return (
     <div className="space-y-6">
@@ -407,9 +553,15 @@ export default function BillingView() {
             </button>
             <button
               onClick={() => setShowManualLateScheduleModal(true)}
-              className="rounded-lg border border-amber-300/30 bg-amber-500/40 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-500/60"
+              className="rounded-lg border border-indigo-300/30 bg-indigo-500/40 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500/60"
             >
               Generate Late Invoices
+            </button>
+            <button
+              onClick={handleOpenInvoiceCheck}
+              className="rounded-lg border border-indigo-300/30 bg-indigo-500/40 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500/60"
+            >
+              Invoice Check
             </button>
             <button
               onClick={() => setShowReminderScheduleModal(true)}
@@ -785,14 +937,15 @@ export default function BillingView() {
                                   <DropdownMenuItem
                                     className="cursor-pointer text-emerald-600 dark:text-emerald-400"
                                     onClick={() => {
-                                      const invoiceIndex = invoices.findIndex(
-                                        (i) => i.id === inv.id,
-                                      )
+                                      const invoiceIndex =
+                                        verifiableInvoices.findIndex(
+                                          (i) => i.id === inv.id,
+                                        )
                                       handleOpenSwipeableModal(invoiceIndex)
                                     }}
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4" />
-                                    Verifikasi Kilat (Mode Geser)
+                                    Verifikasi
                                   </DropdownMenuItem>
                                 )}
                               </>
@@ -1162,6 +1315,374 @@ export default function BillingView() {
           document.body,
         )}
 
+      {showInvoiceCheckModal &&
+        mounted &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="animate-in zoom-in-95 w-full max-w-6xl rounded-xl border border-slate-200 bg-white p-6 shadow-xl duration-200 dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <Title>Invoice Check</Title>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Deteksi parent aktif yang belum punya invoice current month,
+                    manual late, atau invoice yang sudah ada tapi belum terkirim.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowInvoiceCheckModal(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Missing Current
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+                    {invoiceCheckMissingCurrentCount}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Missing Late
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+                    {invoiceCheckMissingLateCount}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Existing Unsent
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+                    {invoiceCheckUnsentCount}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {[
+                  { value: "all", label: "Semua" },
+                  { value: "missing-current", label: "Missing Current" },
+                  { value: "missing-late", label: "Missing Late" },
+                  { value: "missing-both", label: "Missing Both" },
+                  { value: "unsent", label: "Unsent" },
+                ].map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() =>
+                      setInvoiceCheckFilter(
+                        filter.value as
+                          | "all"
+                          | "missing-current"
+                          | "missing-late"
+                          | "missing-both"
+                          | "unsent",
+                      )
+                    }
+                    className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                      invoiceCheckFilter === filter.value
+                        ? "bg-indigo-600 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/60">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setSelectedInvoiceCheckParentIds(allVisibleInvoiceCheckParentIds)
+                    }
+                    className="rounded-lg bg-white px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Pilih Semua Visible
+                  </button>
+                  <button
+                    onClick={() => setSelectedInvoiceCheckParentIds([])}
+                    className="rounded-lg bg-white px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Bersihkan Pilihan
+                  </button>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {selectedInvoiceCheckParentIds.length} parent dipilih
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() =>
+                      executeInvoiceCheckBulkAction(
+                        selectedInvoiceCheckParentIds,
+                        "GENERATE",
+                        "GENERATE",
+                        "Generate invoice terpilih...",
+                      )
+                    }
+                    disabled={selectedInvoiceCheckParentIds.length === 0}
+                    className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Generate Selected
+                  </button>
+                  <button
+                    onClick={() =>
+                      executeInvoiceCheckBulkAction(
+                        selectedInvoiceCheckParentIds,
+                        "GENERATE_AND_SEND",
+                        "GENERATE_AND_SEND",
+                        "Generate & send invoice terpilih...",
+                      )
+                    }
+                    disabled={selectedInvoiceCheckParentIds.length === 0}
+                    className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Generate & Send Selected
+                  </button>
+                  <button
+                    onClick={() =>
+                      executeInvoiceCheckBulkAction(
+                        selectedInvoiceCheckParentIds,
+                        "SEND",
+                        "SEND",
+                        "Mengirim invoice unsent terpilih...",
+                      )
+                    }
+                    disabled={selectedInvoiceCheckParentIds.length === 0}
+                    className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Send Selected Unsent
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+                {invoiceCheckLoading ? (
+                  <div className="flex items-center justify-center py-16 text-slate-500 dark:text-slate-400">
+                    <Loader2 size={20} className="mr-2 animate-spin" />
+                    Memuat data invoice checker...
+                  </div>
+                ) : filteredInvoiceCheckItems.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    Tidak ada parent yang perlu tindakan pada filter ini.
+                  </div>
+                ) : (
+                  filteredInvoiceCheckItems.map((item) => {
+                    const currentMissing = item.current.status === "MISSING"
+                    const manualLateMissing = item.manualLate.status === "MISSING"
+                    const currentUnsent =
+                      item.current.status === "EXISTS_UNSENT"
+                    const manualLateUnsent =
+                      item.manualLate.status === "EXISTS_UNSENT"
+
+                    return (
+                      <div
+                        key={item.parentId}
+                        className="rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                      >
+                        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedInvoiceCheckParentIds.includes(
+                                item.parentId,
+                              )}
+                              onChange={() =>
+                                toggleInvoiceCheckSelection(item.parentId)
+                              }
+                              className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600"
+                            />
+                            <div>
+                              <p className="font-semibold text-slate-900 dark:text-slate-50">
+                                {item.parentName}
+                              </p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {item.phoneNumber || "Nomor telepon belum tersedia"}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {item.activeStudentCount} siswa aktif
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <span
+                              className={`rounded-full px-2 py-1 ${
+                                currentMissing
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                  : currentUnsent
+                                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              }`}
+                            >
+                              Current: {item.current.status}
+                            </span>
+                            <span
+                              className={`rounded-full px-2 py-1 ${
+                                manualLateMissing
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                  : manualLateUnsent
+                                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              }`}
+                            >
+                              Late: {item.manualLate.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mb-3 grid gap-2 text-xs text-slate-500 dark:text-slate-400 md:grid-cols-2">
+                          <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+                            <span className="font-semibold">Current Scope:</span>{" "}
+                            {item.current.label || "Tidak dikonfigurasi"}
+                          </div>
+                          <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+                            <span className="font-semibold">Manual Late Scope:</span>{" "}
+                            {item.manualLate.label || "Tidak dikonfigurasi"}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {currentMissing && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  executeInvoiceCheckAction(
+                                    item.parentId,
+                                    "GENERATE",
+                                    "NONE",
+                                    "Generate current invoice...",
+                                  )
+                                }
+                                className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
+                              >
+                                Generate Current
+                              </button>
+                              <button
+                                onClick={() =>
+                                  executeInvoiceCheckAction(
+                                    item.parentId,
+                                    "GENERATE_AND_SEND",
+                                    "NONE",
+                                    "Generate & send current invoice...",
+                                  )
+                                }
+                                className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                              >
+                                Generate & Send Current
+                              </button>
+                            </>
+                          )}
+
+                          {manualLateMissing && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  executeInvoiceCheckAction(
+                                    item.parentId,
+                                    "NONE",
+                                    "GENERATE",
+                                    "Generate late invoice...",
+                                  )
+                                }
+                                className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
+                              >
+                                Generate Late
+                              </button>
+                              <button
+                                onClick={() =>
+                                  executeInvoiceCheckAction(
+                                    item.parentId,
+                                    "NONE",
+                                    "GENERATE_AND_SEND",
+                                    "Generate & send late invoice...",
+                                  )
+                                }
+                                className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                              >
+                                Generate & Send Late
+                              </button>
+                            </>
+                          )}
+
+                          {currentMissing && manualLateMissing && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  executeInvoiceCheckAction(
+                                    item.parentId,
+                                    "GENERATE",
+                                    "GENERATE",
+                                    "Generate current & late invoice...",
+                                  )
+                                }
+                                className="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                              >
+                                Generate Both
+                              </button>
+                              <button
+                                onClick={() =>
+                                  executeInvoiceCheckAction(
+                                    item.parentId,
+                                    "GENERATE_AND_SEND",
+                                    "GENERATE_AND_SEND",
+                                    "Generate & send current & late invoice...",
+                                  )
+                                }
+                                className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                              >
+                                Generate & Send Both
+                              </button>
+                            </>
+                          )}
+
+                          {currentUnsent && (
+                            <button
+                              onClick={() =>
+                                executeInvoiceCheckAction(
+                                  item.parentId,
+                                  "SEND",
+                                  "NONE",
+                                  "Mengirim current invoice yang belum terkirim...",
+                                )
+                              }
+                              className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                            >
+                              Send Current
+                            </button>
+                          )}
+
+                          {manualLateUnsent && (
+                            <button
+                              onClick={() =>
+                                executeInvoiceCheckAction(
+                                  item.parentId,
+                                  "NONE",
+                                  "SEND",
+                                  "Mengirim late invoice yang belum terkirim...",
+                                )
+                              }
+                              className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                            >
+                              Send Late
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
       {selectedInvoice && (
         <ProofViewerModal
           invoice={selectedInvoice}
@@ -1173,7 +1694,7 @@ export default function BillingView() {
       )}
 
       <SwipeableVerificationModal
-        invoices={invoices}
+        invoices={verifiableInvoices}
         startIndex={verificationStartIndex}
         isOpen={swipeableModalOpen}
         onClose={() => setSwipeableModalOpen(false)}
