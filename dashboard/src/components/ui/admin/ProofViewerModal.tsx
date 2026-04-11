@@ -1,7 +1,7 @@
 'use client';
 
 import { ProofViewerModalProps } from '@/types/verification';
-import { CheckCircle, Loader2, X } from 'lucide-react';
+import { CheckCircle, Loader2, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { FC, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -16,6 +16,11 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
   apiUrl
 }) => {
   const [isVerifying, setIsVerifying] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  const minScale = 1;
+  const maxScale = 3;
+  const scaleStep = 0.25;
 
   const [{ y }, api] = useSpring(() => ({ y: 0 }));
 
@@ -23,6 +28,7 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
     ({ down, movement: [, my], velocity: [, vy], direction: [, dy], cancel }) => {
       // Swipe down to dismiss
       if (my > 150 && vy > 0.5 && !down) {
+        setScale(1);
         onClose();
         // Reset immediately so next open starts fresh
         api.start({ y: 0, immediate: true });
@@ -40,11 +46,28 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleZoomIn = () => {
+    setScale((current) => Math.min(maxScale, current + scaleStep));
+  };
+
+  const handleZoomOut = () => {
+    setScale((current) => Math.max(minScale, current - scaleStep));
+  };
+
+  const handleResetZoom = () => {
+    setScale(1);
+  };
+
+  const handleClose = () => {
+    handleResetZoom();
+    onClose();
+  };
+
   const handleVerify = async () => {
     setIsVerifying(true);
     try {
       await onVerify(invoice.id, 'TRANSFER', invoice.uniqueAmount || invoice.amount);
-      onClose();
+      handleClose();
     } catch (error) {
       console.error('Verification failed:', error);
     } finally {
@@ -72,7 +95,7 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
       <div 
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       <animated.div 
@@ -80,23 +103,70 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
         style={{ y, touchAction: 'none' }}
         className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex will-change-transform cursor-grab active:cursor-grabbing"
       >
-        <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-8 flex items-center justify-center overflow-auto pointer-events-none">
+        <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-8 flex flex-col overflow-hidden">
           {invoice.photoUrl ? (
-            <img 
-              src={`${apiUrl}/${invoice.photoUrl}`}
-              alt="Payment Proof"
-              className="max-w-full h-auto rounded-lg shadow-lg pointer-events-auto"
-            />
-          ) : (
-            <p className="text-slate-500">No proof image available</p>
-          )}
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:bg-slate-800/80">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Payment Proof</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Zoom to inspect the uploaded transfer proof.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  disabled={scale <= minScale}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  aria-label="Zoom out"
+                >
+                  <ZoomOut size={18} />
+                </button>
+                <span className="min-w-14 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  disabled={scale >= maxScale}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  aria-label="Zoom in"
+                >
+                  <ZoomIn size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetZoom}
+                  disabled={scale === 1}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  aria-label="Reset zoom"
+                >
+                  <RotateCcw size={18} />
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-1 items-center justify-center overflow-auto pointer-events-none">
+            {invoice.photoUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={`${apiUrl}/${invoice.photoUrl}`}
+                  alt="Payment Proof"
+                  className="max-w-full h-auto rounded-lg shadow-lg pointer-events-auto transition-transform duration-200 ease-out"
+                  style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+                />
+              </>
+            ) : (
+              <p className="text-slate-500">No proof image available</p>
+            )}
+          </div>
         </div>
         
         <div className="w-96 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Bukti Pembayaran</h3>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
               <X size={20} className="text-slate-500" />

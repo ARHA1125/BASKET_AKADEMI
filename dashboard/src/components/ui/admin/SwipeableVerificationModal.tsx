@@ -10,6 +10,9 @@ import {
   ChevronRight,
   CreditCard,
   Loader2,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
   X
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -29,6 +32,11 @@ export function SwipeableVerificationModal({
   const [paymentMethod, setPaymentMethod] = useState<'TRANSFER' | 'CASH'>('TRANSFER');
   const [isVerifying, setIsVerifying] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  const minScale = 1;
+  const maxScale = 3;
+  const scaleStep = 0.25;
 
   const currentInvoice = invoices[currentIndex];
   const totalInvoices = invoices.length;
@@ -40,6 +48,16 @@ export function SwipeableVerificationModal({
   useEffect(() => {
     setCurrentIndex(startIndex);
   }, [startIndex]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setScale(1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setScale(1);
+  }, [currentIndex]);
 
   const [{ x }, api] = useSpring(() => ({ x: 0 }));
 
@@ -89,7 +107,7 @@ export function SwipeableVerificationModal({
   );
 
 
-  const handleVerify = async () => {
+  const handleVerify = useCallback(async () => {
     if (!currentInvoice) return;
 
     setIsVerifying(true);
@@ -116,7 +134,7 @@ export function SwipeableVerificationModal({
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, [api, currentIndex, currentInvoice, invoices, onClose, onVerify, paymentMethod]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -143,6 +161,18 @@ export function SwipeableVerificationModal({
   }, [isOpen, handlePrevious, handleNext, handleVerify, isVerifying, onClose]);
 
   if (!isOpen || !currentInvoice || !mounted) return null;
+
+  const handleZoomIn = () => {
+    setScale((current) => Math.min(maxScale, current + scaleStep));
+  };
+
+  const handleZoomOut = () => {
+    setScale((current) => Math.max(minScale, current - scaleStep));
+  };
+
+  const handleResetZoom = () => {
+    setScale(1);
+  };
 
   const { baseAmount, uniqueAmount, uniqueCode } = formatUniqueAmount(
     currentInvoice.amount,
@@ -234,12 +264,53 @@ export function SwipeableVerificationModal({
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                 Payment Proof
               </p>
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800/80">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Zoom in to inspect transfer details.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleZoomOut}
+                    disabled={scale <= minScale}
+                    className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    aria-label="Zoom out"
+                  >
+                    <ZoomOut size={16} />
+                  </button>
+                  <span className="min-w-12 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleZoomIn}
+                    disabled={scale >= maxScale}
+                    className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    aria-label="Zoom in"
+                  >
+                    <ZoomIn size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetZoom}
+                    disabled={scale === 1}
+                    className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    aria-label="Reset zoom"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                </div>
+              </div>
               <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                <img
-                  src={`${apiUrl}/${currentInvoice.photoUrl}`}
-                  alt="Payment Proof"
-                  className="w-full h-auto max-h-96 object-contain"
-                />
+                <div className="max-h-96 overflow-auto p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${apiUrl}/${currentInvoice.photoUrl}`}
+                    alt="Payment Proof"
+                    className="w-full h-auto object-contain transition-transform duration-200 ease-out"
+                    style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+                  />
+                </div>
               </div>
             </div>
           )}
