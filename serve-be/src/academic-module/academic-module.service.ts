@@ -32,6 +32,7 @@ import { CreateUnifiedStudentDto } from './dto/create-unified-student.dto';
 import { CreateUnifiedParentDto } from './dto/create-unified-parent.dto';
 import { CreateUnifiedCoachDto } from './dto/create-unified-coach.dto';
 import * as bcrypt from 'bcrypt';
+import { NotificationService } from '../notification-module/notification.service';
 
 @Injectable()
 export class AcademicModuleService {
@@ -47,7 +48,47 @@ export class AcademicModuleService {
     @InjectRepository(TrainingClass) private trainingClassRepo: Repository<TrainingClass>,
     @InjectRepository(Coach) private coachRepo: Repository<Coach>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    private readonly notificationService: NotificationService,
   ) {}
+
+  private buildAcceptanceTargets(students: Student[]) {
+    const groupedByParent = new Map<
+      string,
+      {
+        parentPhone: string;
+        parentFullName: string;
+        approvedStudents: Array<{ name: string; className?: string | null }>;
+      }
+    >();
+
+    for (const student of students) {
+      const parent = student.parent;
+      const parentUser = parent?.user;
+      const parentId = parent?.id;
+      const phone = parentUser?.phoneNumber?.trim() || parent?.phoneNumber?.trim();
+
+      if (!parentId || !phone) {
+        continue;
+      }
+
+      if (!groupedByParent.has(parentId)) {
+        groupedByParent.set(parentId, {
+          parentPhone: phone,
+          parentFullName: parentUser?.fullName || 'Bapak/Ibu',
+          approvedStudents: [],
+        });
+      }
+
+      groupedByParent.get(parentId)?.approvedStudents.push({
+        name: student.user?.fullName || 'Siswa',
+        className: student.trainingClass?.name || '-',
+      });
+    }
+
+    return Array.from(groupedByParent.values()).filter(
+      (target) => target.approvedStudents.length > 0,
+    );
+  }
 
   async createAttendance(dto: CreateAttendanceDto) {
     const { studentId, ...rest } = dto;
@@ -456,6 +497,7 @@ export class AcademicModuleService {
       .leftJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('parent.user', 'parentUser')
+      .leftJoinAndSelect('student.trainingClass', 'trainingClass')
       .where('user.status = :pendingStatus', { pendingStatus: 'Pending' });
 
     if (search) {
@@ -494,6 +536,11 @@ export class AcademicModuleService {
         .execute();
     }
 
+    const acceptanceTargets = this.buildAcceptanceTargets(pendingStudents);
+    if (acceptanceTargets.length > 0) {
+      await this.notificationService.sendAcceptanceMessages(acceptanceTargets);
+    }
+
     return { updated: pendingStudents.length };
   }
 
@@ -506,14 +553,19 @@ export class AcademicModuleService {
 
   async updateStudent(id: string, dto: UpdateStudentDto & { fullName?: string; email?: string; status?: string }) {
     const { parentId, trainingClassId, fullName, email, status, ...rest } = dto;
+    let pendingToActiveStudent: Student | null = null;
 
     if (fullName || email || status) {
       const student = await this.studentRepo.findOne({
         where: { id },
-        relations: ['user', 'parent', 'parent.user'],
+        relations: ['user', 'parent', 'parent.user', 'trainingClass'],
       });
 
       if (student && student.user) {
+        const isPendingToActive =
+          status?.toLowerCase() === 'active' &&
+          student.user.status?.toLowerCase() === 'pending';
+
         await this.userRepo.update(student.user.id, {
           ...(fullName && { fullName }),
           ...(email && { email }),
@@ -522,6 +574,10 @@ export class AcademicModuleService {
 
         if (status?.toLowerCase() === 'active' && student.parent?.user) {
           await this.userRepo.update(student.parent.user.id, { status: 'Active' });
+        }
+
+        if (isPendingToActive) {
+          pendingToActiveStudent = student;
         }
       }
     }
@@ -537,7 +593,23 @@ export class AcademicModuleService {
     }
 
     if (Object.keys(updateData).length > 0) {
-      return this.studentRepo.update(id, updateData);
+      const result = await this.studentRepo.update(id, updateData);
+
+      if (pendingToActiveStudent) {
+        const acceptanceTargets = this.buildAcceptanceTargets([pendingToActiveStudent]);
+        if (acceptanceTargets.length > 0) {
+          await this.notificationService.sendAcceptanceMessages(acceptanceTargets);
+        }
+      }
+
+      return result;
+    }
+
+    if (pendingToActiveStudent) {
+      const acceptanceTargets = this.buildAcceptanceTargets([pendingToActiveStudent]);
+      if (acceptanceTargets.length > 0) {
+        await this.notificationService.sendAcceptanceMessages(acceptanceTargets);
+      }
     }
 
     return { affected: 1 };

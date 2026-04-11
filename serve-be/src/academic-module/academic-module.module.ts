@@ -18,10 +18,11 @@ import { User } from '../auths-module/entities/user.entity';
 
 import { PublicAppController } from './public-app.controller';
 import { PublicAppService } from './public-app.service';
+import { NotificationModuleModule } from '../notification-module/notification-module.module';
 
 @Module({
   imports: [
-   
+    NotificationModuleModule,
     TypeOrmModule.forFeature([
       Attendance,
       Curriculum,

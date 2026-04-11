@@ -61,6 +61,6 @@ import { Parent } from '../academic-module/entities/parent.entity';
     NotificationService,
     MessageTemplateService
   ],
-  exports: [WahaService],
+  exports: [WahaService, NotificationService],
 })
 export class NotificationModuleModule {}
