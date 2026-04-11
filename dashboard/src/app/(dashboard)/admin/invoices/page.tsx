@@ -78,8 +78,12 @@ export default function InvoicesPage() {
   };
 
   const filteredInvoices = invoices.filter(inv => {
-    const matchesSearch = inv.student.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inv.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      normalizedSearch === '' ||
+      inv.student.toLowerCase().includes(normalizedSearch) ||
+      inv.id.toLowerCase().includes(normalizedSearch) ||
+      inv.category.toLowerCase().includes(normalizedSearch);
     
     if (!matchesSearch) return false;
 

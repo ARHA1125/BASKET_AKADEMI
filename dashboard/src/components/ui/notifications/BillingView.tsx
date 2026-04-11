@@ -49,6 +49,7 @@ export default function BillingView() {
   const [filterStatus, setFilterStatus] = useState<
     "all" | "unpaid" | "pending" | "verified"
   >("all")
+  const [searchTerm, setSearchTerm] = useState("")
   const [selectedMonth, setSelectedMonth] = useState<number | "">("")
   const [selectedYear, setSelectedYear] = useState<number | "">("")
   const [showInvoiceCheckModal, setShowInvoiceCheckModal] = useState(false)
@@ -467,6 +468,24 @@ export default function BillingView() {
   const verifiableInvoices = invoices.filter(
     (inv) => inv.photoUrl && !inv.isVerified,
   )
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesStatus = (() => {
+      if (filterStatus === "all") return true
+      if (filterStatus === "verified") return inv.isVerified
+      if (filterStatus === "pending") return inv.photoUrl && !inv.isVerified
+      if (filterStatus === "unpaid") return !inv.photoUrl && !inv.isVerified
+      return true
+    })()
+
+    const matchesSearch =
+      normalizedSearch === "" ||
+      inv.student?.toLowerCase().includes(normalizedSearch) ||
+      inv.id?.toLowerCase().includes(normalizedSearch) ||
+      inv.category?.toLowerCase().includes(normalizedSearch)
+
+    return matchesStatus && matchesSearch
+  })
 
   const filteredInvoiceCheckItems = invoiceCheckItems.filter((item) => {
     const missingCurrent = item.current.status === "MISSING"
@@ -675,6 +694,8 @@ export default function BillingView() {
               <input
                 type="text"
                 placeholder="Cari siswa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-64 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
               />
             </div>
@@ -812,10 +833,10 @@ export default function BillingView() {
             <div className="flex h-48 items-center justify-center text-slate-500 dark:text-slate-400">
               <Loader2 className="mr-2 animate-spin" /> Memuat data tagihan...
             </div>
-          ) : invoices.length === 0 ? (
+          ) : filteredInvoices.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center text-slate-500 dark:text-slate-400">
               <p>
-                Tidak ada tagihan yang sesuai dengan pencarian tab {activeTab}.
+                Tidak ada tagihan yang sesuai dengan pencarian atau filter saat ini.
               </p>
             </div>
           ) : (
@@ -833,17 +854,7 @@ export default function BillingView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {invoices
-                  .filter((inv) => {
-                    if (filterStatus === "all") return true
-                    if (filterStatus === "verified") return inv.isVerified
-                    if (filterStatus === "pending")
-                      return inv.photoUrl && !inv.isVerified
-                    if (filterStatus === "unpaid")
-                      return !inv.photoUrl && !inv.isVerified
-                    return true
-                  })
-                  .map((inv) => (
+                {filteredInvoices.map((inv) => (
                     <tr
                       key={inv.id}
                       className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
