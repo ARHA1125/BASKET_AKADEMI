@@ -361,6 +361,18 @@ export default function BillingView() {
     return parts.length > 0 ? parts.join(" • ") : "Tidak ada perubahan"
   }
 
+  const formatProofTime = (value?: string) => {
+    if (!value) return null
+
+    return new Date(value).toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
   const handleOpenInvoiceCheck = async () => {
     const promise = fetchInvoiceCheck().then((items) => {
       setSelectedInvoiceCheckParentIds([])
@@ -909,11 +921,22 @@ export default function BillingView() {
                         </div>
                       </td>
                       <td className="px-6 py-3">
-                        {inv.photoUrl ? (
-                          <CheckCircle className="text-emerald-500" size={20} />
-                        ) : (
-                          <XCircle className="text-slate-300" size={20} />
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {inv.photoUrl ? (
+                            <>
+                              <CheckCircle className="text-emerald-500" size={20} />
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                {formatProofTime(inv.buktiTimeStamp || inv.verifiedAt) ||
+                                  "Belum diverifikasi"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="text-slate-300" size={20} />
+                              <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
+                            </>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-3">
                         <InvoiceStatusBadge invoice={inv} />

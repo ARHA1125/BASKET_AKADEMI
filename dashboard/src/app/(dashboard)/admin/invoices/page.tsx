@@ -78,6 +78,18 @@ export default function InvoicesPage() {
     }).format(amount);
   };
 
+  const formatProofTime = (value?: string) => {
+    if (!value) return null;
+
+    return new Date(value).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const filteredInvoices = invoices.filter(inv => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     const matchesSearch =
@@ -235,11 +247,21 @@ export default function InvoicesPage() {
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{new Date(invoice.date).toLocaleDateString('id-ID')}</td>
                     <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{formatCurrency(invoice.amount)}</td>
                     <td className="px-6 py-4">
-                      {invoice.photoUrl ? (
-                        <CheckCircle className="text-emerald-500" size={20} />
-                      ) : (
-                        <XCircle className="text-slate-300" size={20} />
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {invoice.photoUrl ? (
+                          <>
+                            <CheckCircle className="text-emerald-500" size={20} />
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {formatProofTime(invoice.buktiTimeStamp || invoice.verifiedAt) || 'Belum diverifikasi'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="text-slate-300" size={20} />
+                            <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <InvoiceStatusBadge invoice={invoice} />
