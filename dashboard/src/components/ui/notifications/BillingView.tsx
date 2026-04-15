@@ -42,8 +42,8 @@ export default function BillingView() {
   const [showManualLateScheduleModal, setShowManualLateScheduleModal] =
     useState(false)
   const [mounted, setMounted] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [proofViewerStartIndex, setProofViewerStartIndex] = useState(0)
   const [swipeableModalOpen, setSwipeableModalOpen] = useState(false)
   const [verificationStartIndex, setVerificationStartIndex] = useState(0)
   const [filterStatus, setFilterStatus] = useState<
@@ -329,7 +329,8 @@ export default function BillingView() {
   }
 
   const handleViewProof = (invoice: any) => {
-    setSelectedInvoice(invoice)
+    const proofIndex = proofInvoices.findIndex((item) => item.id === invoice.id)
+    setProofViewerStartIndex(proofIndex >= 0 ? proofIndex : 0)
     setModalOpen(true)
   }
 
@@ -486,6 +487,7 @@ export default function BillingView() {
 
     return matchesStatus && matchesSearch
   })
+  const proofInvoices = filteredInvoices.filter((inv) => inv.photoUrl)
 
   const filteredInvoiceCheckItems = invoiceCheckItems.filter((item) => {
     const missingCurrent = item.current.status === "MISSING"
@@ -1694,9 +1696,10 @@ export default function BillingView() {
           document.body,
         )}
 
-      {selectedInvoice && (
+      {proofInvoices.length > 0 && (
         <ProofViewerModal
-          invoice={selectedInvoice}
+          invoices={proofInvoices}
+          startIndex={proofViewerStartIndex}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onVerify={handleVerify}

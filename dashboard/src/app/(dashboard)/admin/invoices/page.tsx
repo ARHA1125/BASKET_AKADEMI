@@ -16,8 +16,8 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'verified' | 'unpaid'>('all');
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [proofViewerStartIndex, setProofViewerStartIndex] = useState(0);
 
   useEffect(() => {
     fetchInvoices();
@@ -65,7 +65,8 @@ export default function InvoicesPage() {
   };
 
   const handleViewProof = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
+    const proofIndex = proofInvoices.findIndex((item) => item.id === invoice.id);
+    setProofViewerStartIndex(proofIndex >= 0 ? proofIndex : 0);
     setModalOpen(true);
   };
 
@@ -98,6 +99,7 @@ export default function InvoicesPage() {
         return true;
     }
   });
+  const proofInvoices = filteredInvoices.filter((invoice) => invoice.photoUrl);
 
   const stats = {
     total: invoices.length,
@@ -276,9 +278,10 @@ export default function InvoicesPage() {
       </div>
 
       {/* Proof Viewer Modal */}
-      {selectedInvoice && (
+      {proofInvoices.length > 0 && (
         <ProofViewerModal
-          invoice={selectedInvoice}
+          invoices={proofInvoices}
+          startIndex={proofViewerStartIndex}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onVerify={handleVerify}
