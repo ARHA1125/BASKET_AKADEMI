@@ -37,6 +37,9 @@ export class Invoice {
   @Column({ nullable: true })
   photo_url: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  buktiTimeStamp: Date | null;
+
 
   @Column({ default: false })
   isVerified: boolean;

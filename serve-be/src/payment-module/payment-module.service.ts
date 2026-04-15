@@ -798,6 +798,23 @@ export class PaymentModuleService {
 
     const invoices = await query.getMany();
 
+    invoices.sort((left, right) => {
+      const leftProofTime = left.photo_url
+        ? new Date(left.buktiTimeStamp ?? left.verifiedAt ?? 0).getTime()
+        : 0;
+      const rightProofTime = right.photo_url
+        ? new Date(right.buktiTimeStamp ?? right.verifiedAt ?? 0).getTime()
+        : 0;
+
+      if (leftProofTime !== rightProofTime) {
+        return rightProofTime - leftProofTime;
+      }
+
+      const leftCreatedAt = new Date(left.createdAt).getTime();
+      const rightCreatedAt = new Date(right.createdAt).getTime();
+      return rightCreatedAt - leftCreatedAt;
+    });
+
     return invoices.map((inv) => {
       const uniqueStudents = [
         ...new Set(
@@ -823,6 +840,7 @@ export class PaymentModuleService {
         status: inv.status.toLowerCase(),
         method: '-',
         photoUrl: inv.photo_url,
+        buktiTimeStamp: inv.buktiTimeStamp,
         isVerified: inv.isVerified || false,
         verifiedAt: inv.verifiedAt,
         verifiedBy: inv.verifiedBy,
@@ -1292,6 +1310,7 @@ export class PaymentModuleService {
       throw new Error('Invoice not found');
     }
     invoice.photo_url = photoUrl;
+    invoice.buktiTimeStamp = new Date();
     return this.invoiceRepository.save(invoice);
   }
 
