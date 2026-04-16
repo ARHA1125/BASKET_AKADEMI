@@ -83,7 +83,7 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
 
 
             <div className="pt-2">
-               {paymentMethod === 'qris' && (
+               {/* {paymentMethod === 'qris' && (
                   <div className="text-center space-y-4 animate-in fade-in duration-300">
                      <div className="mx-auto w-48 h-48 bg-white p-2 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center">
                         <QrCode size={120} className="text-slate-800" />
@@ -93,7 +93,7 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Kode QR berlaku selama 15 menit</p>
                      </div>
                   </div>
-               )}
+               )} */}
 
                {paymentMethod === 'manual' && (
                   <div className="space-y-4 animate-in fade-in duration-300">
