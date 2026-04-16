@@ -67,17 +67,17 @@ export const PaymentCard = ({ invoiceId = '', existingProofUrl = '' }: { invoice
          <div className="p-6 space-y-4">
 
             <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-lg">
-               <button 
+               {/* <button 
                   onClick={() => setPaymentMethod('qris')}
                   className={`py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${paymentMethod === 'qris' ? 'bg-white text-blue-600 shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
                >
                   QRIS / VA
-               </button>
+               </button> */}
                <button 
                   onClick={() => setPaymentMethod('manual')}
                   className={`py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${paymentMethod === 'manual' ? 'bg-white text-blue-600 shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
                >
-                  Upload Bukti Transfer
+                  Upload Bukti Pembayaran
                </button>
             </div>
 
