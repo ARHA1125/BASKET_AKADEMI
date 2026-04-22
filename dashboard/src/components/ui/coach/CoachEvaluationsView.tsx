@@ -26,9 +26,13 @@ export function CoachEvaluationsView() {
   const [selectedAgeClass, setSelectedAgeClass] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedWeekMaterialId, setSelectedWeekMaterialId] = useState('');
+  const [isMaterialPickerOpen, setIsMaterialPickerOpen] = useState(false);
+  const [selectedMonthNumber, setSelectedMonthNumber] = useState<number | null>(null);
+  const [selectedWeekNumber, setSelectedWeekNumber] = useState<number | null>(null);
   const [score, setScore] = useState(3);
   const [coachNote, setCoachNote] = useState('');
   const [assessmentAgeClassFilter, setAssessmentAgeClassFilter] = useState('');
+  const [assessmentMonthFilter, setAssessmentMonthFilter] = useState('');
   const [assessmentSearch, setAssessmentSearch] = useState('');
 
   const [editTarget, setEditTarget] = useState<PlayerAssessment | null>(null);
@@ -81,22 +85,108 @@ export function CoachEvaluationsView() {
     return weekMaterials.filter((material) => material.curriculumProfiles?.includes(selectedAgeClass));
   }, [selectedAgeClass, weekMaterials]);
 
-  const filteredAssessments = useMemo(() => {
-    const search = assessmentSearch.trim().toLowerCase();
+  const groupedWeekMaterials = useMemo(() => {
+    if (!selectedAgeClass) return [];
 
-    return assessments.filter((assessment) => {
-      const assessmentAgeClass = assessment.student?.ageClass || assessment.student?.curriculumProfile || assessment.ageClass || assessment.curriculumProfile || '';
-      const matchesClass = !assessmentAgeClassFilter || assessmentAgeClass === assessmentAgeClassFilter;
-      const studentName = assessment.student?.user?.fullName?.toLowerCase() || '';
-      const matchesSearch = !search || studentName.includes(search);
+    return curriculum
+      .map((level) => ({
+        levelName: level.name,
+        months: level.months
+          .map((month) => ({
+            monthNumber: month.monthNumber,
+            title: month.title,
+            weekGroups: [1, 2, 3, 4]
+              .map((weekNumber) => ({
+                weekNumber,
+                materials: month.weekMaterials.filter(
+                  (material) =>
+                    material.weekNumber === weekNumber && material.curriculumProfiles?.includes(selectedAgeClass),
+                ),
+              }))
+              .filter((weekGroup) => weekGroup.materials.length > 0),
+          }))
+          .filter((month) => month.weekGroups.length > 0),
+      }))
+      .filter((level) => level.months.length > 0);
+  }, [curriculum, selectedAgeClass]);
 
-      return matchesClass && matchesSearch;
+  const availableMonths = useMemo(() => {
+    return groupedWeekMaterials.flatMap((level) =>
+      level.months.map((month) => ({
+        levelName: level.levelName,
+        monthNumber: month.monthNumber,
+        title: month.title,
+      })),
+    );
+  }, [groupedWeekMaterials]);
+
+  const selectedMonthData = useMemo(() => {
+    if (selectedMonthNumber === null) return null;
+
+    for (const level of groupedWeekMaterials) {
+      const month = level.months.find((item) => item.monthNumber === selectedMonthNumber);
+      if (month) {
+        return {
+          levelName: level.levelName,
+          ...month,
+        };
+      }
+    }
+
+    return null;
+  }, [groupedWeekMaterials, selectedMonthNumber]);
+
+  const selectedWeekGroup = useMemo(() => {
+    if (!selectedMonthData || selectedWeekNumber === null) return null;
+
+    return selectedMonthData.weekGroups.find((weekGroup) => weekGroup.weekNumber === selectedWeekNumber) || null;
+  }, [selectedMonthData, selectedWeekNumber]);
+
+  const selectedWeekMaterial = useMemo(() => {
+    return filteredWeekMaterials.find((material) => material.id === selectedWeekMaterialId) || null;
+  }, [filteredWeekMaterials, selectedWeekMaterialId]);
+
+  const selectedWeekMaterialSummary = useMemo(() => {
+    if (!selectedWeekMaterial) return '';
+
+    for (const level of groupedWeekMaterials) {
+      for (const month of level.months) {
+        for (const weekGroup of month.weekGroups) {
+          const material = weekGroup.materials.find((item) => item.id === selectedWeekMaterial.id);
+          if (material) {
+            return `${level.levelName} · Bulan ${month.monthNumber} · Minggu ${weekGroup.weekNumber} · ${material.category}`;
+          }
+        }
+      }
+    }
+
+    return selectedWeekMaterial.label;
+  }, [groupedWeekMaterials, selectedWeekMaterial]);
+
+  const assessmentMonthOptions = useMemo(() => {
+    const monthMap = new Map<string, { value: string; label: string }>();
+
+    curriculum.forEach((level) => {
+      level.months.forEach((month) => {
+        const value = String(month.monthNumber);
+        if (!monthMap.has(value)) {
+          monthMap.set(value, {
+            value,
+            label: `Month ${month.monthNumber}`,
+          });
+        }
+      });
     });
-  }, [assessmentAgeClassFilter, assessmentSearch, assessments]);
+
+    return Array.from(monthMap.values()).sort((a, b) => Number(a.value) - Number(b.value));
+  }, [curriculum]);
 
   useEffect(() => {
     setSelectedStudentId('');
     setSelectedWeekMaterialId('');
+    setSelectedMonthNumber(null);
+    setSelectedWeekNumber(null);
+    setIsMaterialPickerOpen(false);
   }, [selectedAgeClass]);
 
   useEffect(() => {
@@ -108,8 +198,26 @@ export function CoachEvaluationsView() {
   useEffect(() => {
     if (selectedWeekMaterialId && !filteredWeekMaterials.some((material) => material.id === selectedWeekMaterialId)) {
       setSelectedWeekMaterialId('');
+      setSelectedMonthNumber(null);
+      setSelectedWeekNumber(null);
     }
   }, [filteredWeekMaterials, selectedWeekMaterialId]);
+
+  useEffect(() => {
+    if (selectedMonthNumber !== null && !availableMonths.some((month) => month.monthNumber === selectedMonthNumber)) {
+      setSelectedMonthNumber(null);
+      setSelectedWeekNumber(null);
+    }
+  }, [availableMonths, selectedMonthNumber]);
+
+  useEffect(() => {
+    if (
+      selectedWeekNumber !== null
+      && !selectedMonthData?.weekGroups.some((weekGroup) => weekGroup.weekNumber === selectedWeekNumber)
+    ) {
+      setSelectedWeekNumber(null);
+    }
+  }, [selectedMonthData, selectedWeekNumber]);
 
   const weekMaterialMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -122,6 +230,21 @@ export function CoachEvaluationsView() {
     });
     return map;
   }, [curriculum]);
+
+  const filteredAssessments = useMemo(() => {
+    const search = assessmentSearch.trim().toLowerCase();
+
+    return assessments.filter((assessment) => {
+      const assessmentAgeClass = assessment.student?.ageClass || assessment.student?.curriculumProfile || assessment.ageClass || assessment.curriculumProfile || '';
+      const matchesClass = !assessmentAgeClassFilter || assessmentAgeClass === assessmentAgeClassFilter;
+      const curriculumLabel = assessment.weekMaterial?.id ? (weekMaterialMap.get(assessment.weekMaterial.id) || '') : '';
+      const matchesMonth = !assessmentMonthFilter || curriculumLabel.includes(`Bln ${assessmentMonthFilter}`);
+      const studentName = assessment.student?.user?.fullName?.toLowerCase() || '';
+      const matchesSearch = !search || studentName.includes(search);
+
+      return matchesClass && matchesMonth && matchesSearch;
+    });
+  }, [assessmentAgeClassFilter, assessmentMonthFilter, assessmentSearch, assessments, weekMaterialMap]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -174,6 +297,22 @@ export function CoachEvaluationsView() {
     }
   };
 
+  const resetMaterialPicker = () => {
+    setSelectedMonthNumber(null);
+    setSelectedWeekNumber(null);
+    setSelectedWeekMaterialId('');
+  };
+
+  const handleSelectMonth = (monthNumber: number) => {
+    setSelectedMonthNumber(monthNumber);
+    setSelectedWeekNumber(null);
+  };
+
+  const handleSelectMaterial = (materialId: string) => {
+    setSelectedWeekMaterialId(materialId);
+    setIsMaterialPickerOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -213,12 +352,27 @@ export function CoachEvaluationsView() {
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Curriculum Material</label>
-              <select value={selectedWeekMaterialId} onChange={(e) => setSelectedWeekMaterialId(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900" disabled={!selectedAgeClass} required>
-                <option value="">{selectedAgeClass ? 'Select competency' : 'Select class first'}</option>
-                {filteredWeekMaterials.map((material) => (
-                  <option key={material.id} value={material.id}>{material.label}</option>
-                ))}
-              </select>
+              <button
+                type="button"
+                onClick={() => setIsMaterialPickerOpen(true)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900"
+                disabled={!selectedAgeClass || filteredWeekMaterials.length === 0}
+              >
+                {selectedWeekMaterialSummary || (selectedAgeClass ? 'Choose month and week' : 'Select class first')}
+              </button>
+              {selectedWeekMaterialSummary && (
+                <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <span>{selectedWeekMaterialSummary}</span>
+                  <button
+                    type="button"
+                    onClick={resetMaterialPicker}
+                    className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
+              <input type="hidden" value={selectedWeekMaterialId} required />
               {selectedAgeClass && filteredWeekMaterials.length === 0 && (
                 <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">No curriculum materials are mapped to {selectedAgeClass} yet.</p>
               )}
@@ -248,6 +402,12 @@ export function CoachEvaluationsView() {
               <option value="">All classes</option>
               {ageClassOptions.map((ageClass) => (
                 <option key={ageClass} value={ageClass}>{ageClass}</option>
+              ))}
+            </select>
+            <select value={assessmentMonthFilter} onChange={(e) => setAssessmentMonthFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:w-40 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+              <option value="">All months</option>
+              {assessmentMonthOptions.map((month) => (
+                <option key={month.value} value={month.value}>{month.label}</option>
               ))}
             </select>
             <input
@@ -349,6 +509,113 @@ export function CoachEvaluationsView() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isMaterialPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Choose Curriculum Material</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Pick a month, then a week, then select the material for {selectedAgeClass}.
+                </p>
+              </div>
+              <button onClick={() => setIsMaterialPickerOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">1. Select Month</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {availableMonths.map((month) => (
+                    <button
+                      key={`${month.levelName}-${month.monthNumber}`}
+                      type="button"
+                      onClick={() => handleSelectMonth(month.monthNumber)}
+                      className={`rounded-lg border px-3 py-3 text-left text-sm ${selectedMonthNumber === month.monthNumber
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+                    >
+                      <div className="font-medium">Month {month.monthNumber}</div>
+                      <div className="text-xs opacity-80">{month.levelName}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">2. Select Week</div>
+                {!selectedMonthData ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Select a month first.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedMonthData.weekGroups.map((weekGroup) => (
+                      <button
+                        key={weekGroup.weekNumber}
+                        type="button"
+                        onClick={() => setSelectedWeekNumber(weekGroup.weekNumber)}
+                        className={`w-full rounded-lg border px-3 py-3 text-left text-sm ${selectedWeekNumber === weekGroup.weekNumber
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+                      >
+                        <div className="font-medium">Week {weekGroup.weekNumber}</div>
+                        <div className="text-xs opacity-80">{weekGroup.materials.length} material(s)</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">3. Select Material</div>
+                {!selectedWeekGroup ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Select a week first.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedWeekGroup.materials.map((material) => (
+                      <button
+                        key={material.id}
+                        type="button"
+                        onClick={() => handleSelectMaterial(material.id)}
+                        className={`w-full rounded-lg border px-3 py-3 text-left text-sm ${selectedWeekMaterialId === material.id
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+                      >
+                        <div className="font-medium">{material.category}</div>
+                        <div className="mt-1 line-clamp-3 text-xs opacity-80">{material.materialDescription}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3 text-sm dark:bg-slate-800">
+              <div className="text-slate-600 dark:text-slate-300">
+                {selectedWeekMaterialSummary || 'No material selected yet.'}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={resetMaterialPicker}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMaterialPickerOpen(false)}
+                  className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
