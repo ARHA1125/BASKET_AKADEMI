@@ -515,7 +515,7 @@ export function CoachEvaluationsView() {
 
       {isMaterialPickerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
                 <h3 className="font-semibold text-slate-900 dark:text-white">Choose Curriculum Material</h3>
@@ -528,10 +528,10 @@ export function CoachEvaluationsView() {
               </button>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <div className="grid items-start gap-4 lg:grid-cols-3">
+              <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700">
                 <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">1. Select Month</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid max-h-[50vh] grid-cols-2 content-start gap-2 overflow-y-auto pr-1">
                   {availableMonths.map((month) => (
                     <button
                       key={`${month.levelName}-${month.monthNumber}`}
@@ -548,12 +548,12 @@ export function CoachEvaluationsView() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+              <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700">
                 <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">2. Select Week</div>
                 {!selectedMonthData ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">Select a month first.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
                     {selectedMonthData.weekGroups.map((weekGroup) => (
                       <button
                         key={weekGroup.weekNumber}
@@ -571,12 +571,12 @@ export function CoachEvaluationsView() {
                 )}
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+              <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700">
                 <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">3. Select Material</div>
                 {!selectedWeekGroup ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">Select a week first.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
                     {selectedWeekGroup.materials.map((material) => (
                       <button
                         key={material.id}
