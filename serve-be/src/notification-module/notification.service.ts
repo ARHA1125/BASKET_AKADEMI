@@ -306,9 +306,9 @@ Salam,
         ? 'send-reminder'
         : kind === NotificationDeliveryKind.ACCEPTANCE
           ? 'send-acceptance'
-        : kind === NotificationDeliveryKind.BROADCAST
-          ? 'send-broadcast'
-          : 'send-invoice';
+          : kind === NotificationDeliveryKind.BROADCAST
+            ? 'send-broadcast'
+            : 'send-invoice';
 
     await this.enqueueDeliveryJob(jobName, delivery, message, 0);
     return delivery;
@@ -316,12 +316,18 @@ Salam,
 
   private async findParentByChatId(chatId: string) {
     const parents = await this.parentRepository.find({
-      relations: ['user', 'students', 'students.user', 'students.trainingClass'],
+      relations: [
+        'user',
+        'students',
+        'students.user',
+        'students.trainingClass',
+      ],
     });
 
     return (
       parents.find((parent) => {
-        const phone = parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
+        const phone =
+          parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
         return phone ? this.formatChatId(phone) === chatId : false;
       }) ?? null
     );
@@ -362,7 +368,8 @@ Salam,
       order: { createdAt: 'DESC' },
     });
 
-    const templateContent = activeTemplate?.content || this.defaultInvoiceTemplate;
+    const templateContent =
+      activeTemplate?.content || this.defaultInvoiceTemplate;
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -447,7 +454,8 @@ Salam,
       order: { createdAt: 'DESC' },
     });
 
-    const templateContent = activeTemplate?.content || this.defaultReminderTemplate;
+    const templateContent =
+      activeTemplate?.content || this.defaultReminderTemplate;
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -533,7 +541,12 @@ Salam,
         delayMs,
       );
 
-      await this.enqueueDeliveryJob('send-acceptance', delivery, message, delayMs);
+      await this.enqueueDeliveryJob(
+        'send-acceptance',
+        delivery,
+        message,
+        delayMs,
+      );
       queuedCount++;
     }
 
@@ -733,18 +746,22 @@ Salam,
     const activeByKind = kinds
       .map((kind) => {
         const kindItems = deliveries.filter((item) => item.kind === kind);
-        const activeItems = kindItems.filter((item) => activeStatuses.has(item.status));
+        const activeItems = kindItems.filter((item) =>
+          activeStatuses.has(item.status),
+        );
         const queuedItems = kindItems.filter(
           (item) => item.status === NotificationDeliveryStatus.QUEUED,
         );
-        const latestScheduledFor = queuedItems
-          .map((item) => item.scheduledFor)
-          .filter((value): value is Date => Boolean(value))
-          .sort((left, right) => right.getTime() - left.getTime())[0] || null;
-        const nextScheduledFor = queuedItems
-          .map((item) => item.scheduledFor)
-          .filter((value): value is Date => Boolean(value))
-          .sort((left, right) => left.getTime() - right.getTime())[0] || null;
+        const latestScheduledFor =
+          queuedItems
+            .map((item) => item.scheduledFor)
+            .filter((value): value is Date => Boolean(value))
+            .sort((left, right) => right.getTime() - left.getTime())[0] || null;
+        const nextScheduledFor =
+          queuedItems
+            .map((item) => item.scheduledFor)
+            .filter((value): value is Date => Boolean(value))
+            .sort((left, right) => left.getTime() - right.getTime())[0] || null;
 
         const estimatedMinutesRemaining = latestScheduledFor
           ? Math.max(
@@ -979,7 +996,10 @@ Salam,
           year: 'numeric',
         }),
       };
-      const message = this.applyTemplate(broadcastLog.templateContent, variables);
+      const message = this.applyTemplate(
+        broadcastLog.templateContent,
+        variables,
+      );
       const retryDelivery = await this.queueSingleDelivery(
         NotificationDeliveryKind.BROADCAST,
         delivery.recipientChatId,

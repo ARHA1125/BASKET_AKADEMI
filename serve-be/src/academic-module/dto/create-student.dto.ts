@@ -1,5 +1,17 @@
-import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  StudentAgeClass,
+  StudentCurriculumProfile,
+} from '../entities/student.entity';
+import { IsEnum } from 'class-validator';
 
 export class CreateStudentDto {
   @IsUUID()
@@ -32,4 +44,12 @@ export class CreateStudentDto {
   @IsString()
   @IsOptional()
   position?: string;
+
+  @IsEnum(StudentAgeClass)
+  @IsOptional()
+  ageClass?: StudentAgeClass;
+
+  @IsEnum(StudentCurriculumProfile)
+  @IsOptional()
+  curriculumProfile?: StudentCurriculumProfile;
 }

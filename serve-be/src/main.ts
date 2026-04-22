@@ -12,12 +12,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: [
-       'http://localhost:3000',
-       'https://localhost:3001',
-       'http://localhost:3001',
-       'https://localhost:3000',
-       'https://app.wirabhakti.my.id', 
-       'https://wirabhakti.my.id',
+      'http://localhost:3000',
+      'https://localhost:3001',
+      'http://localhost:3001',
+      'https://localhost:3000',
+      'https://app.wirabhakti.my.id',
+      'https://wirabhakti.my.id',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,

@@ -1,4 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 export enum BroadcastStatus {
   QUEUED = 'QUEUED',
@@ -27,7 +32,11 @@ export class BroadcastLog {
   @Column({ default: 0 })
   failedCount: number;
 
-  @Column({ type: 'enum', enum: BroadcastStatus, default: BroadcastStatus.QUEUED })
+  @Column({
+    type: 'enum',
+    enum: BroadcastStatus,
+    default: BroadcastStatus.QUEUED,
+  })
   status: BroadcastStatus;
 
   @Column({ type: 'timestamp', nullable: true })

@@ -509,7 +509,9 @@ export class PaymentModuleService {
 
     return actionableParents
       .map(({ parent, activeStudents }) => {
-        const currentInvoice = invoiceMap.get(`${parent.id}:${current.monthKey}`);
+        const currentInvoice = invoiceMap.get(
+          `${parent.id}:${current.monthKey}`,
+        );
         const manualLateInvoice = manualLate
           ? invoiceMap.get(`${parent.id}:${manualLate.monthKey}`)
           : undefined;

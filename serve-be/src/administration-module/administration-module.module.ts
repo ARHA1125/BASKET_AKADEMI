@@ -16,4 +16,3 @@ import { GalleryController } from './gallery.controller';
   providers: [AdministrationService, NewsService, GalleryService],
 })
 export class AdministrationModuleModule {}
-

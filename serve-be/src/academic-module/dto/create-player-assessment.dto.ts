@@ -1,4 +1,14 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
+import { AssessmentStatus } from '../entities/player-assessment.entity';
 
 export class CreatePlayerAssessmentDto {
   @IsUUID()
@@ -9,9 +19,19 @@ export class CreatePlayerAssessmentDto {
   @IsNotEmpty()
   weekMaterialId: string;
 
+  @IsEnum(AssessmentStatus)
+  @IsOptional()
+  status?: AssessmentStatus;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  @IsOptional()
+  score?: number;
+
   @IsString()
   @IsOptional()
-  status?: string;
+  assessorName?: string;
 
   @IsString()
   @IsOptional()

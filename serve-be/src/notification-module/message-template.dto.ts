@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsBoolean, IsOptional, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  IsNotEmpty,
+} from 'class-validator';
 import { TemplateType } from './entities/message-template.entity';
 
 export class CreateMessageTemplateDto {

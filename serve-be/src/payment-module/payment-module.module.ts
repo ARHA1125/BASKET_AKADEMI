@@ -11,7 +11,15 @@ import { SystemSetting } from './entities/system-setting.entity';
 import { ReportController } from './report.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Invoice, Transaction, InvoiceItem, Parent, SystemSetting])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Invoice,
+      Transaction,
+      InvoiceItem,
+      Parent,
+      SystemSetting,
+    ]),
+  ],
   controllers: [PaymentModuleController, ReportController],
   providers: [PaymentModuleService],
   exports: [PaymentModuleService],

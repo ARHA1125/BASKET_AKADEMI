@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AdministrationService } from './administration-module.service';
 import { CreateSponsorDto } from './dto/create-sponsor.dto';
@@ -13,27 +23,40 @@ export class AdministrationController {
   constructor(private readonly administrationService: AdministrationService) {}
 
   @Post()
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'logo', maxCount: 1 },
-    { name: 'agreementDoc', maxCount: 1 },
-  ], {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadDir = './img/sponsors';
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'logo', maxCount: 1 },
+        { name: 'agreementDoc', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: (req, file, cb) => {
+            const uploadDir = './img/sponsors';
+            if (!fs.existsSync(uploadDir)) {
+              fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            cb(null, uploadDir);
+          },
+          filename: (req, file, cb) => {
+            const uniqueSuffix =
+              Date.now() + '-' + Math.round(Math.random() * 1e9);
+            cb(
+              null,
+              `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
+            );
+          },
+        }),
       },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
-      }
-    })
-  }))
+    ),
+  )
   create(
-    @UploadedFiles() files: { logo?: Express.Multer.File[], agreementDoc?: Express.Multer.File[] },
-    @Body() createSponsorDto: CreateSponsorDto
+    @UploadedFiles()
+    files: {
+      logo?: Express.Multer.File[];
+      agreementDoc?: Express.Multer.File[];
+    },
+    @Body() createSponsorDto: CreateSponsorDto,
   ) {
     if (files.logo && files.logo[0]) {
       createSponsorDto.logoUrl = `/img/sponsors/${files.logo[0].filename}`;
@@ -61,28 +84,41 @@ export class AdministrationController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'logo', maxCount: 1 },
-    { name: 'agreementDoc', maxCount: 1 },
-  ], {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadDir = './img/sponsors';
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'logo', maxCount: 1 },
+        { name: 'agreementDoc', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: (req, file, cb) => {
+            const uploadDir = './img/sponsors';
+            if (!fs.existsSync(uploadDir)) {
+              fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            cb(null, uploadDir);
+          },
+          filename: (req, file, cb) => {
+            const uniqueSuffix =
+              Date.now() + '-' + Math.round(Math.random() * 1e9);
+            cb(
+              null,
+              `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
+            );
+          },
+        }),
       },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
-      }
-    })
-  }))
+    ),
+  )
   update(
-    @Param('id') id: string, 
-    @UploadedFiles() files: { logo?: Express.Multer.File[], agreementDoc?: Express.Multer.File[] },
-    @Body() updateSponsorDto: UpdateSponsorDto
+    @Param('id') id: string,
+    @UploadedFiles()
+    files: {
+      logo?: Express.Multer.File[];
+      agreementDoc?: Express.Multer.File[];
+    },
+    @Body() updateSponsorDto: UpdateSponsorDto,
   ) {
     if (files.logo && files.logo[0]) {
       updateSponsorDto.logoUrl = `/img/sponsors/${files.logo[0].filename}`;

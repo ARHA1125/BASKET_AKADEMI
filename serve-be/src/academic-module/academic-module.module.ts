@@ -14,6 +14,9 @@ import { PlayerAssessment } from './entities/player-assessment.entity';
 import { Student } from './entities/student.entity';
 import { TrainingClass } from './entities/training-class.entity';
 import { Coach } from './entities/coach.entity';
+import { StudentActivity } from './entities/student-activity.entity';
+import { GamificationPointLedger } from './entities/gamification-point-ledger.entity';
+import { StudentBadge } from './entities/student-badge.entity';
 import { User } from '../auths-module/entities/user.entity';
 
 import { PublicAppController } from './public-app.controller';
@@ -32,6 +35,9 @@ import { NotificationModuleModule } from '../notification-module/notification-mo
       Parent,
       PlayerAssessment,
       Student,
+      StudentActivity,
+      GamificationPointLedger,
+      StudentBadge,
       TrainingClass,
       Coach,
       User,
