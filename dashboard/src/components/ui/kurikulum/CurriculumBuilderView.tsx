@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Title, Text } from '@/components/ui/notifications/Common'; 
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Plus, Edit2, Loader2, X, CheckCircle2, BookOpen } from 'lucide-react';
 const InlineBadge = ({ children, color = 'blue', className = '' }: { children: React.ReactNode, color?: string, className?: string }) => {
   const colors: Record<string, string> = {
@@ -42,7 +43,7 @@ export default function CurriculumBuilderView() {
   const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
   const [editLevelData, setEditLevelData] = useState({ name: '', description: '', colorCode: 'blue' });
   const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
-  const [editWeekData, setEditWeekData] = useState({ category: '', materialDescription: '' });
+  const [editWeekData, setEditWeekData] = useState({ category: '', materialDescription: '', competencyKey: '', statDomain: 'CHR', statWeight: 1, curriculumProfiles: 'KU-10,KU-12' });
   const [editingMonthId, setEditingMonthId] = useState<string | null>(null);
   const [editMonthData, setEditMonthData] = useState({ title: '' });
 
@@ -50,6 +51,10 @@ export default function CurriculumBuilderView() {
   const [newLevel, setNewLevel] = useState({ name: '', description: '', colorCode: 'blue' });
   const [newMonth, setNewMonth] = useState({ levelId: '', monthNumber: 1, title: '' });
   const [newWeek, setNewWeek] = useState({ monthId: '', weekNumber: 1, category: '', materialDescription: '' });
+  const [newWeekMeta, setNewWeekMeta] = useState({ competencyKey: '', statDomain: 'CHR', statWeight: 1, curriculumProfiles: 'KU-10,KU-12' });
+  const [deleteLevelTarget, setDeleteLevelTarget] = useState<Level | null>(null);
+  const [deleteWeekTarget, setDeleteWeekTarget] = useState<WeekMaterial | null>(null);
+  const [deleteMonthTarget, setDeleteMonthTarget] = useState<Month | null>(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
 
@@ -104,7 +109,6 @@ export default function CurriculumBuilderView() {
   };
 
   const handleDeleteLevel = async (levelId: string) => {
-      if(!confirm("Hapus level ini beserta seluruh isinya?")) return;
       try {
         const token = Cookies.get('auth_token');
         const res = await fetch(`${apiUrl}/academic/curriculum-levels/${levelId}`, {
@@ -186,12 +190,22 @@ export default function CurriculumBuilderView() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ ...newWeek, weekNumber: Number(newWeek.weekNumber) })
+        body: JSON.stringify({ 
+          ...newWeek,
+          ...newWeekMeta,
+          statWeight: Number(newWeekMeta.statWeight),
+          curriculumProfiles: newWeekMeta.curriculumProfiles
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean),
+          weekNumber: Number(newWeek.weekNumber)
+        })
       });
       if (res.ok) {
         toast.success("Week Material added successfully");
         setIsAddWeekOpen(false);
         setNewWeek({ monthId: '', weekNumber: 1, category: '', materialDescription: '' });
+        setNewWeekMeta({ competencyKey: '', statDomain: 'CHR', statWeight: 1, curriculumProfiles: 'KU-10,KU-12' });
         fetchCurriculumData();
       } else {
           toast.error("Failed to add week material");
@@ -209,7 +223,14 @@ export default function CurriculumBuilderView() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editWeekData)
+        body: JSON.stringify({
+          ...editWeekData,
+          statWeight: Number(editWeekData.statWeight),
+          curriculumProfiles: editWeekData.curriculumProfiles
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean),
+        })
       });
       if (res.ok) {
         toast.success("Week material updated");
@@ -222,7 +243,6 @@ export default function CurriculumBuilderView() {
   };
 
   const handleDeleteWeek = async (weekId: string) => {
-      if(!confirm("Hapus materi rincian ini?")) return;
       try {
         const token = Cookies.get('auth_token');
         const res = await fetch(`${apiUrl}/academic/curriculum-week-materials/${weekId}`, {
@@ -262,7 +282,6 @@ export default function CurriculumBuilderView() {
   }
 
   const handleDeleteMonth = async (monthId: string) => {
-       if(!confirm("Hapus seluruh baris bulan ini? Semua materi mingguan didalamnya akan ikut terhapus.")) return;
        try {
         const token = Cookies.get('auth_token');
         const res = await fetch(`${apiUrl}/academic/curriculum-months/${monthId}`, {
@@ -288,7 +307,7 @@ export default function CurriculumBuilderView() {
 
   const openWeekModal = (monthId: string) => {
     if (!monthId) return toast.error("Bulan tidak ditemukan");
-    setNewWeek(prev => ({ ...prev, monthId }));
+        setNewWeek(prev => ({ ...prev, monthId }));
     setIsAddWeekOpen(true);
   };
 
@@ -393,7 +412,7 @@ export default function CurriculumBuilderView() {
                                 <>
                                     <div className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-100 transition-opacity flex gap-1 z-10">
                                         <button onClick={(e) => { e.stopPropagation(); setEditingLevelId(level.id); setEditLevelData({name: level.name, description: level.description || '', colorCode: level.colorCode || 'blue'}); }} className="p-1.5 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 rounded text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700" title="Edit Level"><Edit2 size={14}/></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteLevel(level.id); }} className="p-1.5 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 rounded text-red-600 hover:bg-red-50 dark:hover:bg-slate-700" title="Hapus Level"><X size={14}/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); setDeleteLevelTarget(level); }} className="p-1.5 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 rounded text-red-600 hover:bg-red-50 dark:hover:bg-slate-700" title="Hapus Level"><X size={14}/></button>
                                     </div>
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
@@ -470,6 +489,20 @@ export default function CurriculumBuilderView() {
                                                                     <div className="space-y-2 bg-slate-50 dark:bg-slate-800 p-2 rounded -mx-2">
                                                                         <input type="text" value={editWeekData.category} onChange={e => setEditWeekData({...editWeekData, category: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Kategori"/>
                                                                         <textarea rows={2} value={editWeekData.materialDescription} onChange={e => setEditWeekData({...editWeekData, materialDescription: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Deskripsi"/>
+                                                                        <input type="text" value={editWeekData.competencyKey} onChange={e => setEditWeekData({...editWeekData, competencyKey: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Competency Key"/>
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <select value={editWeekData.statDomain} onChange={e => setEditWeekData({...editWeekData, statDomain: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700">
+                                                                                <option value="SPD">SPD</option>
+                                                                                <option value="SHO">SHO</option>
+                                                                                <option value="PAS">PAS</option>
+                                                                                <option value="DRI">DRI</option>
+                                                                                <option value="DEF">DEF</option>
+                                                                                <option value="PHY">PHY</option>
+                                                                                <option value="CHR">CHR</option>
+                                                                            </select>
+                                                                            <input type="number" min="0.1" step="0.1" value={editWeekData.statWeight} onChange={e => setEditWeekData({...editWeekData, statWeight: Number(e.target.value)})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Weight"/>
+                                                                        </div>
+                                                                        <input type="text" value={editWeekData.curriculumProfiles} onChange={e => setEditWeekData({...editWeekData, curriculumProfiles: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Profiles csv"/>
                                                                         <div className="flex gap-1 justify-end">
                                                                             <button onClick={() => setEditingWeekId(null)} className="text-[10px] px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Batal</button>
                                                                             <button onClick={() => handleEditWeek(w.id)} className="text-[10px] px-2 py-1 bg-blue-600 rounded text-white font-medium">Simpan</button>
@@ -480,8 +513,8 @@ export default function CurriculumBuilderView() {
                                                                         <span className="font-medium text-slate-800 dark:text-slate-300 block mb-1">{w.category}</span>
                                                                         <span className="block">{w.materialDescription}</span>
                                                                         <div className="absolute top-0 right-0 p-1 flex gap-1 bg-white/50 dark:bg-slate-900/50 rounded shadow-sm opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                                            <button onClick={() => { setEditingWeekId(w.id); setEditWeekData({category: w.category, materialDescription: w.materialDescription}); }} className="p-1 text-slate-400 hover:text-blue-600 rounded" title="Edit"><Edit2 size={12}/></button>
-                                                                            <button onClick={() => handleDeleteWeek(w.id)} className="p-1 text-slate-400 hover:text-red-600 rounded" title="Hapus"><X size={12}/></button>
+                                                                            <button onClick={() => { setEditingWeekId(w.id); setEditWeekData({category: w.category, materialDescription: w.materialDescription, competencyKey: w.competencyKey || '', statDomain: w.statDomain || 'CHR', statWeight: Number(w.statWeight || 1), curriculumProfiles: (w.curriculumProfiles || []).join(',')}); }} className="p-1 text-slate-400 hover:text-blue-600 rounded" title="Edit"><Edit2 size={12}/></button>
+                                                                            <button onClick={() => setDeleteWeekTarget(w)} className="p-1 text-slate-400 hover:text-red-600 rounded" title="Hapus"><X size={12}/></button>
                                                                         </div>
                                                                     </>
                                                                 )}
@@ -501,6 +534,20 @@ export default function CurriculumBuilderView() {
                                                                     <div className="space-y-2 bg-slate-50 dark:bg-slate-800 p-2 rounded -mx-2">
                                                                         <input type="text" value={editWeekData.category} onChange={e => setEditWeekData({...editWeekData, category: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Kategori"/>
                                                                         <textarea rows={2} value={editWeekData.materialDescription} onChange={e => setEditWeekData({...editWeekData, materialDescription: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Deskripsi"/>
+                                                                        <input type="text" value={editWeekData.competencyKey} onChange={e => setEditWeekData({...editWeekData, competencyKey: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Competency Key"/>
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <select value={editWeekData.statDomain} onChange={e => setEditWeekData({...editWeekData, statDomain: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700">
+                                                                                <option value="SPD">SPD</option>
+                                                                                <option value="SHO">SHO</option>
+                                                                                <option value="PAS">PAS</option>
+                                                                                <option value="DRI">DRI</option>
+                                                                                <option value="DEF">DEF</option>
+                                                                                <option value="PHY">PHY</option>
+                                                                                <option value="CHR">CHR</option>
+                                                                            </select>
+                                                                            <input type="number" min="0.1" step="0.1" value={editWeekData.statWeight} onChange={e => setEditWeekData({...editWeekData, statWeight: Number(e.target.value)})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Weight"/>
+                                                                        </div>
+                                                                        <input type="text" value={editWeekData.curriculumProfiles} onChange={e => setEditWeekData({...editWeekData, curriculumProfiles: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Profiles csv"/>
                                                                         <div className="flex gap-1 justify-end">
                                                                             <button onClick={() => setEditingWeekId(null)} className="text-[10px] px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Batal</button>
                                                                             <button onClick={() => handleEditWeek(w.id)} className="text-[10px] px-2 py-1 bg-blue-600 rounded text-white font-medium">Simpan</button>
@@ -511,8 +558,8 @@ export default function CurriculumBuilderView() {
                                                                         <span className="font-medium text-slate-800 dark:text-slate-300 block mb-1">{w.category}</span>
                                                                         <span className="block">{w.materialDescription}</span>
                                                                         <div className="absolute top-0 right-0 p-1 flex gap-1 bg-white/50 dark:bg-slate-900/50 rounded shadow-sm opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                                            <button onClick={() => { setEditingWeekId(w.id); setEditWeekData({category: w.category, materialDescription: w.materialDescription}); }} className="p-1 text-slate-400 hover:text-blue-600 rounded" title="Edit"><Edit2 size={12}/></button>
-                                                                            <button onClick={() => handleDeleteWeek(w.id)} className="p-1 text-slate-400 hover:text-red-600 rounded" title="Hapus"><X size={12}/></button>
+                                                                            <button onClick={() => { setEditingWeekId(w.id); setEditWeekData({category: w.category, materialDescription: w.materialDescription, competencyKey: w.competencyKey || '', statDomain: w.statDomain || 'CHR', statWeight: Number(w.statWeight || 1), curriculumProfiles: (w.curriculumProfiles || []).join(',')}); }} className="p-1 text-slate-400 hover:text-blue-600 rounded" title="Edit"><Edit2 size={12}/></button>
+                                                                            <button onClick={() => setDeleteWeekTarget(w)} className="p-1 text-slate-400 hover:text-red-600 rounded" title="Hapus"><X size={12}/></button>
                                                                         </div>
                                                                     </>
                                                                 )}
@@ -547,7 +594,7 @@ export default function CurriculumBuilderView() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 align-top text-right">
-                                                    <button onClick={() => handleDeleteMonth(month.id)} className="text-xs font-medium text-slate-400 hover:text-red-600 transition-colors mr-2 hidden group-hover:inline-flex">
+                                                    <button onClick={() => setDeleteMonthTarget(month)} className="text-xs font-medium text-slate-400 hover:text-red-600 transition-colors mr-2 hidden group-hover:inline-flex">
                                                         Hapus
                                                     </button>
                                                     <button onClick={() => openWeekModal(month.id)} className="text-xs font-medium text-slate-400 hover:text-blue-600 transition-colors hidden group-hover:inline-flex" title="Tambah Materi Baru">
@@ -659,6 +706,33 @@ export default function CurriculumBuilderView() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Materi Latihan Terperinci</label>
                 <textarea required rows={3} value={newWeek.materialDescription} onChange={e => setNewWeek({...newWeek, materialDescription: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g (Stance, Step, Jump)" />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Competency Key</label>
+                <input type="text" value={newWeekMeta.competencyKey} onChange={e => setNewWeekMeta({...newWeekMeta, competencyKey: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g crossover_dribble" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">FUT Stat Domain</label>
+                  <select value={newWeekMeta.statDomain} onChange={e => setNewWeekMeta({...newWeekMeta, statDomain: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="SPD">Speed</option>
+                    <option value="SHO">Shooting</option>
+                    <option value="PAS">Passing</option>
+                    <option value="DRI">Dribbling</option>
+                    <option value="DEF">Defense</option>
+                    <option value="PHY">Physical</option>
+                    <option value="CHR">Character / Consistency</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stat Weight</label>
+                  <input type="number" min="0.1" step="0.1" value={newWeekMeta.statWeight} onChange={e => setNewWeekMeta({...newWeekMeta, statWeight: Number(e.target.value)})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Allowed Curriculum Profiles</label>
+                <input type="text" value={newWeekMeta.curriculumProfiles} onChange={e => setNewWeekMeta({...newWeekMeta, curriculumProfiles: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="KU-10,KU-12" />
+                <p className="text-xs mt-1 text-slate-500">Separate multiple profiles with commas.</p>
+              </div>
               <div className="pt-4 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsAddWeekOpen(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
                 <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center min-w-[100px]">
@@ -669,6 +743,57 @@ export default function CurriculumBuilderView() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteLevelTarget)}
+        title="Hapus Level"
+        description={`Apakah Anda yakin ingin menghapus ${deleteLevelTarget?.name || 'level ini'} beserta seluruh isinya? Tindakan ini tidak dapat dibatalkan.`}
+        onOpenChange={(open) => {
+          if (!open) setDeleteLevelTarget(null);
+        }}
+        onConfirm={async () => {
+          if (!deleteLevelTarget) return;
+          await handleDeleteLevel(deleteLevelTarget.id);
+          setDeleteLevelTarget(null);
+        }}
+        loading={loading}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteWeekTarget)}
+        title="Hapus Materi"
+        description={`Apakah Anda yakin ingin menghapus materi ${deleteWeekTarget?.category || 'ini'}? Tindakan ini tidak dapat dibatalkan.`}
+        onOpenChange={(open) => {
+          if (!open) setDeleteWeekTarget(null);
+        }}
+        onConfirm={async () => {
+          if (!deleteWeekTarget) return;
+          await handleDeleteWeek(deleteWeekTarget.id);
+          setDeleteWeekTarget(null);
+        }}
+        loading={loading}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteMonthTarget)}
+        title="Hapus Bulan"
+        description={`Apakah Anda yakin ingin menghapus bulan ${deleteMonthTarget?.monthNumber || ''}? Semua materi mingguan di dalamnya akan ikut terhapus.`}
+        onOpenChange={(open) => {
+          if (!open) setDeleteMonthTarget(null);
+        }}
+        onConfirm={async () => {
+          if (!deleteMonthTarget) return;
+          await handleDeleteMonth(deleteMonthTarget.id);
+          setDeleteMonthTarget(null);
+        }}
+        loading={loading}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+      />
     </div>
   );
 }

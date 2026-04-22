@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/Sidebar"
 import { UserProfile } from "@/components/ui/navigation/UserProfile"
-import { GraduationCap, LayoutDashboard, MessageCircle, Wallet } from "lucide-react"
+import { Award, GraduationCap, LayoutDashboard, MessageCircle, Wallet } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { SidebarHeader } from "./SidebarHeader"
 
@@ -29,6 +29,11 @@ const navigation = [
     name: "Academic Reports",
     href: "/parent/reports",
     icon: GraduationCap,
+  },
+  {
+    name: "Child Badges",
+    href: "/parent/badges",
+    icon: Award,
   },
   {
     name: "Messages",
