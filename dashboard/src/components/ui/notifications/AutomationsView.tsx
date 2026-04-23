@@ -1,8 +1,9 @@
 import { useAutomationRules, useWahaStatus } from '@/hooks/use-automation';
 import { useTemplates, TemplateType } from '@/hooks/use-templates';
 import {
-    Bot,
-    MessageSquare,
+  Bot,
+  CheckCircle2,
+  MessageSquare,
     Plus,
     QrCode,
     RefreshCw,
@@ -33,7 +34,7 @@ export default function AutomationsView() {
   } = useDeliveryMonitor();
 
   const [newRule, setNewRule] = useState({ keyword: '', response: '' });
-  const [queueKindFilter, setQueueKindFilter] = useState<'ALL' | 'INVOICE' | 'MANUAL_LATE_INVOICE' | 'REMINDER' | 'BROADCAST'>('ALL');
+  const [queueKindFilter, setQueueKindFilter] = useState<'ALL' | 'INVOICE' | 'MANUAL_LATE_INVOICE' | 'REMINDER' | 'ACCEPTANCE' | 'BROADCAST'>('ALL');
   const [queueStatusFilter, setQueueStatusFilter] = useState<'ALL' | 'QUEUED' | 'SENT' | 'ACKED' | 'FAILED'>('ALL');
 
   const formatDateTime = (value: string | null) => {
@@ -51,6 +52,7 @@ export default function AutomationsView() {
     INVOICE: 'Invoice',
     MANUAL_LATE_INVOICE: 'Late Invoice',
     REMINDER: 'Reminder',
+    ACCEPTANCE: 'Acceptance',
     BROADCAST: 'Broadcast',
   };
 
@@ -59,6 +61,7 @@ export default function AutomationsView() {
     MANUAL_LATE_INVOICE:
       'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     REMINDER: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    ACCEPTANCE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
     BROADCAST: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   };
 
@@ -101,7 +104,7 @@ export default function AutomationsView() {
 
   // Template Builder State
   const { templates, updateTemplate, createTemplate, loading: templatesLoading } = useTemplates();
-  const [activeTab, setActiveTab] = useState<'INVOICE' | 'REMINDER' | 'BROADCAST'>('INVOICE');
+  const [activeTab, setActiveTab] = useState<'INVOICE' | 'REMINDER' | 'ACCEPTANCE' | 'BROADCAST'>('INVOICE');
   const [currentTemplate, setCurrentTemplate] = useState('');
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
 
@@ -154,6 +157,22 @@ Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus 
 Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 *Cek Nota Tagihan:*
 {{invoiceUrl}}`);
+      } else if (activeTab === 'ACCEPTANCE') {
+        setCurrentTemplate(`*Pesan Penerimaan Siswa*
+Wirabhakti Basketball Club
+
+Halo {{fullName}},
+
+Selamat, pendaftaran siswa berikut telah disetujui:
+{{studentDetails}}
+
+Jumlah siswa disetujui: {{studentCount}}
+Tanggal: {{date}}
+
+Silakan login dan lanjutkan proses administrasi yang diperlukan.
+
+Salam,
+*Wirabhakti Basketball Club*`);
       } else if (activeTab === 'BROADCAST') {
         setCurrentTemplate(`*Informasi Wirabhakti Basketball Academy*
 
@@ -176,7 +195,13 @@ Salam Olahraga,
         await updateTemplate(currentTemplateId, { content: currentTemplate });
       } else {
         await createTemplate({ 
-            name: activeTab === 'INVOICE' ? 'Invoice Sender' : activeTab === 'REMINDER' ? 'Invoice Due Reminder' : 'Broadcast Message', 
+            name: activeTab === 'INVOICE'
+              ? 'Invoice Sender'
+              : activeTab === 'REMINDER'
+                ? 'Invoice Due Reminder'
+                : activeTab === 'ACCEPTANCE'
+                  ? 'Pesan Penerimaan'
+                  : 'Broadcast Message', 
             content: currentTemplate, 
             type: activeTab as TemplateType, 
             isActive: true 
@@ -198,6 +223,16 @@ Salam Olahraga,
       return [
         { label: '+ Nama Wali Murid', tag: '{{fullName}}' },
         { label: '+ Daftar Siswa', tag: '{{studentNames}}' },
+        { label: '+ Jumlah Siswa', tag: '{{studentCount}}' },
+        { label: '+ Tanggal', tag: '{{date}}' },
+        { label: '+ Line Break', tag: '\\n' },
+      ];
+    }
+    if (activeTab === 'ACCEPTANCE') {
+      return [
+        { label: '+ Nama Wali Murid', tag: '{{fullName}}' },
+        { label: '+ Nama Siswa', tag: '{{studentNames}}' },
+        { label: '+ Detail Siswa', tag: '{{studentDetails}}' },
         { label: '+ Jumlah Siswa', tag: '{{studentCount}}' },
         { label: '+ Tanggal', tag: '{{date}}' },
         { label: '+ Line Break', tag: '\\n' },
@@ -228,6 +263,7 @@ Salam Olahraga,
   const getTabColor = () => {
     if (activeTab === 'INVOICE') return 'indigo';
     if (activeTab === 'REMINDER') return 'orange';
+    if (activeTab === 'ACCEPTANCE') return 'emerald';
     return 'blue';
   };
 
@@ -368,7 +404,7 @@ Salam Olahraga,
          <div className="flex items-start justify-between gap-4 mb-6">
             <div>
                <Title className="mb-1">Send Queue</Title>
-               <Text>Monitor semua antrean pengiriman dari invoice, manual late invoice, reminder, dan broadcast.</Text>
+               <Text>Monitor semua antrean pengiriman dari invoice, manual late invoice, reminder, acceptance, dan broadcast.</Text>
             </div>
             <button
                onClick={() => refreshOverview().catch(() => toast.error('Gagal refresh send queue.'))}
@@ -395,13 +431,14 @@ Salam Olahraga,
          </div>
 
          <div className="mb-4 flex flex-wrap items-center gap-2">
-            {[
-              { label: 'All Kinds', value: 'ALL' },
-              { label: 'Invoice', value: 'INVOICE' },
-              { label: 'Late Invoice', value: 'MANUAL_LATE_INVOICE' },
-              { label: 'Reminder', value: 'REMINDER' },
-              { label: 'Broadcast', value: 'BROADCAST' },
-            ].map((item) => (
+             {[
+               { label: 'All Kinds', value: 'ALL' },
+               { label: 'Invoice', value: 'INVOICE' },
+               { label: 'Late Invoice', value: 'MANUAL_LATE_INVOICE' },
+               { label: 'Reminder', value: 'REMINDER' },
+               { label: 'Acceptance', value: 'ACCEPTANCE' },
+               { label: 'Broadcast', value: 'BROADCAST' },
+             ].map((item) => (
               <button
                 key={item.value}
                 onClick={() => setQueueKindFilter(item.value as typeof queueKindFilter)}
@@ -600,23 +637,42 @@ Salam Olahraga,
             <Megaphone size={16} />
             Broadcast Message
          </button>
-      </div>
+         <button
+            onClick={() => setActiveTab('ACCEPTANCE')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+               activeTab === 'ACCEPTANCE' 
+               ? 'border-emerald-600 text-emerald-600 dark:border-emerald-500 dark:text-emerald-400'
+               : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+         >
+            <CheckCircle2 size={16} />
+            Pesan Penerimaan
+         </button>
+       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
            <div className="flex items-center justify-between mb-4">
               <div>
                  <Title className="mb-1">
-                    {activeTab === 'INVOICE' ? 'Invoice Sender Template' : activeTab === 'REMINDER' ? 'Invoice Due Reminder Template' : 'Broadcast Message Template'}
+                    {activeTab === 'INVOICE'
+                      ? 'Invoice Sender Template'
+                      : activeTab === 'REMINDER'
+                        ? 'Invoice Due Reminder Template'
+                        : activeTab === 'ACCEPTANCE'
+                          ? 'Pesan Penerimaan Template'
+                          : 'Broadcast Message Template'}
                  </Title>
                  <Text>
                     {activeTab === 'INVOICE' 
                        ? ''
                        : activeTab === 'REMINDER' 
                        ? '' 
-                       : ''}
-                 </Text>
-              </div>
+                       : activeTab === 'ACCEPTANCE'
+                         ? ''
+                         : ''}
+                  </Text>
+               </div>
               {activeTab === 'BROADCAST' && (
                 <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-3 py-2 rounded-lg">
                    <Users size={16} className="text-blue-600 dark:text-blue-400" />
@@ -651,14 +707,16 @@ Salam Olahraga,
                  onChange={(e) => setCurrentTemplate(e.target.value)}
                  rows={12}
                  placeholder="Write your template here..." 
-                 className={`w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 bg-slate-50 dark:bg-slate-900 dark:text-slate-50 font-mono resize-y ${
-                    activeTab === 'INVOICE' 
-                       ? 'border-indigo-100 dark:border-indigo-900/30 focus:ring-indigo-500' 
-                       : activeTab === 'REMINDER'
-                       ? 'border-orange-100 dark:border-orange-900/30 focus:ring-orange-500'
-                       : 'border-blue-100 dark:border-blue-900/30 focus:ring-blue-500'
-                 }`}
-              />
+                  className={`w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 bg-slate-50 dark:bg-slate-900 dark:text-slate-50 font-mono resize-y ${
+                     activeTab === 'INVOICE' 
+                        ? 'border-indigo-100 dark:border-indigo-900/30 focus:ring-indigo-500' 
+                        : activeTab === 'REMINDER'
+                        ? 'border-orange-100 dark:border-orange-900/30 focus:ring-orange-500'
+                        : activeTab === 'ACCEPTANCE'
+                        ? 'border-emerald-100 dark:border-emerald-900/30 focus:ring-emerald-500'
+                        : 'border-blue-100 dark:border-blue-900/30 focus:ring-blue-500'
+                  }`}
+               />
            </div>
            
            <div className="mt-4 flex flex-wrap justify-between items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-lg p-4">
@@ -666,17 +724,19 @@ Salam Olahraga,
                  <button 
                     onClick={handleSaveTemplate}
                     disabled={templatesLoading || !currentTemplate.trim()}
-                    className={`flex items-center gap-2 px-6 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                       activeTab === 'INVOICE'
-                          ? 'bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700'
-                          : activeTab === 'REMINDER'
-                          ? 'bg-orange-600 hover:bg-orange-700'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                 >
-                    <Save size={16} />
-                    Save {activeTab === 'INVOICE' ? 'Invoice' : activeTab === 'REMINDER' ? 'Reminder' : 'Broadcast'} Template
-                 </button>
+                     className={`flex items-center gap-2 px-6 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        activeTab === 'INVOICE'
+                           ? 'bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700'
+                           : activeTab === 'REMINDER'
+                           ? 'bg-orange-600 hover:bg-orange-700'
+                           : activeTab === 'ACCEPTANCE'
+                           ? 'bg-emerald-600 hover:bg-emerald-700'
+                           : 'bg-blue-600 hover:bg-blue-700'
+                     }`}
+                  >
+                     <Save size={16} />
+                    Save {activeTab === 'INVOICE' ? 'Invoice' : activeTab === 'REMINDER' ? 'Reminder' : activeTab === 'ACCEPTANCE' ? 'Acceptance' : 'Broadcast'} Template
+                  </button>
 
                   {activeTab === 'BROADCAST' && (
                      <button 

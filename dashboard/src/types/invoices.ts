@@ -36,6 +36,7 @@ export interface Invoice {
     };
     photoUrl?: string;
     photo_url?: string;
+    buktiTimeStamp?: string;
     isVerified?: boolean;
     verifiedAt?: string;
     verifiedBy?: string;

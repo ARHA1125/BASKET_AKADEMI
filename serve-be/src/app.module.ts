@@ -21,7 +21,6 @@ import { JwtAuthGuard } from './auths-module/jwt.auth-module.guard';
 import { RoleGuard } from './auths-module/auths-module.guard';
 import { ValidationPipe } from '@nestjs/common';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -52,10 +51,13 @@ import { ValidationPipe } from '@nestjs/common';
     }),
     ServeStaticModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ([{
-        rootPath: configService.get('UPLOAD_DIR') || join(__dirname, '..', 'img'),
-        serveRoot: '/img',
-      }]),
+      useFactory: (configService: ConfigService) => [
+        {
+          rootPath:
+            configService.get('UPLOAD_DIR') || join(__dirname, '..', 'img'),
+          serveRoot: '/img',
+        },
+      ],
       inject: [ConfigService],
     }),
     AuthsModuleModule,

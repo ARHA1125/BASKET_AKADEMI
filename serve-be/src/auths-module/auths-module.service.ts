@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -17,8 +21,10 @@ export class AuthsModuleService {
 
   async register(registerDto: RegisterDto): Promise<User> {
     const { email, password, role, fullName, phoneNumber } = registerDto;
-    
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
@@ -44,15 +50,17 @@ export class AuthsModuleService {
   async login(loginDto: LoginDto): Promise<{ accessToken: string }> {
     const { email, password } = loginDto;
     const user = await this.userRepository.findOne({ where: { email } });
-        
+
     if (user && (await bcrypt.compare(password, user.password))) {
-            if (user.status && user.status !== 'Active') {
-                throw new UnauthorizedException('Account is pending approval or inactive.');
-            }
-            const payload = { sub: user.id, email: user.email, role: user.role };
-            const accessToken = await this.jwtService.signAsync(payload);
-            return { accessToken };
-        }
+      if (user.status && user.status !== 'Active') {
+        throw new UnauthorizedException(
+          'Account is pending approval or inactive.',
+        );
+      }
+      const payload = { sub: user.id, email: user.email, role: user.role };
+      const accessToken = await this.jwtService.signAsync(payload);
+      return { accessToken };
+    }
 
     throw new UnauthorizedException('Invalid credentials');
   }
@@ -80,37 +88,38 @@ export class AuthsModuleService {
     return this.userRepository.save(user);
   }
 
-
   async findAllUsers(page = 1, limit = 10, search = '') {
-      const query = this.userRepository.createQueryBuilder('user');
+    const query = this.userRepository.createQueryBuilder('user');
 
-      if (search) {
-          query.where('user.fullName ILIKE :search OR user.email ILIKE :search', { search: `%${search}%` });
-      }
-      
-      const [data, total] = await query
-          .skip((page - 1) * limit)
-          .take(limit)
-          .orderBy('user.createdAt', 'DESC')
-          .getManyAndCount();
+    if (search) {
+      query.where('user.fullName ILIKE :search OR user.email ILIKE :search', {
+        search: `%${search}%`,
+      });
+    }
 
-      return { data, total, page, limit };
+    const [data, total] = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('user.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 
   async updateUser(id: string, dto: any) {
-      const user = await this.userRepository.findOne({ where: { id } });
-      if (!user) throw new UnauthorizedException('User not found');
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new UnauthorizedException('User not found');
 
-      if (dto.password) {
-          const salt = await bcrypt.genSalt();
-          dto.password = await bcrypt.hash(dto.password, salt);
-      }
+    if (dto.password) {
+      const salt = await bcrypt.genSalt();
+      dto.password = await bcrypt.hash(dto.password, salt);
+    }
 
-      if (dto.phoneNumber) {
-        dto.phoneNumber = dto.phoneNumber.replace('+62', '0');
-      }
+    if (dto.phoneNumber) {
+      dto.phoneNumber = dto.phoneNumber.replace('+62', '0');
+    }
 
-      Object.assign(user, dto);
-      return this.userRepository.save(user);
+    Object.assign(user, dto);
+    return this.userRepository.save(user);
   }
 }

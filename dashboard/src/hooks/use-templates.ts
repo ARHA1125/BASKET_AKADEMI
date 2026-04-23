@@ -4,6 +4,7 @@ import { getToken } from '@/lib/auth';
 export enum TemplateType {
   INVOICE = 'INVOICE',
   REMINDER = 'REMINDER',
+  ACCEPTANCE = 'ACCEPTANCE',
   EVENT = 'EVENT',
   CUSTOM = 'CUSTOM',
   BROADCAST = 'BROADCAST',

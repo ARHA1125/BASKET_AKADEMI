@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  OneToMany,
+} from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Student } from '../../academic-module/entities/student.entity';
 import { Parent } from '../../academic-module/entities/parent.entity';
@@ -10,7 +18,7 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   COACH = 'COACH',
   STUDENT = 'STUDENT',
-  PARENT = 'PARENT'
+  PARENT = 'PARENT',
 }
 
 @Entity()

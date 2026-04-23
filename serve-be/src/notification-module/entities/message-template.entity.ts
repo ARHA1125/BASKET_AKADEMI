@@ -1,8 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export enum TemplateType {
   INVOICE = 'INVOICE',
   REMINDER = 'REMINDER',
+  ACCEPTANCE = 'ACCEPTANCE',
   EVENT = 'EVENT',
   CUSTOM = 'CUSTOM',
   BROADCAST = 'BROADCAST',

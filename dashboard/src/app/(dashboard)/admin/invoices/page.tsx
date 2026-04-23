@@ -16,8 +16,8 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'verified' | 'unpaid'>('all');
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [proofViewerStartIndex, setProofViewerStartIndex] = useState(0);
 
   useEffect(() => {
     fetchInvoices();
@@ -65,7 +65,8 @@ export default function InvoicesPage() {
   };
 
   const handleViewProof = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
+    const proofIndex = proofInvoices.findIndex((item) => item.id === invoice.id);
+    setProofViewerStartIndex(proofIndex >= 0 ? proofIndex : 0);
     setModalOpen(true);
   };
 
@@ -77,9 +78,25 @@ export default function InvoicesPage() {
     }).format(amount);
   };
 
+  const formatProofTime = (value?: string) => {
+    if (!value) return null;
+
+    return new Date(value).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const filteredInvoices = invoices.filter(inv => {
-    const matchesSearch = inv.student.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inv.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      normalizedSearch === '' ||
+      inv.student.toLowerCase().includes(normalizedSearch) ||
+      inv.id.toLowerCase().includes(normalizedSearch) ||
+      inv.category.toLowerCase().includes(normalizedSearch);
     
     if (!matchesSearch) return false;
 
@@ -94,6 +111,7 @@ export default function InvoicesPage() {
         return true;
     }
   });
+  const proofInvoices = filteredInvoices.filter((invoice) => invoice.photoUrl);
 
   const stats = {
     total: invoices.length,
@@ -229,11 +247,21 @@ export default function InvoicesPage() {
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{new Date(invoice.date).toLocaleDateString('id-ID')}</td>
                     <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{formatCurrency(invoice.amount)}</td>
                     <td className="px-6 py-4">
-                      {invoice.photoUrl ? (
-                        <CheckCircle className="text-emerald-500" size={20} />
-                      ) : (
-                        <XCircle className="text-slate-300" size={20} />
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {invoice.photoUrl ? (
+                          <>
+                            <CheckCircle className="text-emerald-500" size={20} />
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {formatProofTime(invoice.buktiTimeStamp || invoice.verifiedAt) || 'Belum diverifikasi'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="text-slate-300" size={20} />
+                            <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <InvoiceStatusBadge invoice={invoice} />
@@ -272,9 +300,10 @@ export default function InvoicesPage() {
       </div>
 
       {/* Proof Viewer Modal */}
-      {selectedInvoice && (
+      {proofInvoices.length > 0 && (
         <ProofViewerModal
-          invoice={selectedInvoice}
+          invoices={proofInvoices}
+          startIndex={proofViewerStartIndex}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onVerify={handleVerify}

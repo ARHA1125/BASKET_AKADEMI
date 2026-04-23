@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Student } from '../../academic-module/entities/student.entity';
 import { Parent } from '../../academic-module/entities/parent.entity';
 import { Transaction } from './transaction.entity';
@@ -19,7 +26,7 @@ export class Invoice {
   @ManyToOne(() => Student, { nullable: true, onDelete: 'SET NULL' })
   student: Student;
 
-  @ManyToOne(() => Parent, { nullable: true, onDelete: 'SET NULL' }) 
+  @ManyToOne(() => Parent, { nullable: true, onDelete: 'SET NULL' })
   parent: Parent;
 
   @Column('decimal')
@@ -33,10 +40,12 @@ export class Invoice {
 
   @Column({ nullable: true })
   paymentLink: string;
-  
+
   @Column({ nullable: true })
   photo_url: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  buktiTimeStamp: Date | null;
 
   @Column({ default: false })
   isVerified: boolean;
@@ -59,7 +68,11 @@ export class Invoice {
   @Column({ nullable: true })
   month: string;
 
-  @Column({ type: 'enum', enum: ['SUDAH_TERKIRIM', 'BELUM_TERKIRIM'], default: 'BELUM_TERKIRIM' })
+  @Column({
+    type: 'enum',
+    enum: ['SUDAH_TERKIRIM', 'BELUM_TERKIRIM'],
+    default: 'BELUM_TERKIRIM',
+  })
   deliveryStatus: 'SUDAH_TERKIRIM' | 'BELUM_TERKIRIM';
 
   @Column({ type: 'timestamp', nullable: true })

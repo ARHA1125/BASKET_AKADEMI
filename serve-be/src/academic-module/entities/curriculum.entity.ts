@@ -1,4 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 export enum CurriculumLevel {
   ROOKIE = 'ROOKIE',
@@ -18,7 +23,11 @@ export class Curriculum {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ type: 'enum', enum: CurriculumLevel, default: CurriculumLevel.ROOKIE })
+  @Column({
+    type: 'enum',
+    enum: CurriculumLevel,
+    default: CurriculumLevel.ROOKIE,
+  })
   level: CurriculumLevel;
 
   @Column({ nullable: true })

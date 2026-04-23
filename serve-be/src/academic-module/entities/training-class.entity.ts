@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 import { Student } from './student.entity';
 import { User } from '../../auths-module/entities/user.entity';
 import { CurriculumLevel } from './curriculum-level.entity';
@@ -19,7 +25,7 @@ export class TrainingClass {
   students: Student[];
 
   @ManyToOne(() => User, (user) => user.coachedClasses, { nullable: true })
-  coach: User; 
+  coach: User;
 
   @ManyToOne(() => CurriculumLevel, { nullable: true })
   curriculumLevel: CurriculumLevel;

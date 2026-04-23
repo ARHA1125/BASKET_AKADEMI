@@ -30,13 +30,15 @@ export class GalleryService {
 
   async findOne(id: string) {
     const gallery = await this.galleryRepository.findOne({ where: { id } });
-    if (!gallery) throw new NotFoundException(`Gallery with ID ${id} not found`);
+    if (!gallery)
+      throw new NotFoundException(`Gallery with ID ${id} not found`);
     return gallery;
   }
 
   async findBySlug(slug: string) {
     const gallery = await this.galleryRepository.findOne({ where: { slug } });
-    if (!gallery) throw new NotFoundException(`Gallery with slug ${slug} not found`);
+    if (!gallery)
+      throw new NotFoundException(`Gallery with slug ${slug} not found`);
     return gallery;
   }
 

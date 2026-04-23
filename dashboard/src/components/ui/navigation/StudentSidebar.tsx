@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/Sidebar"
 import { UserProfile } from "@/components/ui/navigation/UserProfile"
-import { BarChart3, BookOpen, Calendar, LayoutDashboard, ShoppingBag } from "lucide-react"
+import { Award, BarChart3, BookOpen, Calendar, LayoutDashboard, ShoppingBag } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { SidebarHeader } from "./SidebarHeader"
 
@@ -34,6 +34,11 @@ const navigation = [
     name: "Performance",
     href: "/student/performance",
     icon: BarChart3,
+  },
+  {
+    name: "Badges",
+    href: "/student/badges",
+    icon: Award,
   },
   {
     name: "Store",

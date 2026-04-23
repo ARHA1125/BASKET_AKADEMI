@@ -1,28 +1,69 @@
 'use client';
 
 import { ProofViewerModalProps } from '@/types/verification';
-import { CheckCircle, Loader2, X } from 'lucide-react';
-import { FC, useState } from 'react';
+import { CheckCircle, ChevronLeft, ChevronRight, Loader2, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from '@use-gesture/react';
 
 export const ProofViewerModal: FC<ProofViewerModalProps> = ({
-  invoice,
+  invoices,
+  startIndex = 0,
   isOpen,
   onClose,
   onVerify,
   apiUrl
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  const minScale = 1;
+  const maxScale = 3;
+  const scaleStep = 0.25;
+  const currentInvoice = invoices[currentIndex];
+  const totalInvoices = invoices.length;
 
   const [{ y }, api] = useSpring(() => ({ y: 0 }));
+
+  useEffect(() => {
+    setCurrentIndex(startIndex);
+  }, [startIndex]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setScale(1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setScale(1);
+  }, [currentIndex]);
+
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((current) => Math.max(0, current - 1));
+  }, []);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((current) => Math.min(totalInvoices - 1, current + 1));
+  }, [totalInvoices]);
+
+  const handleResetZoom = useCallback(() => {
+    setScale(1);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    handleResetZoom();
+    onClose();
+  }, [handleResetZoom, onClose]);
 
   const bind = useDrag(
     ({ down, movement: [, my], velocity: [, vy], direction: [, dy], cancel }) => {
       // Swipe down to dismiss
       if (my > 150 && vy > 0.5 && !down) {
+        setScale(1);
         onClose();
         // Reset immediately so next open starts fresh
         api.start({ y: 0, immediate: true });
@@ -38,13 +79,41 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
     { axis: 'y', filterTaps: true, rubberband: true }
   );
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        handlePrevious();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        handleNext();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose, handleNext, handlePrevious, isOpen]);
+
+  const handleZoomIn = () => {
+    setScale((current) => Math.min(maxScale, current + scaleStep));
+  };
+
+  const handleZoomOut = () => {
+    setScale((current) => Math.max(minScale, current - scaleStep));
+  };
+
+  if (!isOpen || !currentInvoice) return null;
 
   const handleVerify = async () => {
     setIsVerifying(true);
     try {
-      await onVerify(invoice.id, 'TRANSFER', invoice.uniqueAmount || invoice.amount);
-      onClose();
+      await onVerify(currentInvoice.id, 'TRANSFER', currentInvoice.uniqueAmount || currentInvoice.amount);
+      handleClose();
     } catch (error) {
       console.error('Verification failed:', error);
     } finally {
@@ -72,7 +141,7 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
       <div 
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       <animated.div 
@@ -80,64 +149,139 @@ export const ProofViewerModal: FC<ProofViewerModalProps> = ({
         style={{ y, touchAction: 'none' }}
         className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex will-change-transform cursor-grab active:cursor-grabbing"
       >
-        <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-8 flex items-center justify-center overflow-auto pointer-events-none">
-          {invoice.photoUrl ? (
-            <img 
-              src={`${apiUrl}/${invoice.photoUrl}`}
-              alt="Payment Proof"
-              className="max-w-full h-auto rounded-lg shadow-lg pointer-events-auto"
-            />
-          ) : (
-            <p className="text-slate-500">No proof image available</p>
-          )}
+        <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-8 flex flex-col overflow-hidden">
+          {currentInvoice.photoUrl ? (
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:bg-slate-800/80">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Payment Proof</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Zoom to inspect the uploaded transfer proof.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  disabled={scale <= minScale}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  aria-label="Zoom out"
+                >
+                  <ZoomOut size={18} />
+                </button>
+                <span className="min-w-14 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  disabled={scale >= maxScale}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  aria-label="Zoom in"
+                >
+                  <ZoomIn size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetZoom}
+                  disabled={scale === 1}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  aria-label="Reset zoom"
+                >
+                  <RotateCcw size={18} />
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-1 items-center justify-center overflow-auto pointer-events-none">
+            {currentInvoice.photoUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={`${apiUrl}/${currentInvoice.photoUrl}`}
+                  alt="Payment Proof"
+                  className="max-w-full h-auto rounded-lg shadow-lg pointer-events-auto transition-transform duration-200 ease-out"
+                  style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+                />
+              </>
+            ) : (
+              <p className="text-slate-500">No proof image available</p>
+            )}
+          </div>
         </div>
         
         <div className="w-96 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Bukti Pembayaran</h3>
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Bukti Pembayaran</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {currentIndex + 1} of {totalInvoices} invoices with proof
+              </p>
+            </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
               <X size={20} className="text-slate-500" />
             </button>
           </div>
 
+          {totalInvoices > 1 && (
+            <div className="mb-6 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={currentIndex === totalInvoices - 1}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+
           <div className="space-y-4 flex-1">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Invoice ID</p>
-              <p className="font-mono text-sm font-semibold text-slate-900 dark:text-white">{invoice.id}</p>
+              <p className="font-mono text-sm font-semibold text-slate-900 dark:text-white">{currentInvoice.id}</p>
             </div>
             
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Siswa</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{invoice.student}</p>
+              <p className="font-semibold text-slate-900 dark:text-white">{currentInvoice.student}</p>
             </div>
             
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Jumlah</p>
-              <p className="text-2xl font-bold text-emerald-600">{formatCurrency(invoice.amount)}</p>
+              <p className="text-2xl font-bold text-emerald-600">{formatCurrency(currentInvoice.amount)}</p>
             </div>
             
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Tanggal Invoice</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{formatDate(invoice.date)}</p>
+              <p className="font-semibold text-slate-900 dark:text-white">{formatDate(currentInvoice.date)}</p>
             </div>
 
-            {invoice.isVerified && invoice.verifiedAt && (
+            {currentInvoice.isVerified && currentInvoice.verifiedAt && (
               <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
                   <CheckCircle size={20} />
                   <span className="font-semibold">Terverifikasi</span>
                 </div>
                 <p className="text-sm text-emerald-600 dark:text-emerald-500 mt-1">
-                  {formatDate(invoice.verifiedAt)}
+                  {formatDate(currentInvoice.verifiedAt)}
                 </p>
               </div>
             )}
           </div>
 
-          {!invoice.isVerified && (
+          {!currentInvoice.isVerified && (
             <button
               onClick={handleVerify}
               disabled={isVerifying}

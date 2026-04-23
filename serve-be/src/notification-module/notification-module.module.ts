@@ -43,14 +43,14 @@ import { Parent } from '../academic-module/entities/parent.entity';
       Parent,
       NotificationDelivery,
     ]),
-    PaymentModuleModule
+    PaymentModuleModule,
   ],
   controllers: [
-    NotificationModuleController, 
-    WahaController, 
-    NotificationRulesController, 
-    NotificationController, 
-    MessageTemplateController
+    NotificationModuleController,
+    WahaController,
+    NotificationRulesController,
+    NotificationController,
+    MessageTemplateController,
   ],
   providers: [
     NotificationModuleService,
@@ -59,8 +59,8 @@ import { Parent } from '../academic-module/entities/parent.entity';
     InvoiceScheduler,
     NotificationRulesService,
     NotificationService,
-    MessageTemplateService
+    MessageTemplateService,
   ],
-  exports: [WahaService],
+  exports: [WahaService, NotificationService],
 })
 export class NotificationModuleModule {}
