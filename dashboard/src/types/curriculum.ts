@@ -3,6 +3,10 @@ export interface WeekMaterial {
   weekNumber: number;
   category: string;
   materialDescription: string;
+  competencyKey?: string;
+  statDomain?: string;
+  statWeight?: number;
+  curriculumProfiles?: string[];
 }
 
 export interface Month {

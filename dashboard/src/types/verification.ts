@@ -14,7 +14,8 @@ export interface SwipeableVerificationModalProps {
 }
 
 export interface ProofViewerModalProps {
-  invoice: Invoice;
+  invoices: Invoice[];
+  startIndex?: number;
   isOpen: boolean;
   onClose: () => void;
   onVerify: (id: string, paymentMethod: 'TRANSFER' | 'CASH', paidAmount?: number) => Promise<void>;

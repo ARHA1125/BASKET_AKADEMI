@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { MarketplaceModuleService } from './marketplace-module.service';
 import { CreateMarketplaceModuleDto } from './dto/create-marketplace-module.dto';
 import { UpdateMarketplaceModuleDto } from './dto/update-marketplace-module.dto';
@@ -8,7 +16,9 @@ import { UserRole } from '../auths-module/entities/user.entity';
 @Roles(UserRole.ADMIN)
 @Controller('marketplace-module')
 export class MarketplaceModuleController {
-  constructor(private readonly marketplaceModuleService: MarketplaceModuleService) {}
+  constructor(
+    private readonly marketplaceModuleService: MarketplaceModuleService,
+  ) {}
 
   @Post()
   create(@Body() createMarketplaceModuleDto: CreateMarketplaceModuleDto) {
@@ -26,8 +36,14 @@ export class MarketplaceModuleController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMarketplaceModuleDto: UpdateMarketplaceModuleDto) {
-    return this.marketplaceModuleService.update(+id, updateMarketplaceModuleDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateMarketplaceModuleDto: UpdateMarketplaceModuleDto,
+  ) {
+    return this.marketplaceModuleService.update(
+      +id,
+      updateMarketplaceModuleDto,
+    );
   }
 
   @Delete(':id')

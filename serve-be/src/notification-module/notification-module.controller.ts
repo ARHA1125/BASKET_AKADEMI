@@ -6,5 +6,7 @@ import { UserRole } from '../auths-module/entities/user.entity';
 @Roles(UserRole.ADMIN)
 @Controller('notification-module')
 export class NotificationModuleController {
-  constructor(private readonly notificationModuleService: NotificationModuleService) {}
+  constructor(
+    private readonly notificationModuleService: NotificationModuleService,
+  ) {}
 }

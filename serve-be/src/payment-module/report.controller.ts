@@ -25,7 +25,7 @@ export class ReportController {
     return {
       totalOutstanding: 3750000,
       overdue30Days: 1500000,
-      studentCount: 15
+      studentCount: 15,
     };
   }
 }

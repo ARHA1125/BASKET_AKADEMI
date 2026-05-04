@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, Title, Text } from '@/components/ui/notifications/Common';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Plus, Search, Trash2, Loader2, Save, X, UploadCloud, FileText, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import Cookies from 'js-cookie';
@@ -15,6 +16,7 @@ export default function SponsorsView() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [deleteTarget, setDeleteTarget] = useState<Sponsor | null>(null);
 
   
   const [selectedSdk, setSelectedSdk] = useState<Sponsor | null>(null); 
@@ -162,12 +164,12 @@ export default function SponsorsView() {
       }
   };
 
-  const handleDeleteSponsor = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this sponsor?')) return;
+  const handleDeleteSponsor = async () => {
+    if (!deleteTarget) return;
 
     try {
         const token = Cookies.get('auth_token');
-      const response = await fetch(`${apiUrl}/administration/sponsors/${id}`, {
+      const response = await fetch(`${apiUrl}/administration/sponsors/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: {
             'Authorization': `Bearer ${token}`
@@ -176,6 +178,7 @@ export default function SponsorsView() {
 
       if (response.ok) {
         toast.success('Sponsor deleted');
+        setDeleteTarget(null);
         fetchSponsors();
       } else {
         toast.error('Failed to delete sponsor');
@@ -270,7 +273,7 @@ export default function SponsorsView() {
                                             <Pencil size={16} />
                                         </button>
                                         <button 
-                                            onClick={() => handleDeleteSponsor(sponsor.id)}
+                                            onClick={() => setDeleteTarget(sponsor)}
                                             className="text-slate-400 hover:text-red-600 transition-colors p-1"
                                             title="Delete"
                                         >
@@ -389,6 +392,17 @@ export default function SponsorsView() {
             </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Sponsor"
+        description={`Are you sure you want to delete ${deleteTarget?.name || 'this sponsor'}? This action cannot be undone.`}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={handleDeleteSponsor}
+        loading={loading}
+      />
     </div>
   );
 }

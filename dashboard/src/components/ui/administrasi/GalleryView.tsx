@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, Title, Text } from '@/components/ui/notifications/Common';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Plus, Search, Trash2, Loader2, Pencil, Image as ImageIcon, Camera, FolderOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import Cookies from 'js-cookie';
@@ -17,6 +18,7 @@ export default function GalleryView() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<GalleryAlbum | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<GalleryAlbum | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
@@ -54,16 +56,17 @@ export default function GalleryView() {
     }
   }, { scope: containerRef, dependencies: [albums, loading] });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this album?')) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
       const token = Cookies.get('auth_token');
-      const response = await fetch(`${apiUrl}/administration/gallery/${id}`, {
+      const response = await fetch(`${apiUrl}/administration/gallery/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
         toast.success('Album deleted');
+        setDeleteTarget(null);
         fetchAlbums();
       } else {
         toast.error('Failed to delete album');
@@ -222,7 +225,7 @@ export default function GalleryView() {
                         <Pencil size={15} />
                       </button>
                       <button
-                        onClick={() => handleDelete(album.id)}
+                        onClick={() => setDeleteTarget(album)}
                         className="p-1.5 text-slate-400 hover:text-red-600 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-500/10"
                         title="Delete"
                       >
@@ -236,6 +239,17 @@ export default function GalleryView() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Album"
+        description={`Are you sure you want to delete ${deleteTarget?.title || 'this album'}? This action cannot be undone.`}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={handleDelete}
+        loading={loading}
+      />
     </div>
   );
 }

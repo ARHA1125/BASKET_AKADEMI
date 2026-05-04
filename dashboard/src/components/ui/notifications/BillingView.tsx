@@ -42,13 +42,14 @@ export default function BillingView() {
   const [showManualLateScheduleModal, setShowManualLateScheduleModal] =
     useState(false)
   const [mounted, setMounted] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [proofViewerStartIndex, setProofViewerStartIndex] = useState(0)
   const [swipeableModalOpen, setSwipeableModalOpen] = useState(false)
   const [verificationStartIndex, setVerificationStartIndex] = useState(0)
   const [filterStatus, setFilterStatus] = useState<
     "all" | "unpaid" | "pending" | "verified"
   >("all")
+  const [searchTerm, setSearchTerm] = useState("")
   const [selectedMonth, setSelectedMonth] = useState<number | "">("")
   const [selectedYear, setSelectedYear] = useState<number | "">("")
   const [showInvoiceCheckModal, setShowInvoiceCheckModal] = useState(false)
@@ -328,7 +329,8 @@ export default function BillingView() {
   }
 
   const handleViewProof = (invoice: any) => {
-    setSelectedInvoice(invoice)
+    const proofIndex = proofInvoices.findIndex((item) => item.id === invoice.id)
+    setProofViewerStartIndex(proofIndex >= 0 ? proofIndex : 0)
     setModalOpen(true)
   }
 
@@ -357,6 +359,18 @@ export default function BillingView() {
     ].filter(Boolean)
 
     return parts.length > 0 ? parts.join(" • ") : "Tidak ada perubahan"
+  }
+
+  const formatProofTime = (value?: string) => {
+    if (!value) return null
+
+    return new Date(value).toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   const handleOpenInvoiceCheck = async () => {
@@ -467,6 +481,25 @@ export default function BillingView() {
   const verifiableInvoices = invoices.filter(
     (inv) => inv.photoUrl && !inv.isVerified,
   )
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesStatus = (() => {
+      if (filterStatus === "all") return true
+      if (filterStatus === "verified") return inv.isVerified
+      if (filterStatus === "pending") return inv.photoUrl && !inv.isVerified
+      if (filterStatus === "unpaid") return !inv.photoUrl && !inv.isVerified
+      return true
+    })()
+
+    const matchesSearch =
+      normalizedSearch === "" ||
+      inv.student?.toLowerCase().includes(normalizedSearch) ||
+      inv.id?.toLowerCase().includes(normalizedSearch) ||
+      inv.category?.toLowerCase().includes(normalizedSearch)
+
+    return matchesStatus && matchesSearch
+  })
+  const proofInvoices = filteredInvoices.filter((inv) => inv.photoUrl)
 
   const filteredInvoiceCheckItems = invoiceCheckItems.filter((item) => {
     const missingCurrent = item.current.status === "MISSING"
@@ -675,6 +708,8 @@ export default function BillingView() {
               <input
                 type="text"
                 placeholder="Cari siswa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-64 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
               />
             </div>
@@ -812,10 +847,10 @@ export default function BillingView() {
             <div className="flex h-48 items-center justify-center text-slate-500 dark:text-slate-400">
               <Loader2 className="mr-2 animate-spin" /> Memuat data tagihan...
             </div>
-          ) : invoices.length === 0 ? (
+          ) : filteredInvoices.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center text-slate-500 dark:text-slate-400">
               <p>
-                Tidak ada tagihan yang sesuai dengan pencarian tab {activeTab}.
+                Tidak ada tagihan yang sesuai dengan pencarian atau filter saat ini.
               </p>
             </div>
           ) : (
@@ -833,17 +868,7 @@ export default function BillingView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {invoices
-                  .filter((inv) => {
-                    if (filterStatus === "all") return true
-                    if (filterStatus === "verified") return inv.isVerified
-                    if (filterStatus === "pending")
-                      return inv.photoUrl && !inv.isVerified
-                    if (filterStatus === "unpaid")
-                      return !inv.photoUrl && !inv.isVerified
-                    return true
-                  })
-                  .map((inv) => (
+                {filteredInvoices.map((inv) => (
                     <tr
                       key={inv.id}
                       className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
@@ -896,11 +921,22 @@ export default function BillingView() {
                         </div>
                       </td>
                       <td className="px-6 py-3">
-                        {inv.photoUrl ? (
-                          <CheckCircle className="text-emerald-500" size={20} />
-                        ) : (
-                          <XCircle className="text-slate-300" size={20} />
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {inv.photoUrl ? (
+                            <>
+                              <CheckCircle className="text-emerald-500" size={20} />
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                {formatProofTime(inv.buktiTimeStamp || inv.verifiedAt) ||
+                                  "Belum diverifikasi"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="text-slate-300" size={20} />
+                              <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
+                            </>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-3">
                         <InvoiceStatusBadge invoice={inv} />
@@ -1683,9 +1719,10 @@ export default function BillingView() {
           document.body,
         )}
 
-      {selectedInvoice && (
+      {proofInvoices.length > 0 && (
         <ProofViewerModal
-          invoice={selectedInvoice}
+          invoices={proofInvoices}
+          startIndex={proofViewerStartIndex}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onVerify={handleVerify}

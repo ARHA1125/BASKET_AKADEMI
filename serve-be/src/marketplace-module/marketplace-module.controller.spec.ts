@@ -11,7 +11,9 @@ describe('MarketplaceModuleController', () => {
       providers: [MarketplaceModuleService],
     }).compile();
 
-    controller = module.get<MarketplaceModuleController>(MarketplaceModuleController);
+    controller = module.get<MarketplaceModuleController>(
+      MarketplaceModuleController,
+    );
   });
 
   it('should be defined', () => {

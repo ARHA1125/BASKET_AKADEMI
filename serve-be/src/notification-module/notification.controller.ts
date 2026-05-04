@@ -42,7 +42,8 @@ export class NotificationController {
       };
     }
 
-    const { current, manualLate } = await this.paymentService.getInvoiceCheckTargets();
+    const { current, manualLate } =
+      await this.paymentService.getInvoiceCheckTargets();
     const summary = {
       generatedCurrent: 0,
       queuedCurrent: 0,
@@ -68,18 +69,18 @@ export class NotificationController {
 
       if (currentAction === 'SEND' || currentAction === 'GENERATE_AND_SEND') {
         if (currentInvoices.length === 0) {
-          currentInvoices = await this.paymentService.findInvoicesForParentsAndMonth(
-            parentIds,
-            current.month,
-            current.year,
-          );
+          currentInvoices =
+            await this.paymentService.findInvoicesForParentsAndMonth(
+              parentIds,
+              current.month,
+              current.year,
+            );
         }
 
         const sendResult =
           await this.notificationService.sendInvoiceReminders(currentInvoices);
         summary.queuedCurrent = sendResult.queued;
-        summary.estimatedCurrentMinutes =
-          sendResult.estimatedDurationMinutes;
+        summary.estimatedCurrentMinutes = sendResult.estimatedDurationMinutes;
       }
     }
 
@@ -135,16 +136,10 @@ export class NotificationController {
   @Post('invoices/check/execute-one')
   async executeInvoiceCheckOne(
     @Body('parentId') parentId: string,
-    @Body('currentAction') currentAction:
-      | 'NONE'
-      | 'GENERATE'
-      | 'GENERATE_AND_SEND'
-      | 'SEND',
-    @Body('manualLateAction') manualLateAction:
-      | 'NONE'
-      | 'GENERATE'
-      | 'GENERATE_AND_SEND'
-      | 'SEND',
+    @Body('currentAction')
+    currentAction: 'NONE' | 'GENERATE' | 'GENERATE_AND_SEND' | 'SEND',
+    @Body('manualLateAction')
+    manualLateAction: 'NONE' | 'GENERATE' | 'GENERATE_AND_SEND' | 'SEND',
   ) {
     return this.executeInvoiceCheckActions(
       parentId ? [parentId] : [],
@@ -156,16 +151,10 @@ export class NotificationController {
   @Post('invoices/check/execute-bulk')
   async executeInvoiceCheckBulk(
     @Body('parentIds') parentIds: string[],
-    @Body('currentAction') currentAction:
-      | 'NONE'
-      | 'GENERATE'
-      | 'GENERATE_AND_SEND'
-      | 'SEND',
-    @Body('manualLateAction') manualLateAction:
-      | 'NONE'
-      | 'GENERATE'
-      | 'GENERATE_AND_SEND'
-      | 'SEND',
+    @Body('currentAction')
+    currentAction: 'NONE' | 'GENERATE' | 'GENERATE_AND_SEND' | 'SEND',
+    @Body('manualLateAction')
+    manualLateAction: 'NONE' | 'GENERATE' | 'GENERATE_AND_SEND' | 'SEND',
   ) {
     return this.executeInvoiceCheckActions(
       parentIds || [],

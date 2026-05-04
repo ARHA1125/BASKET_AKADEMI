@@ -1,6 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Event } from './event.entity';
 import { Student } from '../../academic-module/entities/student.entity';
+
+export enum SquadStatus {
+  DRAFT = 'DRAFT',
+  FINALIZED = 'FINALIZED',
+}
 
 @Entity()
 export class Squad {
@@ -23,4 +37,19 @@ export class Squad {
 
   @Column({ default: false })
   isFinalized: boolean;
+
+  @Column({ type: 'enum', enum: SquadStatus, default: SquadStatus.DRAFT })
+  status: SquadStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  finalizedAt: Date;
+
+  @Column({ nullable: true })
+  finalizedBy: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

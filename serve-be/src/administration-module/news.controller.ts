@@ -1,5 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
+  UploadedFiles,
+  UploadedFile,
+} from '@nestjs/common';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { NewsService } from './news.service';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
@@ -17,7 +31,7 @@ const newsStorage = diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, `news-${uniqueSuffix}${extname(file.originalname)}`);
   },
 });
@@ -27,9 +41,11 @@ export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
   @Post()
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'coverImage', maxCount: 1 },
-  ], { storage: newsStorage }))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'coverImage', maxCount: 1 }], {
+      storage: newsStorage,
+    }),
+  )
   create(
     @UploadedFiles() files: { coverImage?: Express.Multer.File[] },
     @Body() createNewsDto: CreateNewsDto,
@@ -63,9 +79,11 @@ export class NewsController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'coverImage', maxCount: 1 },
-  ], { storage: newsStorage }))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'coverImage', maxCount: 1 }], {
+      storage: newsStorage,
+    }),
+  )
   update(
     @Param('id') id: string,
     @UploadedFiles() files: { coverImage?: Express.Multer.File[] },

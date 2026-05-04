@@ -59,6 +59,14 @@ const navigation2 = [
         name: "Student Evaluations",
         href: "/coach/evaluations",
       },
+      {
+        name: "Weekly Leaderboard",
+        href: "/coach/leaderboard",
+      },
+      {
+        name: "Gamification Actions",
+        href: "/coach/gamification",
+      },
     ],
   },
   {

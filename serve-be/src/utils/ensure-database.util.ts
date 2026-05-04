@@ -19,14 +19,14 @@ export async function ensureDatabaseExists() {
     password,
     host,
     port,
-    database: 'postgres', 
+    database: 'postgres',
   });
 
   try {
     await client.connect();
     const res = await client.query(
       `SELECT datname FROM pg_catalog.pg_database WHERE datname = $1`,
-      [dbName]
+      [dbName],
     );
 
     if (res.rowCount === 0) {

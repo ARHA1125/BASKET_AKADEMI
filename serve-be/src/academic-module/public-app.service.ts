@@ -20,27 +20,31 @@ export class PublicAppService {
 
   async checkDuplicate(email?: string, phone?: string) {
     const result = { emailExists: false, phoneExists: false };
-    
+
     if (email) {
       const existingEmail = await this.userRepo.findOne({ where: { email } });
       if (existingEmail) {
         result.emailExists = true;
       }
     }
-    
+
     if (phone) {
-      const existingPhone = await this.userRepo.findOne({ where: { phoneNumber: phone } });
+      const existingPhone = await this.userRepo.findOne({
+        where: { phoneNumber: phone },
+      });
       if (existingPhone) {
         result.phoneExists = true;
       }
     }
-    
+
     return result;
   }
 
   async processApplication(dto: PublicApplicationDto) {
     // 1. Handle Parent
-    let parentUser = await this.userRepo.findOne({ where: { email: dto.parentEmail } });
+    let parentUser = await this.userRepo.findOne({
+      where: { email: dto.parentEmail },
+    });
     let parentProfile: Parent;
 
     if (!parentUser) {
@@ -65,11 +69,13 @@ export class PublicAppService {
       await this.parentRepo.save(parentProfile);
     } else {
       // Existing parent user, finding profile
-      const existingProfile = await this.parentRepo.findOne({ where: { user: { id: parentUser.id } } });
+      const existingProfile = await this.parentRepo.findOne({
+        where: { user: { id: parentUser.id } },
+      });
       if (!existingProfile) {
-         // Should not happen for valid parents, but safely create if missing
-         parentProfile = this.parentRepo.create({ user: parentUser });
-         await this.parentRepo.save(parentProfile);
+        // Should not happen for valid parents, but safely create if missing
+        parentProfile = this.parentRepo.create({ user: parentUser });
+        await this.parentRepo.save(parentProfile);
       } else {
         parentProfile = existingProfile;
       }
@@ -78,17 +84,20 @@ export class PublicAppService {
     // 2. Handle Student
     // Check if student email already exists (if provided)
     if (dto.studentEmail) {
-        const existingStudent = await this.userRepo.findOne({ where: { email: dto.studentEmail } });
-        if (existingStudent) {
-            throw new ConflictException('Student email already registered');
-        }
+      const existingStudent = await this.userRepo.findOne({
+        where: { email: dto.studentEmail },
+      });
+      if (existingStudent) {
+        throw new ConflictException('Student email already registered');
+      }
     }
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash('Password123', salt);
 
     // Generate a placeholder email if none provided to satisfy unique constraint
-    const studentEmail = dto.studentEmail || `pending.${Date.now()}@example.com`;
+    const studentEmail =
+      dto.studentEmail || `pending.${Date.now()}@example.com`;
 
     const studentUser = this.userRepo.create({
       email: studentEmail,
@@ -107,7 +116,7 @@ export class PublicAppService {
       position: dto.studentPosition,
       parent: parentProfile,
     });
-    
+
     return this.studentRepo.save(studentProfile);
   }
 }

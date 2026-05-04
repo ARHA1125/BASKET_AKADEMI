@@ -15,7 +15,10 @@ export class PublicAppController {
 
   @Public()
   @Get('check-duplicate')
-  async checkDuplicate(@Query('email') email?: string, @Query('phone') phone?: string) {
+  async checkDuplicate(
+    @Query('email') email?: string,
+    @Query('phone') phone?: string,
+  ) {
     return this.publicAppService.checkDuplicate(email, phone);
   }
 }

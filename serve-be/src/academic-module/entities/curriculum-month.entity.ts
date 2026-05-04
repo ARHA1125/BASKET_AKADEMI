@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { CurriculumLevel } from './curriculum-level.entity';
 import { CurriculumWeekMaterial } from './curriculum-week-material.entity';
 
@@ -13,7 +21,9 @@ export class CurriculumMonth {
   @Column({ type: 'varchar', length: 100, nullable: true })
   title: string; // e.g., "Bulan Pertama", "Bulan Kedua"
 
-  @ManyToOne(() => CurriculumLevel, (level) => level.months, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CurriculumLevel, (level) => level.months, {
+    onDelete: 'CASCADE',
+  })
   level: CurriculumLevel;
 
   @OneToMany(() => CurriculumWeekMaterial, (weekMaterial) => weekMaterial.month)

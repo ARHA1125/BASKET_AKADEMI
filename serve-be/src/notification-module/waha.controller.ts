@@ -30,7 +30,10 @@ export class WahaController {
   }
 
   @Get('qr')
-  async getQR(@Res() res: Response, @Query('session') session: string = 'default') {
+  async getQR(
+    @Res() res: Response,
+    @Query('session') session: string = 'default',
+  ) {
     try {
       const imageBuffer = await this.wahaService.getSessionQR(session);
       res.set('Content-Type', 'image/png');
@@ -51,10 +54,15 @@ export class WahaController {
   }
 
   @Post('send-text')
-  async sendText(@Body() body: { chatId: string; message: string; session?: string }) {
-    return this.wahaService.sendMessage(body.chatId, body.message, body.session);
+  async sendText(
+    @Body() body: { chatId: string; message: string; session?: string },
+  ) {
+    return this.wahaService.sendMessage(
+      body.chatId,
+      body.message,
+      body.session,
+    );
   }
-
 
   // In-memory Cooldown Tracker (ChatId -> LastReplyTimestamp)
   private lastAutoReply = new Map<string, number>();
@@ -64,12 +72,13 @@ export class WahaController {
   @Post('webhook')
   async handleWebhook(@Body() payload: any) {
     const logFile = path.join(process.cwd(), 'debug-waha.log');
-    const log = (msg: string) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+    const log = (msg: string) =>
+      fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
 
     if (!payload) return { status: 'ok' };
     const event = payload.event;
     const data = payload.payload;
-    
+
     // console.log(`[Webhook] Event: ${event}, ID: ${data?.id}`);
     log(`Event: ${event}, ID: ${data?.id}`);
 
@@ -90,45 +99,52 @@ export class WahaController {
     }
 
     if (event === 'message' || event === 'message.any') {
-        if (data.fromMe) {
-            log(`Ignored - Message is fromMe.`);
-            return; 
+      if (data.fromMe) {
+        log(`Ignored - Message is fromMe.`);
+        return;
+      }
+      if (data.from === 'status@broadcast') {
+        return;
+      }
+
+      const text = data.body;
+      const chatId = data.from;
+      log(`Processing Message from ${chatId}: "${text}"`);
+
+      if (text && chatId) {
+        // Check Cooldown
+        const lastReply = this.lastAutoReply.get(chatId) || 0;
+        const now = Date.now();
+
+        if (now - lastReply < this.COOLDOWN_MS) {
+          const remaining = Math.ceil(
+            (this.COOLDOWN_MS - (now - lastReply)) / 1000,
+          );
+          log(
+            `IGNORED: Cooldown active for ${chatId}. Retrying in ${remaining}s.`,
+          );
+          return { status: 'ignored_cooling_down' };
         }
-        if (data.from === 'status@broadcast') {
-            return; 
+
+        const rule = await this.rulesService.findMatchingRule(text);
+        if (rule) {
+          log(
+            `MATCH FOUND: Auto-replying with rule "${rule.name}" (Content: "${rule.response}") on session "${payload.session || 'default'}"`,
+          );
+
+          // Update Timestamp
+          this.lastAutoReply.set(chatId, Date.now());
+
+          setTimeout(() => {
+            this.wahaService
+              .sendMessage(chatId, rule.response, payload.session || 'default')
+              .then(() => log(`Sent reply to ${chatId}`))
+              .catch((err) => log(`Send Error: ${err.message}`));
+          }, 1000);
+        } else {
+          log(`No matching rule found for text: "${text}"`);
         }
-
-        const text = data.body;
-        const chatId = data.from;
-        log(`Processing Message from ${chatId}: "${text}"`);
-
-        if (text && chatId) {
-            // Check Cooldown
-            const lastReply = this.lastAutoReply.get(chatId) || 0;
-            const now = Date.now();
-            
-            if (now - lastReply < this.COOLDOWN_MS) {
-                const remaining = Math.ceil((this.COOLDOWN_MS - (now - lastReply)) / 1000);
-                log(`IGNORED: Cooldown active for ${chatId}. Retrying in ${remaining}s.`);
-                return { status: 'ignored_cooling_down' };
-            }
-
-            const rule = await this.rulesService.findMatchingRule(text);
-            if (rule) {
-                log(`MATCH FOUND: Auto-replying with rule "${rule.name}" (Content: "${rule.response}") on session "${payload.session || 'default'}"`);
-                
-                // Update Timestamp
-                this.lastAutoReply.set(chatId, Date.now());
-
-                setTimeout(() => {
-                    this.wahaService.sendMessage(chatId, rule.response, payload.session || 'default')
-                        .then(() => log(`Sent reply to ${chatId}`))
-                        .catch(err => log(`Send Error: ${err.message}`));
-                }, 1000);
-            } else {
-                log(`No matching rule found for text: "${text}"`);
-            }
-        }
+      }
     }
     return { status: 'ok' };
   }

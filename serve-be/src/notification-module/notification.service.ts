@@ -43,6 +43,11 @@ const DELIVERY_POLICIES: Record<NotificationDeliveryKind, QueueSchedulePolicy> =
       batchSize: 20,
       batchPauseMs: 10 * 60_000,
     },
+    [NotificationDeliveryKind.ACCEPTANCE]: {
+      intervalMs: 75_000,
+      batchSize: 15,
+      batchPauseMs: 12 * 60_000,
+    },
     [NotificationDeliveryKind.BROADCAST]: {
       intervalMs: 75_000,
       batchSize: 15,
@@ -83,6 +88,21 @@ Mohon maaf mengganggu waktunya. Kami informasikan bahwa terdapat tagihan kursus 
 Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 *Cek Nota Tagihan:*
 {{invoiceUrl}}`;
+  private readonly defaultAcceptanceTemplate = `*Pesan Penerimaan Siswa*
+Wirabhakti Basketball Club
+
+Halo {{fullName}},
+
+Selamat, pendaftaran siswa berikut telah disetujui:
+{{studentDetails}}
+
+Jumlah siswa disetujui: {{studentCount}}
+Tanggal: {{date}}
+
+Silakan login dan lanjutkan proses administrasi yang diperlukan.
+
+Salam,
+*Wirabhakti Basketball Club*`;
 
   constructor(
     @InjectQueue('notification')
@@ -221,6 +241,40 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     };
   }
 
+  private buildAcceptanceVariables(target: {
+    parentFullName: string;
+    approvedStudents: Array<{ name: string; className?: string | null }>;
+  }) {
+    const approvedStudents = target.approvedStudents.filter(
+      (student) => student.name.trim().length > 0,
+    );
+    const studentDetails = approvedStudents.length
+      ? approvedStudents
+          .map(
+            (student, index) =>
+              `${index + 1}. *Nama Siswa:* ${student.name}\n   *Kelas:* ${student.className || '-'}`,
+          )
+          .join('\n\n')
+      : '1. *Nama Siswa:* Siswa\n   *Kelas:* -';
+
+    return {
+      fullName: target.parentFullName || 'Bapak/Ibu',
+      studentNames: approvedStudents.length
+        ? approvedStudents
+            .map((student, index) => `${index + 1}. ${student.name}`)
+            .join('\n')
+        : '-',
+      studentDetails,
+      studentCount: String(approvedStudents.length || 0),
+      date: new Date().toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    };
+  }
+
   private applyTemplate(
     templateContent: string,
     variables: Record<string, string>,
@@ -250,9 +304,11 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     const jobName =
       kind === NotificationDeliveryKind.REMINDER
         ? 'send-reminder'
-        : kind === NotificationDeliveryKind.BROADCAST
-          ? 'send-broadcast'
-          : 'send-invoice';
+        : kind === NotificationDeliveryKind.ACCEPTANCE
+          ? 'send-acceptance'
+          : kind === NotificationDeliveryKind.BROADCAST
+            ? 'send-broadcast'
+            : 'send-invoice';
 
     await this.enqueueDeliveryJob(jobName, delivery, message, 0);
     return delivery;
@@ -260,12 +316,18 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
 
   private async findParentByChatId(chatId: string) {
     const parents = await this.parentRepository.find({
-      relations: ['user', 'students', 'students.user', 'students.trainingClass'],
+      relations: [
+        'user',
+        'students',
+        'students.user',
+        'students.trainingClass',
+      ],
     });
 
     return (
       parents.find((parent) => {
-        const phone = parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
+        const phone =
+          parent.user?.phoneNumber?.trim() || parent.phoneNumber?.trim();
         return phone ? this.formatChatId(phone) === chatId : false;
       }) ?? null
     );
@@ -306,7 +368,8 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
       order: { createdAt: 'DESC' },
     });
 
-    const templateContent = activeTemplate?.content || this.defaultInvoiceTemplate;
+    const templateContent =
+      activeTemplate?.content || this.defaultInvoiceTemplate;
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -391,7 +454,8 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
       order: { createdAt: 'DESC' },
     });
 
-    const templateContent = activeTemplate?.content || this.defaultReminderTemplate;
+    const templateContent =
+      activeTemplate?.content || this.defaultReminderTemplate;
     let queuedCount = 0;
 
     for (const invoice of invoices) {
@@ -438,6 +502,58 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
       queued: queuedCount,
       estimatedDurationMinutes: this.estimateDurationMinutes(
         NotificationDeliveryKind.REMINDER,
+        queuedCount,
+      ),
+    };
+  }
+
+  async sendAcceptanceMessages(
+    approvals: Array<{
+      parentPhone: string;
+      parentFullName: string;
+      approvedStudents: Array<{ name: string; className?: string | null }>;
+    }>,
+  ) {
+    const activeTemplate = await this.templateRepository.findOne({
+      where: { type: TemplateType.ACCEPTANCE, isActive: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    const templateContent =
+      activeTemplate?.content || this.defaultAcceptanceTemplate;
+    let queuedCount = 0;
+
+    for (const approval of approvals) {
+      if (!approval.parentPhone?.trim()) {
+        continue;
+      }
+
+      const chatId = this.formatChatId(approval.parentPhone);
+      const variables = this.buildAcceptanceVariables(approval);
+      const message = this.applyTemplate(templateContent, variables);
+      const delayMs = this.calculateDelayMs(
+        NotificationDeliveryKind.ACCEPTANCE,
+        queuedCount,
+      );
+      const delivery = await this.createDelivery(
+        NotificationDeliveryKind.ACCEPTANCE,
+        chatId,
+        delayMs,
+      );
+
+      await this.enqueueDeliveryJob(
+        'send-acceptance',
+        delivery,
+        message,
+        delayMs,
+      );
+      queuedCount++;
+    }
+
+    return {
+      queued: queuedCount,
+      estimatedDurationMinutes: this.estimateDurationMinutes(
+        NotificationDeliveryKind.ACCEPTANCE,
         queuedCount,
       ),
     };
@@ -630,18 +746,22 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
     const activeByKind = kinds
       .map((kind) => {
         const kindItems = deliveries.filter((item) => item.kind === kind);
-        const activeItems = kindItems.filter((item) => activeStatuses.has(item.status));
+        const activeItems = kindItems.filter((item) =>
+          activeStatuses.has(item.status),
+        );
         const queuedItems = kindItems.filter(
           (item) => item.status === NotificationDeliveryStatus.QUEUED,
         );
-        const latestScheduledFor = queuedItems
-          .map((item) => item.scheduledFor)
-          .filter((value): value is Date => Boolean(value))
-          .sort((left, right) => right.getTime() - left.getTime())[0] || null;
-        const nextScheduledFor = queuedItems
-          .map((item) => item.scheduledFor)
-          .filter((value): value is Date => Boolean(value))
-          .sort((left, right) => left.getTime() - right.getTime())[0] || null;
+        const latestScheduledFor =
+          queuedItems
+            .map((item) => item.scheduledFor)
+            .filter((value): value is Date => Boolean(value))
+            .sort((left, right) => right.getTime() - left.getTime())[0] || null;
+        const nextScheduledFor =
+          queuedItems
+            .map((item) => item.scheduledFor)
+            .filter((value): value is Date => Boolean(value))
+            .sort((left, right) => left.getTime() - right.getTime())[0] || null;
 
         const estimatedMinutesRemaining = latestScheduledFor
           ? Math.max(
@@ -805,6 +925,41 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
       return { retried: true, deliveryId: retryDelivery.id };
     }
 
+    if (delivery.kind === NotificationDeliveryKind.ACCEPTANCE) {
+      const parent = await this.findParentByChatId(delivery.recipientChatId);
+      if (!parent) {
+        throw new Error('Parent recipient could not be resolved for retry.');
+      }
+
+      const activeTemplate = await this.templateRepository.findOne({
+        where: { type: TemplateType.ACCEPTANCE, isActive: true },
+        order: { createdAt: 'DESC' },
+      });
+
+      const approvedStudents =
+        parent.students?.map((student) => ({
+          name: student.user?.fullName ?? 'Siswa',
+          className: student.trainingClass?.name ?? '-',
+        })) || [];
+
+      const templateContent =
+        activeTemplate?.content || this.defaultAcceptanceTemplate;
+      const message = this.applyTemplate(
+        templateContent,
+        this.buildAcceptanceVariables({
+          parentFullName: parent.user?.fullName || 'Bapak/Ibu',
+          approvedStudents,
+        }),
+      );
+      const retryDelivery = await this.queueSingleDelivery(
+        NotificationDeliveryKind.ACCEPTANCE,
+        delivery.recipientChatId,
+        message,
+      );
+
+      return { retried: true, deliveryId: retryDelivery.id };
+    }
+
     if (delivery.kind === NotificationDeliveryKind.BROADCAST) {
       if (!delivery.broadcastLogId) {
         throw new Error('Broadcast delivery has no batch reference.');
@@ -841,7 +996,10 @@ Mohon segera melakukan pembayaran. Abaikan pesan ini jika sudah membayar.
           year: 'numeric',
         }),
       };
-      const message = this.applyTemplate(broadcastLog.templateContent, variables);
+      const message = this.applyTemplate(
+        broadcastLog.templateContent,
+        variables,
+      );
       const retryDelivery = await this.queueSingleDelivery(
         NotificationDeliveryKind.BROADCAST,
         delivery.recipientChatId,

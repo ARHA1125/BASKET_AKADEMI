@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { NotificationRulesService } from './notification-rules.service';
 import { NotificationRule } from './entities/notification-rule.entity';
 import { Roles } from '../common/decorators/role.decorator';
@@ -28,7 +37,10 @@ export class NotificationRulesController {
 
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRuleDto: Partial<NotificationRule>) {
+  update(
+    @Param('id') id: string,
+    @Body() updateRuleDto: Partial<NotificationRule>,
+  ) {
     return this.rulesService.update(id, updateRuleDto);
   }
 

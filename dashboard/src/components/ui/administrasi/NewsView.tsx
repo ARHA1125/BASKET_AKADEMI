@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, Title, Text, Badge } from '@/components/ui/notifications/Common';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Plus, Search, Trash2, Loader2, Pencil, Eye, FileText, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import Cookies from 'js-cookie';
@@ -17,6 +18,7 @@ export default function NewsView() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<NewsArticle | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
@@ -54,16 +56,17 @@ export default function NewsView() {
     }
   }, { scope: containerRef, dependencies: [news, loading] });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this article?')) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
       const token = Cookies.get('auth_token');
-      const response = await fetch(`${apiUrl}/administration/news/${id}`, {
+      const response = await fetch(`${apiUrl}/administration/news/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
         toast.success('Article deleted');
+        setDeleteTarget(null);
         fetchNews();
       } else {
         toast.error('Failed to delete article');
@@ -233,7 +236,7 @@ export default function NewsView() {
                         <Pencil size={15} />
                       </button>
                       <button
-                        onClick={() => handleDelete(article.id)}
+                        onClick={() => setDeleteTarget(article)}
                         className="p-1.5 text-slate-400 hover:text-red-600 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-500/10"
                         title="Delete"
                       >
@@ -247,6 +250,17 @@ export default function NewsView() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Article"
+        description={`Are you sure you want to delete ${deleteTarget?.title || 'this article'}? This action cannot be undone.`}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={handleDelete}
+        loading={loading}
+      />
     </div>
   );
 }

@@ -1,5 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
+  UploadedFiles,
+  UploadedFile,
+} from '@nestjs/common';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { GalleryService } from './gallery.service';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
@@ -17,7 +31,7 @@ const galleryStorage = diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, `gallery-${uniqueSuffix}${extname(file.originalname)}`);
   },
 });
@@ -27,9 +41,11 @@ export class GalleryController {
   constructor(private readonly galleryService: GalleryService) {}
 
   @Post()
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'coverImage', maxCount: 1 },
-  ], { storage: galleryStorage }))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'coverImage', maxCount: 1 }], {
+      storage: galleryStorage,
+    }),
+  )
   create(
     @UploadedFiles() files: { coverImage?: Express.Multer.File[] },
     @Body() dto: CreateGalleryDto,
@@ -63,9 +79,11 @@ export class GalleryController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'coverImage', maxCount: 1 },
-  ], { storage: galleryStorage }))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'coverImage', maxCount: 1 }], {
+      storage: galleryStorage,
+    }),
+  )
   update(
     @Param('id') id: string,
     @UploadedFiles() files: { coverImage?: Express.Multer.File[] },

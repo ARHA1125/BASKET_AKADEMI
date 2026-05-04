@@ -1,15 +1,15 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
   Delete,
-  Query
+  Query,
+  Request,
 } from '@nestjs/common';
 import { AcademicModuleService } from './academic-module.service';
-
 
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
@@ -28,15 +28,19 @@ import { UpdateCoachDto } from './dto/update-coach.dto';
 import { CreateUnifiedStudentDto } from './dto/create-unified-student.dto';
 import { CreateUnifiedParentDto } from './dto/create-unified-parent.dto';
 import { CreateUnifiedCoachDto } from './dto/create-unified-coach.dto';
+import { CreateStudentActivityDto } from './dto/create-student-activity.dto';
+import { UpdateStudentActivityDto } from './dto/update-student-activity.dto';
+import { AwardPointsDto } from './dto/award-points.dto';
 import { Roles } from '../common/decorators/role.decorator';
 import { UserRole } from '../auths-module/entities/user.entity';
+import { CurriculumStatDomain } from './entities/curriculum-week-material.entity';
 
 @Roles(UserRole.ADMIN, UserRole.COACH)
 @Controller('academic')
 export class AcademicModuleController {
   constructor(private readonly academicService: AcademicModuleService) {}
 
-
+  @Post('attendance')
   createAttendance(@Body() dto: CreateAttendanceDto) {
     return this.academicService.createAttendance(dto);
   }
@@ -44,6 +48,11 @@ export class AcademicModuleController {
   @Get('attendance')
   findAllAttendance() {
     return this.academicService.findAllAttendance();
+  }
+
+  @Get('attendance/reports/summary')
+  getAttendanceSummary(@Query('ageClass') ageClass?: string) {
+    return this.academicService.getAttendanceSummary(ageClass);
   }
 
   @Get('attendance/:id')
@@ -73,9 +82,9 @@ export class AcademicModuleController {
 
   @Get('coaches')
   findAllCoach(
-    @Query('page') page?: number, 
-    @Query('limit') limit?: number, 
-    @Query('search') search?: string
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
   ) {
     return this.academicService.findAllCoach(page, limit, search);
   }
@@ -94,7 +103,6 @@ export class AcademicModuleController {
   removeCoach(@Param('id') id: string) {
     return this.academicService.removeCoach(id);
   }
-
 
   @Post('curriculum')
   createCurriculum(@Body() dto: CreateCurriculumDto) {
@@ -124,7 +132,9 @@ export class AcademicModuleController {
   // --- Curriculum Hierarchy API ---
 
   @Post('curriculum-levels')
-  createCurriculumLevel(@Body() data: { name: string; description?: string; colorCode?: string }) {
+  createCurriculumLevel(
+    @Body() data: { name: string; description?: string; colorCode?: string },
+  ) {
     return this.academicService.createCurriculumLevel(data);
   }
 
@@ -139,7 +149,11 @@ export class AcademicModuleController {
   }
 
   @Patch('curriculum-levels/:id')
-  updateCurriculumLevel(@Param('id') id: string, @Body() data: Partial<{ name: string; description: string; colorCode: string }>) {
+  updateCurriculumLevel(
+    @Param('id') id: string,
+    @Body()
+    data: Partial<{ name: string; description: string; colorCode: string }>,
+  ) {
     return this.academicService.updateCurriculumLevel(id, data);
   }
 
@@ -149,12 +163,17 @@ export class AcademicModuleController {
   }
 
   @Post('curriculum-months')
-  createCurriculumMonth(@Body() data: { levelId: string; monthNumber: number; title?: string }) {
+  createCurriculumMonth(
+    @Body() data: { levelId: string; monthNumber: number; title?: string },
+  ) {
     return this.academicService.createCurriculumMonth(data);
   }
 
   @Patch('curriculum-months/:id')
-  updateCurriculumMonth(@Param('id') id: string, @Body() data: Partial<{ monthNumber: number; title: string }>) {
+  updateCurriculumMonth(
+    @Param('id') id: string,
+    @Body() data: Partial<{ monthNumber: number; title: string }>,
+  ) {
     return this.academicService.updateCurriculumMonth(id, data);
   }
 
@@ -164,12 +183,36 @@ export class AcademicModuleController {
   }
 
   @Post('curriculum-week-materials')
-  createCurriculumWeekMaterial(@Body() data: { monthId: string; weekNumber: number; category: string; materialDescription: string }) {
+  createCurriculumWeekMaterial(
+    @Body()
+    data: {
+      monthId: string;
+      weekNumber: number;
+      category: string;
+      materialDescription: string;
+      competencyKey?: string;
+      statDomain?: CurriculumStatDomain;
+      statWeight?: number;
+      curriculumProfiles?: string[];
+    },
+  ) {
     return this.academicService.createCurriculumWeekMaterial(data);
   }
 
   @Patch('curriculum-week-materials/:id')
-  updateCurriculumWeekMaterial(@Param('id') id: string, @Body() data: Partial<{ weekNumber: number; category: string; materialDescription: string }>) {
+  updateCurriculumWeekMaterial(
+    @Param('id') id: string,
+    @Body()
+    data: Partial<{
+      weekNumber: number;
+      category: string;
+      materialDescription: string;
+      competencyKey?: string;
+      statDomain?: CurriculumStatDomain;
+      statWeight?: number;
+      curriculumProfiles?: string[];
+    }>,
+  ) {
     return this.academicService.updateCurriculumWeekMaterial(id, data);
   }
 
@@ -190,9 +233,9 @@ export class AcademicModuleController {
 
   @Get('parents')
   findAllParent(
-    @Query('page') page?: number, 
-    @Query('limit') limit?: number, 
-    @Query('search') search?: string
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
   ) {
     return this.academicService.findAllParent(page, limit, search);
   }
@@ -212,7 +255,6 @@ export class AcademicModuleController {
     return this.academicService.removeParent(id);
   }
 
-
   @Post('assessments')
   createPlayerAssessment(@Body() dto: CreatePlayerAssessmentDto) {
     return this.academicService.createPlayerAssessment(dto);
@@ -229,13 +271,70 @@ export class AcademicModuleController {
   }
 
   @Patch('assessments/:id')
-  updatePlayerAssessment(@Param('id') id: string, @Body() dto: UpdatePlayerAssessmentDto) {
+  updatePlayerAssessment(
+    @Param('id') id: string,
+    @Body() dto: UpdatePlayerAssessmentDto,
+  ) {
     return this.academicService.updatePlayerAssessment(id, dto);
   }
 
   @Delete('assessments/:id')
   removePlayerAssessment(@Param('id') id: string) {
     return this.academicService.removePlayerAssessment(id);
+  }
+
+  @Post('activities')
+  createStudentActivity(@Body() dto: CreateStudentActivityDto) {
+    return this.academicService.createStudentActivity(dto);
+  }
+
+  @Get('activities')
+  findAllStudentActivity(@Query('studentId') studentId?: string) {
+    return this.academicService.findAllStudentActivity(studentId);
+  }
+
+  @Patch('activities/:id')
+  updateStudentActivity(
+    @Param('id') id: string,
+    @Body() dto: UpdateStudentActivityDto,
+  ) {
+    return this.academicService.updateStudentActivity(id, dto);
+  }
+
+  @Delete('activities/:id')
+  removeStudentActivity(@Param('id') id: string) {
+    return this.academicService.removeStudentActivity(id);
+  }
+
+  @Get('badges')
+  findStudentBadges(@Query('studentId') studentId?: string) {
+    return this.academicService.findStudentBadges(studentId);
+  }
+
+  @Post('gamification/points')
+  awardGamificationPoints(@Body() dto: AwardPointsDto) {
+    return this.academicService.awardGamificationPoints(dto);
+  }
+
+  @Get('gamification/leaderboard/weekly')
+  getWeeklyLeaderboard(@Query('ageClass') ageClass?: string) {
+    return this.academicService.getWeeklyLeaderboard(ageClass);
+  }
+
+  @Roles(UserRole.STUDENT, UserRole.ADMIN, UserRole.COACH)
+  @Get('me/performance')
+  getMyPerformance(@Request() req) {
+    return this.academicService.getStudentPerformanceSummaryByUserId(
+      req.user.id,
+    );
+  }
+
+  @Roles(UserRole.PARENT, UserRole.ADMIN, UserRole.COACH)
+  @Get('me/children/performance')
+  getMyChildrenPerformance(@Request() req) {
+    return this.academicService.getParentChildrenPerformanceSummaryByUserId(
+      req.user.id,
+    );
   }
 
   @Post('unified/students')
@@ -250,12 +349,17 @@ export class AcademicModuleController {
 
   @Get('students')
   findAllStudent(
-    @Query('page') page?: number, 
-    @Query('limit') limit?: number, 
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
     @Query('search') search?: string,
     @Query('applicationOrder') applicationOrder?: 'ASC' | 'DESC',
   ) {
-    return this.academicService.findAllStudent(page, limit, search, applicationOrder);
+    return this.academicService.findAllStudent(
+      page,
+      limit,
+      search,
+      applicationOrder,
+    );
   }
 
   @Get('students/:id')
@@ -294,7 +398,10 @@ export class AcademicModuleController {
   }
 
   @Patch('classes/:id')
-  updateTrainingClass(@Param('id') id: string, @Body() dto: UpdateTrainingClassDto) {
+  updateTrainingClass(
+    @Param('id') id: string,
+    @Body() dto: UpdateTrainingClassDto,
+  ) {
     return this.academicService.updateTrainingClass(id, dto);
   }
 

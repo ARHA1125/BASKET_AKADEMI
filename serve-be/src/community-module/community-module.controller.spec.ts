@@ -11,7 +11,9 @@ describe('CommunityModuleController', () => {
       providers: [CommunityModuleService],
     }).compile();
 
-    controller = module.get<CommunityModuleController>(CommunityModuleController);
+    controller = module.get<CommunityModuleController>(
+      CommunityModuleController,
+    );
   });
 
   it('should be defined', () => {

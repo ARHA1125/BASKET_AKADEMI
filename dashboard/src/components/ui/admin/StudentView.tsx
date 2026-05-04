@@ -26,6 +26,20 @@ const Card = ({ children, className = '' }: { children: React.ReactNode, classNa
   </div>
 );
 
+const AGE_CLASS_OPTIONS = ['KU-10', 'KU-12', 'KU-14', 'KU-17'] as const;
+const CURRICULUM_PROFILE_OPTIONS = [
+    { value: 'KU-10', label: 'KU-10 / Fundamental Core' },
+    { value: 'KU-12', label: 'KU-12 / Fundamental Full' },
+    { value: 'KU-14', label: 'KU-14 / Intermediate' },
+    { value: 'KU-17', label: 'KU-17 / Advanced' },
+] as const;
+
+const toNumericPayload = (value: string) => {
+    if (value.trim() === '') return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 export default function StudentView() {
     const { 
         data: filteredData,
@@ -62,7 +76,9 @@ export default function StudentView() {
         height: '',
         weight: '',
         birthDate: '',
-        parentId: ''
+        parentId: '',
+        ageClass: 'KU-12',
+        curriculumProfile: 'KU-12',
     });
 
     useEffect(() => {
@@ -77,7 +93,9 @@ export default function StudentView() {
             height: '',
             weight: '',
             birthDate: '',
-            parentId: ''
+            parentId: '',
+            ageClass: 'KU-12',
+            curriculumProfile: 'KU-12',
         });
         setEditingId(null);
     };
@@ -90,7 +108,9 @@ export default function StudentView() {
             height: student.height.toString(),
             weight: student.weight.toString(),
             birthDate: student.birthDate || '',
-            parentId: student.parent?.id || '' 
+            parentId: student.parent?.id || '',
+            ageClass: student.ageClass || 'KU-12',
+            curriculumProfile: student.curriculumProfile || 'KU-12',
         });
         setEditingId(student.id);
         setIsModalOpen(true);
@@ -174,11 +194,13 @@ export default function StudentView() {
         let success = false;
         const payload = {
             ...formData,
-            height: Number(formData.height),
-            weight: Number(formData.weight),
+            height: toNumericPayload(formData.height),
+            weight: toNumericPayload(formData.weight),
             birthDate: formData.birthDate || undefined,
             position: formData.position || undefined,
-            parentId: formData.parentId || undefined
+            parentId: formData.parentId || undefined,
+            ageClass: formData.ageClass || undefined,
+            curriculumProfile: formData.curriculumProfile || undefined,
         };
 
         if (editingId) {
@@ -383,6 +405,9 @@ export default function StudentView() {
                                             <div className="text-slate-500 text-xs mt-0.5">
                                                 {item.height ? `${item.height}cm` : '-'} • {item.weight ? `${item.weight}kg` : '-'}
                                             </div>
+                                            <div className="text-slate-500 text-xs mt-0.5">
+                                                {item.ageClass || '-'} • {item.curriculumProfile || '-'}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {item.parent ? (
@@ -540,7 +565,23 @@ export default function StudentView() {
                                         </div>
                                          <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Weight (kg)</label>
-                                            <input type="number" name="weight" value={formData.weight} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white" />
+                                            <input type="number" name="weight" min="0" step="0.1" inputMode="decimal" value={formData.weight} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white" />
+                                        </div>
+                                        <div className="space-y-1.5 col-span-2">
+                                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Age Class</label>
+                                            <select name="ageClass" value={formData.ageClass} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                                                {AGE_CLASS_OPTIONS.map((option) => (
+                                                    <option key={option} value={option}>{option}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1.5 col-span-2">
+                                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Curriculum Profile</label>
+                                            <select name="curriculumProfile" value={formData.curriculumProfile} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                                                {CURRICULUM_PROFILE_OPTIONS.map((option) => (
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </div>
                                 </section>

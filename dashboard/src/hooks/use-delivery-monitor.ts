@@ -5,6 +5,7 @@ type DeliveryKind =
   | 'INVOICE'
   | 'MANUAL_LATE_INVOICE'
   | 'REMINDER'
+  | 'ACCEPTANCE'
   | 'BROADCAST';
 
 type DeliveryStatus = 'QUEUED' | 'SENT' | 'ACKED' | 'FAILED' | 'SKIPPED';

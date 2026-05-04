@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+} from 'typeorm';
 import { Student } from './student.entity';
 
 export enum AttendanceStatus {
@@ -16,7 +22,11 @@ export class Attendance {
   @ManyToOne(() => Student, (student) => student.attendances)
   student: Student;
 
-  @Column({ type: 'enum', enum: AttendanceStatus, default: AttendanceStatus.PRESENT })
+  @Column({
+    type: 'enum',
+    enum: AttendanceStatus,
+    default: AttendanceStatus.PRESENT,
+  })
   status: AttendanceStatus;
 
   @CreateDateColumn()
