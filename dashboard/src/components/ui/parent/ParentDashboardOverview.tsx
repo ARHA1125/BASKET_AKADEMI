@@ -3,8 +3,9 @@
 import { getToken } from '@/lib/auth';
 import { PlayerCard } from '@/components/ui/admin/PlayerCard';
 import { GamificationSummary, PlayerAssessment, Student, StudentBadge } from '@/types/academic';
-import { Calendar, CreditCard, Crown, MessageCircle, Shield, Sparkles, Trophy, Users, Zap } from 'lucide-react';
+import { Calendar, CreditCard, Crown, MessageCircle, Shield, Sparkles, Star, Trophy, Users, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useParentDataStore } from '@/hooks/use-parent-data';
 
 type ChildSummary = {
   student: Student;
@@ -41,33 +42,11 @@ type ParentSummaryResponse = {
 };
 
 export function ParentDashboardOverview() {
-  const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState<ParentSummaryResponse | null>(null);
-  const [activeChildIndex, setActiveChildIndex] = useState(0);
+  const { data: summary, loading, activeChildIndex, setActiveChildIndex, fetchData } = useParentDataStore();
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true);
-        const token = getToken();
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}/academic/me/children/performance`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) {
-          throw new Error('Failed to load parent dashboard');
-        }
-
-        setSummary(await res.json());
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    run();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   const activeChild = useMemo(() => {
     if (!summary?.children?.length) return null;
@@ -87,24 +66,6 @@ export function ParentDashboardOverview() {
             {loading ? 'Loading your children progress...' : 'Monitor FUT progress, attendance-driven momentum, and rankings.'}
           </p>
         </div>
-
-        {summary?.children?.length ? (
-          <div className="flex flex-wrap gap-2 rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-800 dark:bg-gray-900">
-            {summary.children.map((child, index) => (
-              <button
-                key={child.student.id}
-                onClick={() => setActiveChildIndex(index)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  activeChildIndex === index
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
-                }`}
-              >
-                {child.student.user.fullName}
-              </button>
-            ))}
-          </div>
-        ) : null}
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px,1fr]">
@@ -118,6 +79,7 @@ export function ParentDashboardOverview() {
                   name={activeChild?.student.user.fullName || 'Player'}
                   position={activeChild?.student.position || 'ATH'}
                   ovr={String(latest.overallRating)}
+                  rating={latest.overallRating}
                   subtitle={`${activeChild?.student.ageClass || '-'} · ${activeChild?.student.curriculumProfile || '-'}`}
                   stats={{
                     spd: latest.speedScore,
@@ -185,16 +147,30 @@ export function ParentDashboardOverview() {
                   <tr>
                     <th className="px-3 py-2">Competency</th>
                     <th className="px-3 py-2">Score</th>
-                    <th className="px-3 py-2">OVR</th>
+                    <th className="px-3 py-2">Stars</th>
                     <th className="px-3 py-2">Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {activeChild?.assessments?.slice(0, 10).map((assessment) => (
+                  {activeChild?.assessments?.slice(0, 10).map((assessment: PlayerAssessment) => (
                     <tr key={assessment.id} className="border-b border-slate-100 dark:border-slate-800">
                       <td className="px-3 py-2">{assessment.weekMaterial?.category || '-'}</td>
                       <td className="px-3 py-2">{assessment.score}/5</td>
-                      <td className="px-3 py-2 font-semibold text-slate-900 dark:text-white">{assessment.overallRating}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={14}
+                              className={
+                                star <= (assessment.score || 0)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-700"
+                              }
+                            />
+                          ))}
+                        </div>
+                      </td>
                       <td className="px-3 py-2">{new Date(assessment.assessedAt).toLocaleDateString('id-ID')}</td>
                     </tr>
                   ))}
@@ -211,7 +187,7 @@ export function ParentDashboardOverview() {
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="font-semibold text-slate-900 dark:text-white">Trophy Categories</h3>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {achievements.map((item) => {
+              {achievements.map((item: { badge: StudentBadge }) => {
                 const theme = BADGE_THEME[item.badge.categoryKey || 'team_spirit'] || BADGE_THEME.team_spirit;
                 const Icon = theme.icon;
 
