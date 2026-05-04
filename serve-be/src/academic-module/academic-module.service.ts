@@ -804,7 +804,7 @@ export class AcademicModuleService {
   }
 
   findAllAttendance() {
-    return this.attendanceRepo.find({ relations: ['student'] });
+    return this.attendanceRepo.find({ relations: ['student', 'student.user'] });
   }
 
   async getAttendanceSummary(ageClass?: string) {
@@ -858,7 +858,7 @@ export class AcademicModuleService {
   }
 
   findOneAttendance(id: string) {
-    return this.attendanceRepo.findOne({ where: { id }, relations: ['student'] });
+    return this.attendanceRepo.findOne({ where: { id }, relations: ['student', 'student.user'] });
   }
 
   updateAttendance(id: string, dto: UpdateAttendanceDto) {
@@ -1447,38 +1447,9 @@ export class AcademicModuleService {
     if (!assessments || assessments.length === 0) return null;
 
     const aggregated = { ...assessments[0] };
-    
-    aggregated.speedScore = Math.max(...assessments.map(a => a.speedScore || 0));
-    aggregated.shootingScore = Math.max(...assessments.map(a => a.shootingScore || 0));
-    aggregated.passingScore = Math.max(...assessments.map(a => a.passingScore || 0));
-    aggregated.dribblingScore = Math.max(...assessments.map(a => a.dribblingScore || 0));
-    aggregated.defenseScore = Math.max(...assessments.map(a => a.defenseScore || 0));
-    aggregated.physicalScore = Math.max(...assessments.map(a => a.physicalScore || 0));
-    aggregated.consistencyScore = Math.max(...assessments.map(a => a.consistencyScore || 0));
+    const averageScore = assessments.reduce((sum, a) => sum + (a.score || 0), 0) / assessments.length;
 
-    const statValues = [
-      aggregated.speedScore,
-      aggregated.shootingScore,
-      aggregated.passingScore,
-      aggregated.dribblingScore,
-      aggregated.defenseScore,
-      aggregated.physicalScore,
-      Math.round(aggregated.consistencyScore * 0.4),
-    ];
-
-    const weightedOverall = (
-      aggregated.speedScore * 0.16 +
-      aggregated.shootingScore * 0.18 +
-      aggregated.passingScore * 0.16 +
-      aggregated.dribblingScore * 0.18 +
-      aggregated.defenseScore * 0.16 +
-      aggregated.physicalScore * 0.12 +
-      aggregated.consistencyScore * 0.04
-    );
-
-    aggregated.overallRating = Math.round(
-      Math.max(weightedOverall, statValues.reduce((sum, value) => sum + value, 0) / statValues.length)
-    );
+    aggregated.overallRating = parseFloat(averageScore.toFixed(1));
 
     const statsMap: Record<string, number> = {
       SPEED: aggregated.speedScore,
