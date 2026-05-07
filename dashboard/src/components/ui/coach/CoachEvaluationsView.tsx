@@ -5,7 +5,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PlayerAssessment } from '@/types/academic';
 import { WeekMaterial, Level } from '@/types/curriculum';
 import Cookies from 'js-cookie';
-import { Pencil, Trash2, X } from 'lucide-react';
+import { Pencil, Star, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -426,8 +426,7 @@ export function CoachEvaluationsView() {
                   <th className="px-3 py-2">Curriculum</th>
                   <th className="px-3 py-2">Competency</th>
                   <th className="px-3 py-2">Score</th>
-                  <th className="px-3 py-2">OVR</th>
-                  <th className="px-3 py-2">Dominant</th>
+                  <th className="px-3 py-2">Stars</th>
                   <th className="px-3 py-2">Actions</th>
                 </tr>
               </thead>
@@ -440,8 +439,21 @@ export function CoachEvaluationsView() {
                     </td>
                     <td className="px-3 py-2">{assessment.weekMaterial?.category || '-'}</td>
                     <td className="px-3 py-2">{assessment.score}/5</td>
-                    <td className="px-3 py-2 font-semibold text-slate-900 dark:text-white">{assessment.overallRating ?? '-'}</td>
-                    <td className="px-3 py-2">{formatDominantStat(assessment)}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={14}
+                            className={
+                              star <= (assessment.score || 0)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-700"
+                            }
+                          />
+                        ))}
+                      </div>
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <button

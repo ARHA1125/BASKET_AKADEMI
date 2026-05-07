@@ -2,6 +2,7 @@
 
 import { getToken } from '@/lib/auth';
 import { PlayerAssessment, Student, StudentActivity } from '@/types/academic';
+import { Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 export function StudentPerformanceView() {
@@ -69,24 +70,20 @@ export function StudentPerformanceView() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="text-5xl font-extrabold text-slate-900 dark:text-white">{latestAssessment.overallRating}</div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">OVR</div>
-                </div>
-                <div className="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900/50 dark:text-slate-200">
-                  {student?.ageClass || '-'}
                 </div>
               </div>
 
-              <div>
-                <div className="text-lg font-semibold text-slate-900 dark:text-white">{student?.user.fullName}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">{student?.curriculumProfile || '-'}</div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {statCards.map(([label, value]) => (
-                  <div key={label} className="rounded-lg bg-white/70 px-3 py-2 dark:bg-slate-950/40">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
-                    <div className="text-lg font-semibold text-slate-900 dark:text-white">{value}</div>
-                  </div>
+              <div className="flex justify-start items-center gap-1 py-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={32}
+                    className={
+                      star <= Math.round(latestAssessment.overallRating)
+                        ? "fill-yellow-400 text-yellow-400 drop-shadow-sm"
+                        : "fill-black/10 text-black/20 dark:fill-white/10 dark:text-white/20"
+                    }
+                  />
                 ))}
               </div>
 
@@ -134,7 +131,7 @@ export function StudentPerformanceView() {
                   <tr>
                     <th className="px-3 py-2">Competency</th>
                     <th className="px-3 py-2">Score</th>
-                    <th className="px-3 py-2">OVR</th>
+                    <th className="px-3 py-2">Stars</th>
                     <th className="px-3 py-2">Date</th>
                   </tr>
                 </thead>
@@ -143,7 +140,21 @@ export function StudentPerformanceView() {
                     <tr key={assessment.id} className="border-b border-slate-100 dark:border-slate-800">
                       <td className="px-3 py-2">{assessment.weekMaterial?.category || '-'}</td>
                       <td className="px-3 py-2">{assessment.score}/5</td>
-                      <td className="px-3 py-2 font-semibold text-slate-900 dark:text-white">{assessment.overallRating}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={14}
+                              className={
+                                star <= (assessment.score || 0)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-700"
+                              }
+                            />
+                          ))}
+                        </div>
+                      </td>
                       <td className="px-3 py-2">{new Date(assessment.assessedAt).toLocaleDateString('id-ID')}</td>
                     </tr>
                   ))}

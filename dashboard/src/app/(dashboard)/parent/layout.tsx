@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/Sidebar"
 import { Breadcrumbs } from "@/components/ui/navigation/Breadcrumbs"
 import { ParentSidebar } from "@/components/ui/navigation/ParentSidebar"
+import { ParentStudentSwitcher } from "@/components/ui/parent/ParentStudentSwitcher"
 import { cookies } from "next/headers"
 
 export default async function ParentLayout({
@@ -16,9 +17,12 @@ export default async function ParentLayout({
       <ParentSidebar />
       <div className="flex flex-1 flex-col w-full min-w-0">
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-gray-950">
-          <SidebarTrigger className="-ml-1" />
-          <div className="mr-2 h-4 w-px bg-gray-200 dark:bg-gray-800" />
-          <Breadcrumbs />
+          <div className="flex flex-1 items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <div className="mr-2 h-4 w-px bg-gray-200 dark:bg-gray-800" />
+            <Breadcrumbs />
+          </div>
+          <ParentStudentSwitcher />
         </header>
         <main className="flex-1 p-4">{children}</main>
       </div>

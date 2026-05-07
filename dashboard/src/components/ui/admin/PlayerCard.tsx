@@ -1,4 +1,4 @@
-import { Users } from 'lucide-react';
+import { Users, Star } from 'lucide-react';
 import Image from "next/image";
 
 import { Stats } from '@/types/admin';
@@ -7,14 +7,16 @@ interface PlayerCardProps {
   name: string;
   position: string;
   ovr: string;
-  stats: Stats;
+  rating?: number;
+  stats?: Stats;
   image?: string;
   subtitle?: string;
   flagLabel?: string;
   size?: 'full' | 'medium' | 'mini';
+  theme?: 'gold' | 'dark' | 'light';
 }
 
-export const PlayerCard = ({ name, position, ovr, stats, image, subtitle, flagLabel = 'ID', size = 'full', theme = 'gold' }: PlayerCardProps & { theme?: 'gold' | 'dark' | 'light' }) => {
+export const PlayerCard = ({ name, position, ovr, rating = 0, image, subtitle, flagLabel = 'ID', size = 'full', theme = 'gold' }: PlayerCardProps) => {
     const themes = {
         gold: "from-yellow-100 via-yellow-50 to-yellow-200 border-yellow-400",
         dark: "from-slate-800 via-slate-700 to-slate-900 border-slate-600 text-white",
@@ -30,7 +32,7 @@ export const PlayerCard = ({ name, position, ovr, stats, image, subtitle, flagLa
         photo: 'w-28 h-28',
         icon: 48,
         title: 'text-lg',
-        statLabel: 'text-xs',
+        starSize: 20,
         flag: 'min-w-[32px] px-2 py-0.5 text-[10px]',
       },
       medium: {
@@ -41,7 +43,7 @@ export const PlayerCard = ({ name, position, ovr, stats, image, subtitle, flagLa
         photo: 'w-20 h-20',
         icon: 36,
         title: 'text-sm',
-        statLabel: 'text-[10px]',
+        starSize: 16,
         flag: 'min-w-[28px] px-1.5 py-0.5 text-[9px]',
       },
       mini: {
@@ -52,7 +54,7 @@ export const PlayerCard = ({ name, position, ovr, stats, image, subtitle, flagLa
         photo: 'w-14 h-14',
         icon: 24,
         title: 'text-xs',
-        statLabel: 'text-[9px]',
+        starSize: 12,
         flag: 'min-w-[24px] px-1 py-0.5 text-[8px]',
       },
     } as const;
@@ -61,16 +63,24 @@ export const PlayerCard = ({ name, position, ovr, stats, image, subtitle, flagLa
     const subTextColor = theme === 'dark' ? 'text-gray-300' : 'text-gray-500';
     const currentSize = sizeStyles[size];
 
-    const statEntries = [
-      ['SPD', stats.spd],
-      ['DRI', stats.dri],
-      ['SHO', stats.sho],
-      ['DEF', stats.def],
-      ['PAS', stats.pas],
-      ['PHY', stats.phy],
-    ] as const;
-
-    const visibleStats = size === 'mini' ? statEntries.slice(0, 4) : statEntries;
+    const renderStars = () => {
+      const activeStars = rating > 0 ? Math.round(rating) : Math.round(Number(ovr));
+      return (
+        <div className="flex justify-center items-center gap-0.5 py-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              size={currentSize.starSize}
+              className={
+                star <= activeStars
+                  ? "fill-yellow-400 text-yellow-400 drop-shadow-sm"
+                  : "fill-black/10 text-black/20 dark:fill-white/10 dark:text-white/20"
+              }
+            />
+          ))}
+        </div>
+      );
+    };
 
   return (
     <div className={`relative w-full ${currentSize.maxWidth} mx-auto bg-gradient-to-b ${themes[theme]} rounded-t-2xl rounded-b-3xl border-2 shadow-[0_10px_25px_rgba(0,0,0,0.12)] overflow-hidden ${currentSize.padding} transform transition-transform hover:scale-105 duration-300`}>
@@ -98,13 +108,8 @@ export const PlayerCard = ({ name, position, ovr, stats, image, subtitle, flagLa
       </div>
 
 
-      <div className="relative grid grid-cols-2 gap-x-4 gap-y-1 px-2">
-        {visibleStats.map(([label, value]) => (
-          <div key={label} className="flex justify-between items-center">
-            <span className={`${currentSize.statLabel} font-bold ${subTextColor}`}>{label}</span>
-            <span className={`font-black ${textColor} ${size === 'mini' ? 'text-xs' : 'text-sm'}`}>{value}</span>
-          </div>
-        ))}
+      <div className="relative px-2">
+        {renderStars()}
       </div>
     </div>
   );
