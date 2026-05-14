@@ -3,7 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Category } from './category.entity';
 
 @Entity()
 export class Product {
@@ -20,13 +23,20 @@ export class Product {
   price: number;
 
   @Column('int')
-  stock: number; // For simple inventory. For variants, need separate entity.
+  stock: number;
 
   @Column({ nullable: true })
   imageUrl: string;
 
+  @ManyToOne(() => Category, (category) => category.products, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'categoryId' })
+  category: Category;
+
   @Column({ nullable: true })
-  category: string; // Jersey, Ball, etc.
+  categoryId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

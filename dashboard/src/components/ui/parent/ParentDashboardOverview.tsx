@@ -81,6 +81,7 @@ export function ParentDashboardOverview() {
                   ovr={String(latest.overallRating)}
                   rating={latest.overallRating}
                   subtitle={`${activeChild?.student.ageClass || '-'} · ${activeChild?.student.curriculumProfile || '-'}`}
+                  image={activeChild?.student.user.photo_url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}${activeChild.student.user.photo_url}` : undefined}
                   stats={{
                     spd: latest.speedScore,
                     sho: latest.shootingScore,

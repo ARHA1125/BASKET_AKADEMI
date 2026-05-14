@@ -48,7 +48,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
       
       if (role) {
         console.log("Setting role cookie:", role);
-        Cookies.set("role", role, { expires: 7, path: '/' });
+        Cookies.set("role", role, { expires: 1, path: '/' });
       } else {
         console.warn("No role found in user data or token!");
       }
@@ -71,7 +71,7 @@ export function logout() {
   Cookies.remove(TOKEN_KEY, { path: '/' });
   Cookies.remove("role", { path: '/' });
   localStorage.removeItem(USER_KEY);
-  window.location.href = "/login";
+  window.location.href = "/logout";
 }
 
 export function setToken(token: string) {

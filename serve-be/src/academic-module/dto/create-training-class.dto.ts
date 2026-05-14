@@ -9,6 +9,10 @@ export class CreateTrainingClassDto {
   @IsOptional()
   schedule?: string;
 
+  @IsString()
+  @IsOptional()
+  ageClass?: string;
+
   @IsUUID()
   @IsOptional()
   coachId?: string;

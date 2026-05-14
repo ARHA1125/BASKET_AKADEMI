@@ -2,6 +2,7 @@ export interface UserProfile {
     fullName: string;
     email: string;
     phoneNumber?: string;
+    photo_url?: string;
     status?: string; 
     createdAt?: string;
 }

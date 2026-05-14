@@ -21,6 +21,12 @@ export class TrainingClass {
   @Column({ nullable: true })
   schedule: string; // e.g. "Mon, Wed 16:00"
 
+  @Column({
+    type: 'varchar',
+    nullable: true,
+  })
+  ageClass: string;
+
   @OneToMany(() => Student, (student) => student.trainingClass)
   students: Student[];
 

@@ -53,8 +53,7 @@ import { ValidationPipe } from '@nestjs/common';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => [
         {
-          rootPath:
-            configService.get('UPLOAD_DIR') || join(__dirname, '..', 'img'),
+          rootPath: configService.get('UPLOAD_DIR') || join(process.cwd(), 'img'),
           serveRoot: '/img',
         },
       ],

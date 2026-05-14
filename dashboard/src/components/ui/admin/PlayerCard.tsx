@@ -1,5 +1,4 @@
 import { Users, Star } from 'lucide-react';
-import Image from "next/image";
 
 import { Stats } from '@/types/admin';
 
@@ -98,7 +97,7 @@ export const PlayerCard = ({ name, position, ovr, rating = 0, image, subtitle, f
 
 
       <div className={`relative ${currentSize.photo} mx-auto -mt-2 mb-2 bg-gradient-to-b from-gray-200 to-gray-300 rounded-full border-4 ${theme === 'dark' ? 'border-slate-500' : 'border-white'} shadow-lg flex items-center justify-center overflow-hidden`}>
-         {image ? <Image src={image} alt={name} fill className="object-cover" /> : <Users size={currentSize.icon} className="text-gray-400" />}
+         {image ? <img src={image} alt={name} className="w-full h-full object-cover" /> : <Users size={currentSize.icon} className="text-gray-400" />}
       </div>
 
 

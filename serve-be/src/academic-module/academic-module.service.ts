@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -16,6 +16,7 @@ import { StudentActivity } from './entities/student-activity.entity';
 import { GamificationPointLedger } from './entities/gamification-point-ledger.entity';
 import { BadgeCode, StudentBadge } from './entities/student-badge.entity';
 import { User, UserRole } from '../auths-module/entities/user.entity';
+import { CoachMaterialNote } from './entities/coach-material-note.entity';
 
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
@@ -37,6 +38,7 @@ import { CreateUnifiedCoachDto } from './dto/create-unified-coach.dto';
 import { CreateStudentActivityDto } from './dto/create-student-activity.dto';
 import { UpdateStudentActivityDto } from './dto/update-student-activity.dto';
 import { AwardPointsDto } from './dto/award-points.dto';
+import { CreateCoachMaterialNoteDto, UpdateCoachMaterialNoteDto } from './dto/coach-material-note.dto';
 import * as bcrypt from 'bcrypt';
 import { NotificationService } from '../notification-module/notification.service';
 import { AttendanceStatus } from './entities/attendance.entity';
@@ -207,6 +209,7 @@ export class AcademicModuleService {
     @InjectRepository(TrainingClass) private trainingClassRepo: Repository<TrainingClass>,
     @InjectRepository(Coach) private coachRepo: Repository<Coach>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(CoachMaterialNote) private coachNoteRepo: Repository<CoachMaterialNote>,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -1476,7 +1479,7 @@ export class AcademicModuleService {
   async getStudentPerformanceSummaryByUserId(userId: string) {
     const student = await this.studentRepo.findOne({
       where: { user: { id: userId } },
-      relations: ['user', 'parent', 'parent.user'],
+      relations: ['user', 'parent', 'parent.user', 'trainingClass', 'trainingClass.coach', 'trainingClass.curriculumLevel', 'trainingClass.activeMonth'],
     });
 
     if (!student) {
@@ -1519,7 +1522,7 @@ export class AcademicModuleService {
   async getParentChildrenPerformanceSummaryByUserId(userId: string) {
     const parent = await this.parentRepo.findOne({
       where: { user: { id: userId } },
-      relations: ['user', 'students', 'students.user'],
+      relations: ['user', 'students', 'students.user', 'students.trainingClass', 'students.trainingClass.coach', 'students.trainingClass.curriculumLevel', 'students.trainingClass.activeMonth'],
     });
 
     if (!parent) {
@@ -1741,14 +1744,27 @@ export class AcademicModuleService {
   }
 
   async createTrainingClass(dto: CreateTrainingClassDto) {
-    const { coachId, curriculumLevelId, activeMonthId, ...rest } = dto;
+    const { coachId, curriculumLevelId, activeMonthId, ageClass, ...rest } = dto;
     const trainingClass = this.trainingClassRepo.create({
       ...rest,
       coach: coachId ? { id: coachId } : undefined,
       curriculumLevel: curriculumLevelId ? { id: curriculumLevelId } : undefined,
       activeMonth: activeMonthId ? { id: activeMonthId } : undefined,
+      ageClass,
     });
-    return this.trainingClassRepo.save(trainingClass);
+    const savedClass = await this.trainingClassRepo.save(trainingClass);
+
+    if (ageClass) {
+      await this.studentRepo
+        .createQueryBuilder()
+        .update(Student)
+        .set({ trainingClass: savedClass })
+        .where('ageClass = :ageClass', { ageClass })
+        .andWhere('trainingClass IS NULL')
+        .execute();
+    }
+
+    return this.findOneTrainingClass(savedClass.id);
   }
 
   findAllTrainingClass() {
@@ -1762,12 +1778,209 @@ export class AcademicModuleService {
     });
   }
 
-  updateTrainingClass(id: string, dto: UpdateTrainingClassDto) {
-    return this.trainingClassRepo.update(id, dto);
+  async updateTrainingClass(id: string, dto: UpdateTrainingClassDto) {
+    const { coachId, curriculumLevelId, activeMonthId, ageClass, ...rest } = dto;
+    const updateData: any = { ...rest };
+    
+    if (coachId !== undefined) {
+      updateData.coach = coachId ? { id: coachId } : null;
+    }
+    if (curriculumLevelId !== undefined) {
+      updateData.curriculumLevel = curriculumLevelId ? { id: curriculumLevelId } : null;
+    }
+    if (activeMonthId !== undefined) {
+      updateData.activeMonth = activeMonthId ? { id: activeMonthId } : null;
+    }
+    
+    const existingClass = await this.trainingClassRepo.findOne({
+      where: { id },
+      relations: ['students'],
+    });
+
+    if (ageClass && ageClass !== existingClass?.ageClass) {
+      await this.studentRepo
+        .createQueryBuilder()
+        .update(Student)
+        .set({ trainingClass: { id } })
+        .where('ageClass = :ageClass', { ageClass })
+        .andWhere('trainingClass IS NULL')
+        .execute();
+    }
+
+    await this.trainingClassRepo.save({ id, ...updateData });
+    return this.findOneTrainingClass(id);
   }
 
-  removeTrainingClass(id: string) {
+  async removeTrainingClass(id: string) {
+    const trainingClass = await this.trainingClassRepo.findOne({
+      where: { id },
+      relations: ['students'],
+    });
+
+    if (!trainingClass) {
+      throw new NotFoundException('Training class not found');
+    }
+
+    if (trainingClass.students && trainingClass.students.length > 0) {
+      await this.studentRepo
+        .createQueryBuilder()
+        .update(Student)
+        .set({ trainingClass: null as any })
+        .where('trainingClassId = :id', { id })
+        .execute();
+    }
+
     return this.trainingClassRepo.delete(id);
+  }
+
+  async findCurriculumWithCoachNotes(coachId: string) {
+    const levels = await this.curriculumLevelRepo.find({
+      relations: ['months', 'months.weekMaterials'],
+      order: {
+        createdAt: 'ASC',
+        months: {
+          monthNumber: 'ASC',
+          weekMaterials: {
+            weekNumber: 'ASC',
+          },
+        },
+      },
+    });
+
+    const coachNotes = await this.coachNoteRepo.find({
+      where: { coachId },
+    });
+
+    const notesMap = new Map(coachNotes.map(note => [note.weekMaterialId, note]));
+
+    const levelsWithNotes = levels.map(level => ({
+      ...level,
+      months: level.months.map(month => ({
+        ...month,
+        weekMaterials: month.weekMaterials.map(week => ({
+          ...week,
+          coachNote: notesMap.get(week.id) || null,
+        })),
+      })),
+    }));
+
+    return levelsWithNotes;
+  }
+
+  async createCoachMaterialNote(coachId: string, dto: CreateCoachMaterialNoteDto) {
+    const existing = await this.coachNoteRepo.findOne({
+      where: {
+        coachId,
+        weekMaterialId: dto.weekMaterialId,
+      },
+    });
+
+    if (existing) {
+      existing.customNotes = dto.customNotes || '';
+      return this.coachNoteRepo.save(existing);
+    }
+
+    const note = this.coachNoteRepo.create({
+      coachId,
+      weekMaterialId: dto.weekMaterialId,
+      customNotes: dto.customNotes || '',
+    });
+
+    return this.coachNoteRepo.save(note);
+  }
+
+  async updateCoachMaterialNote(noteId: string, coachId: string, dto: UpdateCoachMaterialNoteDto) {
+    const note = await this.coachNoteRepo.findOne({
+      where: { id: noteId, coachId },
+    });
+
+    if (!note) {
+      throw new Error('Note not found or unauthorized');
+    }
+
+    note.customNotes = dto.customNotes || '';
+    return this.coachNoteRepo.save(note);
+  }
+
+  async deleteCoachMaterialNote(noteId: string, coachId: string) {
+    const note = await this.coachNoteRepo.findOne({
+      where: { id: noteId, coachId },
+    });
+
+    if (!note) {
+      throw new Error('Note not found or unauthorized');
+    }
+
+    return this.coachNoteRepo.delete(noteId);
+  }
+
+  async findCoachMaterialNotes(coachId: string) {
+    return this.coachNoteRepo.find({
+      where: { coachId },
+      relations: ['weekMaterial'],
+    });
+  }
+
+  async getMyTrainingClass(userId: string) {
+    const student = await this.studentRepo.findOne({
+      where: { user: { id: userId } },
+      relations: [
+        'trainingClass',
+        'trainingClass.coach',
+        'trainingClass.curriculumLevel',
+        'trainingClass.curriculumLevel.months',
+        'trainingClass.curriculumLevel.months.weekMaterials',
+        'trainingClass.activeMonth',
+        'trainingClass.students',
+        'trainingClass.students.user',
+      ],
+    });
+
+    if (!student || !student.trainingClass) {
+      return null;
+    }
+
+    return student.trainingClass;
+  }
+
+  async getMyChildrenTrainingClasses(userId: string) {
+    const parent = await this.parentRepo.findOne({
+      where: { user: { id: userId } },
+      relations: [
+        'students',
+        'students.user',
+        'students.trainingClass',
+        'students.trainingClass.coach',
+        'students.trainingClass.curriculumLevel',
+        'students.trainingClass.activeMonth',
+      ],
+    });
+
+    if (!parent) {
+      return [];
+    }
+
+    return parent.students.map(student => ({
+      student: {
+        id: student.id,
+        fullName: student.user?.fullName,
+        ageClass: student.ageClass,
+      },
+      trainingClass: student.trainingClass,
+    }));
+  }
+
+  async getMyCoachingClasses(userId: string) {
+    return this.trainingClassRepo.find({
+      where: { coach: { id: userId } },
+      relations: [
+        'students',
+        'students.user',
+        'curriculumLevel',
+        'curriculumLevel.months',
+        'activeMonth',
+      ],
+    });
   }
 
 }
