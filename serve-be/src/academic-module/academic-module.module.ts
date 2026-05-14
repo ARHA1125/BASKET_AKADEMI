@@ -18,6 +18,7 @@ import { StudentActivity } from './entities/student-activity.entity';
 import { GamificationPointLedger } from './entities/gamification-point-ledger.entity';
 import { StudentBadge } from './entities/student-badge.entity';
 import { User } from '../auths-module/entities/user.entity';
+import { CoachMaterialNote } from './entities/coach-material-note.entity';
 
 import { PublicAppController } from './public-app.controller';
 import { PublicAppService } from './public-app.service';
@@ -41,6 +42,7 @@ import { NotificationModuleModule } from '../notification-module/notification-mo
       TrainingClass,
       Coach,
       User,
+      CoachMaterialNote,
     ]),
   ],
   controllers: [AcademicModuleController, PublicAppController],

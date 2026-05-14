@@ -16,6 +16,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  if (token && !role && !isLoginPage && !isInvoicePage && !isApplyPage) {
+    console.log('[Middleware] Token exists but role is missing - forcing relogin')
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.delete('auth_token')
+    response.cookies.delete('role')
+    return response
+  }
 
   if (token && isLoginPage) {
     return NextResponse.redirect(new URL('/', request.url))

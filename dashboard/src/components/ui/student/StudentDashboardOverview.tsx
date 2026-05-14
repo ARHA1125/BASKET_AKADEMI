@@ -122,6 +122,7 @@ export function StudentDashboardOverview() {
                   position={student?.position || 'ATH'}
                   ovr={String(latest.overallRating)}
                   subtitle={`${student?.ageClass || '-'} · ${student?.curriculumProfile || '-'}`}
+                  image={student?.user.photo_url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}${student.user.photo_url}` : undefined}
                   stats={{
                     spd: latest.speedScore,
                     sho: latest.shootingScore,

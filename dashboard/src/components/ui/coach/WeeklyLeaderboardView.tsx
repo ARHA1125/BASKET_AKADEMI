@@ -46,6 +46,7 @@ export function WeeklyLeaderboardView() {
                   position={entry.ageClass?.replace('KU-', 'U') || 'ATH'}
                   ovr={String(entry.overallRating || 0)}
                   subtitle={`${entry.curriculumProfile?.replace('_', ' ') || entry.ageClass || '-'} · ${entry.weeklyPoints} PTS`}
+                  image={entry.photo_url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}${entry.photo_url}` : undefined}
                   stats={{
                     spd: entry.speedScore || 0,
                     sho: entry.shootingScore || 0,

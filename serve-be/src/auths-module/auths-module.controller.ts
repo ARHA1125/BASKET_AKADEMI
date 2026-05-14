@@ -10,6 +10,7 @@ import {
   Request,
   UploadedFile,
   BadRequestException,
+  Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -17,6 +18,8 @@ import { extname } from 'path';
 import { AuthsModuleService } from './auths-module.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../common/decorators/public.decorator';
 
 @Controller('auth')
@@ -42,6 +45,17 @@ export class AuthsModuleController {
     return this.authsModuleService.getProfile(req.user.id);
   }
 
+  @Patch('profile')
+  updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.authsModuleService.updateMyProfile(req.user.id, updateProfileDto);
+  }
+
+  @Post('profile/password')
+  @HttpCode(HttpStatus.OK)
+  changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.authsModuleService.changePassword(req.user.id, changePasswordDto);
+  }
+
   @Post('profile/image')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -62,6 +76,9 @@ export class AuthsModuleController {
           );
         }
         callback(null, true);
+      },
+      limits: {
+        fileSize: 2 * 1024 * 1024,
       },
     }),
   )

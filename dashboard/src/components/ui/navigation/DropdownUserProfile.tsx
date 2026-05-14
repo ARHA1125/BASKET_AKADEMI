@@ -15,8 +15,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/DropdownMenu"
 import { logout } from "@/lib/auth"
-import { ArrowUpRight, Monitor, Moon, Sun } from "lucide-react"
+import { ArrowUpRight, Monitor, Moon, Sun, User } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
+import Cookies from "js-cookie"
 import * as React from "react"
 
 import { DropdownUserProfileProps, AdditionalProps } from "@/types/components"
@@ -29,9 +31,18 @@ export function DropdownUserProfile({
 }: DropdownUserProfileProps & AdditionalProps) {
   const [mounted, setMounted] = React.useState(false)
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
+  
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const handleProfileClick = () => {
+    const role = Cookies.get('role')?.toLowerCase()
+    if (role) {
+      router.push(`/${role}/profile`)
+    }
+  }
 
   if (!mounted) {
     return null
@@ -82,6 +93,13 @@ export function DropdownUserProfile({
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubMenuContent>
             </DropdownMenuSubMenu>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={handleProfileClick}>
+              <User className="size-4 shrink-0" aria-hidden="true" />
+              My Profile
+            </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>

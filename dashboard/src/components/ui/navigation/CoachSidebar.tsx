@@ -16,7 +16,7 @@ import {
 import { SidebarHeader } from "@/components/ui/SidebarHeader"
 import { cx, focusRing } from "@/lib/utils"
 import { RiArrowDownSFill } from "@remixicon/react"
-import { BookText, Calendar, ClipboardCheck, GraduationCap, House, UserCheck, Users } from "lucide-react"
+import { BookText, Calendar, ClipboardCheck, GraduationCap, House, ShoppingBag, UserCheck, Users } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
 import * as React from "react"
 import { UserProfile } from "./UserProfile"
@@ -26,6 +26,12 @@ const navigation = [
     name: "Home",
     href: "/coach",
     icon: House,
+    notifications: false,
+  },
+  {
+    name: "Store",
+    href: "/coach/store",
+    icon: ShoppingBag,
     notifications: false,
   },
 ] as const
@@ -84,36 +90,36 @@ const navigation2 = [
       },
     ],
   },
-  {
-    name: "Schedule",
-    href: "#",
-    icon: Calendar,
-    children: [
-      {
-        name: "Training Schedule",
-        href: "/coach/schedule",
-      },
-      {
-        name: "Session History",
-        href: "/coach/schedule/history",
-      },
-    ],
-  },
-  {
-    name: "Training",
-    href: "#",
-    icon: GraduationCap,
-    children: [
-      {
-        name: "Training Materials",
-        href: "/coach/materials",
-      },
-      {
-        name: "Performance Reports",
-        href: "/coach/reports",
-      },
-    ],
-  },
+  // {
+  //   name: "Schedule",
+  //   href: "#",
+  //   icon: Calendar,
+  //   children: [
+  //     {
+  //       name: "Training Schedule",
+  //       href: "/coach/schedule",
+  //     },
+  //     {
+  //       name: "Session History",
+  //       href: "/coach/schedule/history",
+  //     },
+  //   ],
+  // },
+  // {
+  //   name: "Training",
+  //   href: "#",
+  //   icon: GraduationCap,
+  //   children: [
+  //     {
+  //       name: "Training Materials",
+  //       href: "/coach/materials",
+  //     },
+  //     {
+  //       name: "Performance Reports",
+  //       href: "/coach/reports",
+  //     },
+  //   ],
+  // },
   {
     name: "Drafting & Seleksi Tim",
     href: "#",
@@ -144,8 +150,8 @@ export function CoachSidebar({
     navigation2[1].name,
     navigation2[2].name,
     navigation2[3].name,
-    navigation2[4].name,
-    navigation2[5].name,
+    // navigation2[4].name,
+    // navigation2[5].name,
   ])
 
   const toggleMenu = (name: string) => {

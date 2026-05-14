@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthsModuleService {
@@ -121,5 +124,64 @@ export class AuthsModuleService {
 
     Object.assign(user, dto);
     return this.userRepository.save(user);
+  }
+
+  async updateMyProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (dto.email && dto.email !== user.email) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException('Email already exists');
+      }
+      user.status = 'Pending';
+    }
+
+    if (dto.fullName) {
+      user.fullName = dto.fullName;
+    }
+
+    if (dto.email) {
+      user.email = dto.email;
+    }
+
+    if (dto.phoneNumber) {
+      user.phoneNumber = dto.phoneNumber.replace('+62', '0');
+    }
+
+    return this.userRepository.save(user);
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isOldPasswordValid = await bcrypt.compare(
+      dto.oldPassword,
+      user.password,
+    );
+    if (!isOldPasswordValid) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    const salt = await bcrypt.genSalt();
+    user.password = await bcrypt.hash(dto.newPassword, salt);
+
+    await this.userRepository.save(user);
+
+    return { message: 'Password changed successfully' };
   }
 }

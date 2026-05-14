@@ -10,7 +10,8 @@ import {
   SidebarMenuItem,
 } from "@/components/Sidebar"
 import { UserProfile } from "@/components/ui/navigation/UserProfile"
-import { Award, GraduationCap, LayoutDashboard, MessageCircle, Wallet } from "lucide-react"
+import { Award, GraduationCap, LayoutDashboard, MessageCircle, ShoppingBag, Wallet } from "lucide-react"
+
 import { usePathname } from "next/navigation"
 import { SidebarHeader } from "./SidebarHeader"
 
@@ -39,6 +40,11 @@ const navigation = [
     name: "Messages",
     href: "/parent/messages",
     icon: MessageCircle,
+  },
+  {
+    name: "Store",
+    href: "/parent/store",
+    icon: ShoppingBag,
   },
 ] as const
 

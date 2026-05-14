@@ -31,6 +31,7 @@ import { CreateUnifiedCoachDto } from './dto/create-unified-coach.dto';
 import { CreateStudentActivityDto } from './dto/create-student-activity.dto';
 import { UpdateStudentActivityDto } from './dto/update-student-activity.dto';
 import { AwardPointsDto } from './dto/award-points.dto';
+import { CreateCoachMaterialNoteDto, UpdateCoachMaterialNoteDto } from './dto/coach-material-note.dto';
 import { Roles } from '../common/decorators/role.decorator';
 import { UserRole } from '../auths-module/entities/user.entity';
 import { CurriculumStatDomain } from './entities/curriculum-week-material.entity';
@@ -408,5 +409,68 @@ export class AcademicModuleController {
   @Delete('classes/:id')
   removeTrainingClass(@Param('id') id: string) {
     return this.academicService.removeTrainingClass(id);
+  }
+
+  @Roles(UserRole.COACH)
+  @Get('coach/curriculum')
+  findCurriculumWithCoachNotes(@Request() req) {
+    return this.academicService.findCurriculumWithCoachNotes(req.user.id);
+  }
+
+  @Roles(UserRole.COACH)
+  @Get('coach/material-notes')
+  findCoachMaterialNotes(@Request() req) {
+    return this.academicService.findCoachMaterialNotes(req.user.id);
+  }
+
+  @Roles(UserRole.COACH)
+  @Post('coach/material-notes')
+  createCoachMaterialNote(@Request() req, @Body() dto: CreateCoachMaterialNoteDto) {
+    return this.academicService.createCoachMaterialNote(req.user.id, dto);
+  }
+
+  @Roles(UserRole.COACH)
+  @Patch('coach/material-notes/:id')
+  updateCoachMaterialNote(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: UpdateCoachMaterialNoteDto,
+  ) {
+    return this.academicService.updateCoachMaterialNote(id, req.user.id, dto);
+  }
+
+  @Roles(UserRole.COACH)
+  @Delete('coach/material-notes/:id')
+  deleteCoachMaterialNote(@Request() req, @Param('id') id: string) {
+    return this.academicService.deleteCoachMaterialNote(id, req.user.id);
+  }
+
+  @Roles(UserRole.STUDENT)
+  @Get('me/training-class')
+  getMyTrainingClass(@Request() req) {
+    return this.academicService.getMyTrainingClass(req.user.id);
+  }
+
+  @Roles(UserRole.PARENT)
+  @Get('me/children/training-classes')
+  getMyChildrenTrainingClasses(@Request() req) {
+    return this.academicService.getMyChildrenTrainingClasses(req.user.id);
+  }
+
+  @Roles(UserRole.COACH)
+  @Get('me/coaching-classes')
+  getMyCoachingClasses(@Request() req) {
+    return this.academicService.getMyCoachingClasses(req.user.id);
+  }
+
+  @Roles(UserRole.COACH)
+  @Patch('classes/:id/active-month')
+  updateClassActiveMonth(
+    @Param('id') id: string,
+    @Body() body: { activeMonthId: string },
+  ) {
+    return this.academicService.updateTrainingClass(id, {
+      activeMonthId: body.activeMonthId,
+    });
   }
 }
