@@ -37,7 +37,7 @@ export function ParentBadgesView() {
         });
 
         if (!res.ok) {
-          throw new Error('Failed to load child badges');
+          throw new Error('Gagal memuat penghargaan anak');
         }
 
         const json = await res.json();
@@ -58,8 +58,8 @@ export function ParentBadgesView() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Child Achievements</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review badges earned by your child from real academy progress and participation.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Pencapaian Anak</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Tinjau lencana yang diperoleh anak Anda dari kemajuan dan partisipasi nyata di akademi.</p>
         </div>
 
         {children.length > 0 && (
@@ -82,8 +82,8 @@ export function ParentBadgesView() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {activeChild?.badges?.map((badge) => (
-          <div key={badge.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {activeChild?.badges?.map((badge, index) => (
+          <div key={badge.id || `${badge.badgeCode}-${badge.categoryKey || 'badge'}-${index}`} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             {(() => {
               const theme = BADGE_THEME[badge.categoryKey || 'team_spirit'] || BADGE_THEME.team_spirit;
               const Icon = theme.icon;
@@ -95,7 +95,7 @@ export function ParentBadgesView() {
               </div>
               <div>
                 <div className="font-semibold text-slate-900 dark:text-white">{badge.title}</div>
-                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{badge.badgeCode} · Tier {badge.tier || 0}</div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{badge.badgeCode} · Tingkat {badge.tier || 0}</div>
               </div>
             </div>
               );
@@ -105,14 +105,14 @@ export function ParentBadgesView() {
               <div className="h-2 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500" style={{ width: `${Math.min(((badge.progressPoints || 0) / Math.max(badge.targetPoints || 1, 1)) * 100, 100)}%` }} />
             </div>
             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{badge.progressPoints || 0} / {badge.targetPoints || 0} pts</div>
-            <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">Awarded {new Date(badge.awardedAt).toLocaleDateString('id-ID')}</div>
+            <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">Diberikan {new Date(badge.awardedAt).toLocaleDateString('id-ID')}</div>
           </div>
         ))}
 
         {!loading && !activeChild?.badges?.length && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400 md:col-span-2 xl:col-span-3">
             <Trophy className="mx-auto mb-3 h-5 w-5" />
-            No badges available for this child yet.
+            Belum ada lencana yang tersedia untuk anak ini.
           </div>
         )}
       </div>

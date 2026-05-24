@@ -143,14 +143,14 @@ export function CoachCurriculumView() {
         body: JSON.stringify(newLevel)
       });
       if (res.ok) {
-        toast.success("Level added successfully");
+        toast.success("Level berhasil ditambahkan");
         setIsAddLevelOpen(false);
         setNewLevel({ name: '', description: '', colorCode: 'blue' });
         fetchCurriculumData();
       } else {
-         toast.error("Failed to add level");
+         toast.error("Gagal menambahkan level");
       }
-    } catch (e) { toast.error("Error adding level"); }
+    } catch (e) { toast.error("Terjadi kesalahan saat menambahkan level"); }
     finally { setSubmitting(false); }
   };
 
@@ -168,14 +168,14 @@ export function CoachCurriculumView() {
         body: JSON.stringify({ ...newMonth, monthNumber: Number(newMonth.monthNumber) })
       });
       if (res.ok) {
-        toast.success("Month added successfully");
+        toast.success("Bulan berhasil ditambahkan");
         setIsAddMonthOpen(false);
         setNewMonth({ levelId: '', monthNumber: 1, title: '' });
         fetchCurriculumData();
       } else {
-         toast.error("Failed to add month");
+         toast.error("Gagal menambahkan bulan");
       }
-    } catch (e) { toast.error("Error adding month"); }
+    } catch (e) { toast.error("Terjadi kesalahan saat menambahkan bulan"); }
     finally { setSubmitting(false); }
   };
 
@@ -202,15 +202,15 @@ export function CoachCurriculumView() {
         })
       });
       if (res.ok) {
-        toast.success("Week Material added successfully");
+        toast.success("Materi minggu berhasil ditambahkan");
         setIsAddWeekOpen(false);
         setNewWeek({ monthId: '', weekNumber: 1, category: '', materialDescription: '' });
         setNewWeekMeta({ competencyKey: '', statDomain: 'CHR', statWeight: 1, curriculumProfiles: 'KU-10,KU-12' });
         fetchCurriculumData();
       } else {
-          toast.error("Failed to add week material");
+          toast.error("Gagal menambahkan materi minggu");
       }
-    } catch (e) { toast.error("Error adding week material"); }
+    } catch (e) { toast.error("Terjadi kesalahan saat menambahkan materi minggu"); }
     finally { setSubmitting(false); }
   };
 
@@ -233,13 +233,13 @@ export function CoachCurriculumView() {
         })
       });
       if (res.ok) {
-        toast.success("Week material updated");
+        toast.success("Materi minggu berhasil diperbarui");
         setEditingWeekId(null);
         fetchCurriculumData();
       } else {
-        toast.error("Failed to update week material");
+        toast.error("Gagal memperbarui materi minggu");
       }
-    } catch (e) { toast.error("Error updating week material"); }
+    } catch (e) { toast.error("Terjadi kesalahan saat memperbarui materi minggu"); }
   };
 
   const handleDeleteWeek = async (weekId: string) => {
@@ -272,13 +272,13 @@ export function CoachCurriculumView() {
           body: JSON.stringify(editMonthData)
         });
         if (res.ok) {
-          toast.success("Bulan berhasil diupdate");
+          toast.success("Bulan berhasil diperbarui");
           setEditingMonthId(null);
           fetchCurriculumData();
         } else {
-          toast.error("Gagal mengupdate bulan");
+          toast.error("Gagal memperbarui bulan");
         }
-      } catch (e) { toast.error("Error updating month"); }
+      } catch (e) { toast.error("Terjadi kesalahan saat memperbarui bulan"); }
   }
 
   const handleDeleteMonth = async (monthId: string) => {
@@ -300,7 +300,7 @@ export function CoachCurriculumView() {
   }
 
   const openMonthModal = (levelId: string) => {
-    if (!levelId) return toast.error("Select a level first");
+    if (!levelId) return toast.error("Pilih level terlebih dahulu");
     setNewMonth(prev => ({ ...prev, levelId }));
     setIsAddMonthOpen(true);
   };
@@ -398,10 +398,10 @@ export function CoachCurriculumView() {
                                     <input type="text" value={editLevelData.name} onChange={e => setEditLevelData({...editLevelData, name: e.target.value})} className="w-full text-sm font-medium px-2 py-1.5 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Nama Level"/>
                                     <textarea rows={2} value={editLevelData.description || ''} onChange={e => setEditLevelData({...editLevelData, description: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Deskripsi Singkat"/>
                                     <select value={editLevelData.colorCode} onChange={e => setEditLevelData({...editLevelData, colorCode: e.target.value})} className="w-full text-xs px-2 py-1.5 border rounded dark:bg-slate-900 dark:border-slate-700">
-                                        <option value="blue">Blue (Dasar)</option>
-                                        <option value="emerald">Green (Menengah)</option>
-                                        <option value="amber">Yellow (Lanjutan)</option>
-                                        <option value="slate">Slate</option>
+                                        <option value="blue">Biru (Dasar)</option>
+                                        <option value="emerald">Hijau (Menengah)</option>
+                                        <option value="amber">Kuning (Lanjutan)</option>
+                                        <option value="slate">Abu-abu (Slate)</option>
                                     </select>
                                     <div className="flex gap-2 justify-end mt-2">
                                         <button onClick={() => setEditingLevelId(null)} className="text-xs px-3 py-1.5 bg-slate-200 dark:bg-slate-700 rounded font-medium text-slate-600 dark:text-slate-300">Batal</button>
@@ -489,20 +489,20 @@ export function CoachCurriculumView() {
                                                                     <div className="space-y-2 bg-slate-50 dark:bg-slate-800 p-2 rounded -mx-2">
                                                                         <input type="text" value={editWeekData.category} onChange={e => setEditWeekData({...editWeekData, category: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Kategori"/>
                                                                         <textarea rows={2} value={editWeekData.materialDescription} onChange={e => setEditWeekData({...editWeekData, materialDescription: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Deskripsi"/>
-                                                                        <input type="text" value={editWeekData.competencyKey} onChange={e => setEditWeekData({...editWeekData, competencyKey: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Competency Key"/>
+                                                                        <input type="text" value={editWeekData.competencyKey} onChange={e => setEditWeekData({...editWeekData, competencyKey: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Kunci Kompetensi"/>
                                                                         <div className="grid grid-cols-2 gap-2">
                                                                             <select value={editWeekData.statDomain} onChange={e => setEditWeekData({...editWeekData, statDomain: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700">
-                                                                                <option value="SPD">SPD</option>
-                                                                                <option value="SHO">SHO</option>
-                                                                                <option value="PAS">PAS</option>
-                                                                                <option value="DRI">DRI</option>
-                                                                                <option value="DEF">DEF</option>
-                                                                                <option value="PHY">PHY</option>
-                                                                                <option value="CHR">CHR</option>
+                                                                                <option value="SPD">SPD (Kecepatan)</option>
+                                                                                <option value="SHO">SHO (Tendangan)</option>
+                                                                                <option value="PAS">PAS (Operan)</option>
+                                                                                <option value="DRI">DRI (Menggiring)</option>
+                                                                                <option value="DEF">DEF (Bertahan)</option>
+                                                                                <option value="PHY">PHY (Fisik)</option>
+                                                                                <option value="CHR">CHR (Karakter)</option>
                                                                             </select>
-                                                                            <input type="number" min="0.1" step="0.1" value={editWeekData.statWeight} onChange={e => setEditWeekData({...editWeekData, statWeight: Number(e.target.value)})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Weight"/>
+                                                                            <input type="number" min="0.1" step="0.1" value={editWeekData.statWeight} onChange={e => setEditWeekData({...editWeekData, statWeight: Number(e.target.value)})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Bobot"/>
                                                                         </div>
-                                                                        <input type="text" value={editWeekData.curriculumProfiles} onChange={e => setEditWeekData({...editWeekData, curriculumProfiles: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Profiles csv"/>
+                                                                        <input type="text" value={editWeekData.curriculumProfiles} onChange={e => setEditWeekData({...editWeekData, curriculumProfiles: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Profil (koma)"/>
                                                                         <div className="flex gap-1 justify-end">
                                                                             <button onClick={() => setEditingWeekId(null)} className="text-[10px] px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Batal</button>
                                                                             <button onClick={() => handleEditWeek(w.id)} className="text-[10px] px-2 py-1 bg-blue-600 rounded text-white font-medium">Simpan</button>
@@ -534,20 +534,20 @@ export function CoachCurriculumView() {
                                                                     <div className="space-y-2 bg-slate-50 dark:bg-slate-800 p-2 rounded -mx-2">
                                                                         <input type="text" value={editWeekData.category} onChange={e => setEditWeekData({...editWeekData, category: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Kategori"/>
                                                                         <textarea rows={2} value={editWeekData.materialDescription} onChange={e => setEditWeekData({...editWeekData, materialDescription: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Deskripsi"/>
-                                                                        <input type="text" value={editWeekData.competencyKey} onChange={e => setEditWeekData({...editWeekData, competencyKey: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Competency Key"/>
+                                                                        <input type="text" value={editWeekData.competencyKey} onChange={e => setEditWeekData({...editWeekData, competencyKey: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Kunci Kompetensi"/>
                                                                         <div className="grid grid-cols-2 gap-2">
                                                                             <select value={editWeekData.statDomain} onChange={e => setEditWeekData({...editWeekData, statDomain: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700">
-                                                                                <option value="SPD">SPD</option>
-                                                                                <option value="SHO">SHO</option>
-                                                                                <option value="PAS">PAS</option>
-                                                                                <option value="DRI">DRI</option>
-                                                                                <option value="DEF">DEF</option>
-                                                                                <option value="PHY">PHY</option>
-                                                                                <option value="CHR">CHR</option>
+                                                                                <option value="SPD">SPD (Kecepatan)</option>
+                                                                                <option value="SHO">SHO (Tendangan)</option>
+                                                                                <option value="PAS">PAS (Operan)</option>
+                                                                                <option value="DRI">DRI (Menggiring)</option>
+                                                                                <option value="DEF">DEF (Bertahan)</option>
+                                                                                <option value="PHY">PHY (Fisik)</option>
+                                                                                <option value="CHR">CHR (Karakter)</option>
                                                                             </select>
-                                                                            <input type="number" min="0.1" step="0.1" value={editWeekData.statWeight} onChange={e => setEditWeekData({...editWeekData, statWeight: Number(e.target.value)})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Weight"/>
+                                                                            <input type="number" min="0.1" step="0.1" value={editWeekData.statWeight} onChange={e => setEditWeekData({...editWeekData, statWeight: Number(e.target.value)})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Bobot"/>
                                                                         </div>
-                                                                        <input type="text" value={editWeekData.curriculumProfiles} onChange={e => setEditWeekData({...editWeekData, curriculumProfiles: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Profiles csv"/>
+                                                                        <input type="text" value={editWeekData.curriculumProfiles} onChange={e => setEditWeekData({...editWeekData, curriculumProfiles: e.target.value})} className="w-full text-xs px-2 py-1 border rounded dark:bg-slate-900 dark:border-slate-700" placeholder="Profil (koma)"/>
                                                                         <div className="flex gap-1 justify-end">
                                                                             <button onClick={() => setEditingWeekId(null)} className="text-[10px] px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Batal</button>
                                                                             <button onClick={() => handleEditWeek(w.id)} className="text-[10px] px-2 py-1 bg-blue-600 rounded text-white font-medium">Simpan</button>
@@ -641,10 +641,10 @@ export function CoachCurriculumView() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kode Warna UI</label>
                 <select value={newLevel.colorCode} onChange={e => setNewLevel({...newLevel, colorCode: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="blue">Blue (Dasar)</option>
-                  <option value="emerald">Green (Menengah)</option>
-                  <option value="amber">Yellow (Lanjutan)</option>
-                  <option value="slate">Slate</option>
+                  <option value="blue">Biru (Dasar)</option>
+                  <option value="emerald">Hijau (Menengah)</option>
+                  <option value="amber">Kuning (Lanjutan)</option>
+                  <option value="slate">Abu-abu (Slate)</option>
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-2">
@@ -714,24 +714,24 @@ export function CoachCurriculumView() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">FUT Stat Domain</label>
                   <select value={newWeekMeta.statDomain} onChange={e => setNewWeekMeta({...newWeekMeta, statDomain: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="SPD">Speed</option>
-                    <option value="SHO">Shooting</option>
-                    <option value="PAS">Passing</option>
-                    <option value="DRI">Dribbling</option>
-                    <option value="DEF">Defense</option>
-                    <option value="PHY">Physical</option>
-                    <option value="CHR">Character / Consistency</option>
+                    <option value="SPD">Kecepatan (Speed)</option>
+                    <option value="SHO">Tendangan (Shooting)</option>
+                    <option value="PAS">Operan (Passing)</option>
+                    <option value="DRI">Menggiring (Dribbling)</option>
+                    <option value="DEF">Bertahan (Defense)</option>
+                    <option value="PHY">Fisik (Physical)</option>
+                    <option value="CHR">Karakter / Konsistensi</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stat Weight</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bobot Stat (Stat Weight)</label>
                   <input type="number" min="0.1" step="0.1" value={newWeekMeta.statWeight} onChange={e => setNewWeekMeta({...newWeekMeta, statWeight: Number(e.target.value)})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Allowed Curriculum Profiles</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Profil Kurikulum yang Diizinkan (Allowed Profiles)</label>
                 <input type="text" value={newWeekMeta.curriculumProfiles} onChange={e => setNewWeekMeta({...newWeekMeta, curriculumProfiles: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="KU-10,KU-12" />
-                <p className="text-xs mt-1 text-slate-500">Separate multiple profiles with commas.</p>
+                <p className="text-xs mt-1 text-slate-500">Pisahkan beberapa profil dengan koma.</p>
               </div>
               <div className="pt-4 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsAddWeekOpen(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>

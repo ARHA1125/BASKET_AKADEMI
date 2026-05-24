@@ -9,12 +9,12 @@ import { toast } from 'sonner';
 type AgeClass = 'KU-10' | 'KU-12' | 'KU-14' | 'KU-17';
 
 const ACTIVITY_PRESETS = [
-  { label: 'Lineup Selected', activityType: 'LINEUP_SELECTION', points: 20, ruleCode: 'LINEUP_SELECTED', reason: 'Selected into lineup +20' },
-  { label: 'Event Participation', activityType: 'EVENT_PARTICIPATION', points: 15, ruleCode: 'EVENT_PARTICIPATION', reason: 'Participated in event +15' },
-  { label: 'Discipline Bonus', activityType: 'DISCIPLINE', points: 5, ruleCode: 'DISCIPLINE_BONUS', reason: 'Discipline bonus +5' },
-  { label: 'Teamwork Bonus', activityType: 'TEAMWORK', points: 5, ruleCode: 'TEAMWORK_BONUS', reason: 'Teamwork bonus +5' },
-  { label: 'Coach Feedback Bonus', activityType: 'COACH_FEEDBACK', points: 5, ruleCode: 'COACH_FEEDBACK_BONUS', reason: 'Coach feedback bonus +5' },
-  { label: 'Skill Progress Milestone', activityType: 'SKILL_PROGRESS', points: 10, ruleCode: 'SKILL_PROGRESS', reason: 'Skill progress milestone +10' },
+  { label: 'Lineup Terpilih', activityType: 'LINEUP_SELECTION', points: 20, ruleCode: 'LINEUP_SELECTED', reason: 'Terpilih ke dalam lineup +20' },
+  { label: 'Partisipasi Event', activityType: 'EVENT_PARTICIPATION', points: 15, ruleCode: 'EVENT_PARTICIPATION', reason: 'Berpartisipasi dalam event +15' },
+  { label: 'Bonus Disiplin', activityType: 'DISCIPLINE', points: 5, ruleCode: 'DISCIPLINE_BONUS', reason: 'Bonus disiplin +5' },
+  { label: 'Bonus Kerja Sama Tim', activityType: 'TEAMWORK', points: 5, ruleCode: 'TEAMWORK_BONUS', reason: 'Bonus kerja sama tim +5' },
+  { label: 'Bonus Umpan Balik Pelatih', activityType: 'COACH_FEEDBACK', points: 5, ruleCode: 'COACH_FEEDBACK_BONUS', reason: 'Bonus umpan balik pelatih +5' },
+  { label: 'Pencapaian Kemajuan Skill', activityType: 'SKILL_PROGRESS', points: 10, ruleCode: 'SKILL_PROGRESS', reason: 'Pencapaian kemajuan skill +10' },
 ] as const;
 
 const ageClassOptions: AgeClass[] = ['KU-10', 'KU-12', 'KU-14', 'KU-17'];
@@ -84,7 +84,7 @@ export function CoachGamificationActionsView() {
     });
 
     if (!activity?.id) {
-      toast.error('Failed to create activity');
+      toast.error('Gagal membuat aktivitas');
       return;
     }
 
@@ -98,11 +98,11 @@ export function CoachGamificationActionsView() {
     });
 
     if (!awarded) {
-      toast.error('Activity saved but failed to award points');
+      toast.error('Aktivitas disimpan tetapi gagal memberikan poin');
       return;
     }
 
-    toast.success('Gamification activity and points recorded');
+    toast.success('Aktivitas gamifikasi dan poin berhasil dicatat');
     setDescription('');
     fetchActivities();
   };
@@ -132,11 +132,11 @@ export function CoachGamificationActionsView() {
     });
 
     if (!ok) {
-      toast.error('Failed to update activity');
+      toast.error('Gagal memperbarui aktivitas');
       return;
     }
 
-    toast.success('Activity updated');
+    toast.success('Aktivitas diperbarui');
     cancelEdit();
   };
 
@@ -145,11 +145,11 @@ export function CoachGamificationActionsView() {
 
     const ok = await deleteActivity(deleteTargetId);
     if (!ok) {
-      toast.error('Failed to delete activity');
+      toast.error('Gagal menghapus aktivitas');
       return;
     }
 
-    toast.success('Activity and linked points deleted');
+    toast.success('Aktivitas dan poin terkait berhasil dihapus');
     if (editTargetId === deleteTargetId) {
       cancelEdit();
     }
@@ -159,17 +159,17 @@ export function CoachGamificationActionsView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Coach Gamification Actions</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Award lineup, event, discipline, teamwork, feedback, and skill progress points.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Tindakan Gamifikasi Pelatih</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Berikan poin lineup, event, disiplin, kerja sama tim, umpan balik, dan perkembangan skill.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[380px,1fr]">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Class / KU</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Kelas / KU</label>
               <select value={selectedAgeClass} onChange={(e) => setSelectedAgeClass(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required>
-                <option value="">Select class</option>
+                <option value="">Pilih kelas</option>
                 {ageClassOptions.map((ageClass) => (
                   <option key={ageClass} value={ageClass}>{ageClass}</option>
                 ))}
@@ -177,43 +177,43 @@ export function CoachGamificationActionsView() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Siswa</label>
               <select value={studentId} onChange={(e) => setStudentId(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900" disabled={!selectedAgeClass} required>
-                <option value="">{selectedAgeClass ? 'Select student' : 'Select class first'}</option>
+                <option value="">{selectedAgeClass ? 'Pilih siswa' : 'Pilih kelas terlebih dahulu'}</option>
                 {filteredStudents.map((student) => (
-                  <option key={student.id} value={student.id}>{student.user?.fullName || 'Unknown Student'} · {student.ageClass || '-'}</option>
+                  <option key={student.id} value={student.id}>{student.user?.fullName || 'Siswa Tidak Diketahui'} · {student.ageClass || '-'}</option>
                 ))}
               </select>
               {selectedAgeClass && filteredStudents.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">No students found in {selectedAgeClass}.</p>
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Tidak ada siswa yang ditemukan di {selectedAgeClass}.</p>
               )}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Activity Type</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Jenis Aktivitas</label>
               <select value={presetIndex} onChange={(e) => setPresetIndex(Number(e.target.value))} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                 {ACTIVITY_PRESETS.map((option, index) => (
-                  <option key={option.ruleCode} value={index}>{option.label} ({option.points} pts)</option>
+                  <option key={option.ruleCode} value={index}>{option.label} ({option.points} poin)</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Optional context for the awarded activity" />
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Deskripsi</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Konteks opsional untuk aktivitas yang diberikan" />
             </div>
 
             <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-              {loading ? 'Saving...' : `Award ${preset.points} Points`}
+              {loading ? 'Menyimpan...' : `Berikan ${preset.points} Poin`}
             </button>
           </form>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Activities</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Aktivitas Terbaru</h2>
           <div className="mt-4 flex flex-col gap-3 md:flex-row">
             <select value={activityAgeClassFilter} onChange={(e) => setActivityAgeClassFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:w-44 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-              <option value="">All classes</option>
+              <option value="">Semua kelas</option>
               {ageClassOptions.map((ageClass) => (
                 <option key={ageClass} value={ageClass}>{ageClass}</option>
               ))}
@@ -222,7 +222,7 @@ export function CoachGamificationActionsView() {
               type="search"
               value={activitySearch}
               onChange={(e) => setActivitySearch(e.target.value)}
-              placeholder="Search student name"
+              placeholder="Cari nama siswa"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:flex-1 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
@@ -230,17 +230,17 @@ export function CoachGamificationActionsView() {
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <tr>
-                  <th className="px-3 py-2">Student</th>
-                  <th className="px-3 py-2">Activity</th>
-                  <th className="px-3 py-2">Type</th>
-                  <th className="px-3 py-2">Created</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <th className="px-3 py-2">Siswa</th>
+                  <th className="px-3 py-2">Aktivitas</th>
+                  <th className="px-3 py-2">Jenis</th>
+                  <th className="px-3 py-2">Dibuat</th>
+                  <th className="px-3 py-2">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredActivities.slice(0, 12).map((activity) => (
                   <tr key={activity.id} className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="px-3 py-2">{activity.student?.user?.fullName || 'Unknown Student'}</td>
+                    <td className="px-3 py-2">{activity.student?.user?.fullName || 'Siswa Tidak Diketahui'}</td>
                     <td className="px-3 py-2">
                       {editTargetId === activity.id ? (
                         <div className="space-y-2">
@@ -295,7 +295,7 @@ export function CoachGamificationActionsView() {
                               type="button"
                               onClick={() => handleUpdate(activity.id)}
                               className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400"
-                              aria-label="Save activity"
+                              aria-label="Simpan aktivitas"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -303,7 +303,7 @@ export function CoachGamificationActionsView() {
                               type="button"
                               onClick={cancelEdit}
                               className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                              aria-label="Cancel edit"
+                              aria-label="Batalkan edit"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -314,7 +314,7 @@ export function CoachGamificationActionsView() {
                               type="button"
                               onClick={() => startEdit(activity)}
                               className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400"
-                              aria-label="Edit activity"
+                              aria-label="Edit aktivitas"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -322,7 +322,7 @@ export function CoachGamificationActionsView() {
                               type="button"
                               onClick={() => setDeleteTargetId(activity.id)}
                               className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-red-400"
-                              aria-label="Delete activity"
+                              aria-label="Hapus aktivitas"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -334,7 +334,7 @@ export function CoachGamificationActionsView() {
                 ))}
                 {filteredActivities.length === 0 && (
                   <tr>
-                    <td className="px-3 py-6 text-center text-slate-500" colSpan={5}>No activities match the current filters.</td>
+                    <td className="px-3 py-6 text-center text-slate-500" colSpan={5}>Tidak ada aktivitas yang cocok dengan filter saat ini.</td>
                   </tr>
                 )}
               </tbody>
@@ -344,13 +344,15 @@ export function CoachGamificationActionsView() {
       </div>
       <ConfirmDialog
         open={Boolean(deleteTargetId)}
-        title="Delete Activity"
-        description="Are you sure you want to delete this activity and its linked gamification points? This action cannot be undone."
+        title="Hapus Aktivitas"
+        description="Apakah Anda yakin ingin menghapus aktivitas ini beserta poin gamifikasi terkait? Tindakan ini tidak dapat dibatalkan."
         onOpenChange={(open) => {
           if (!open) setDeleteTargetId('');
         }}
         onConfirm={handleDelete}
         loading={loading}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
       />
     </div>
   );

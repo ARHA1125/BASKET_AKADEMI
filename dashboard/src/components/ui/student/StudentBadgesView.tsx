@@ -32,7 +32,7 @@ export function StudentBadgesView() {
         });
 
         if (!res.ok) {
-          throw new Error('Failed to load badges');
+          throw new Error('Gagal memuat penghargaan');
         }
 
         const json = await res.json();
@@ -50,8 +50,8 @@ export function StudentBadgesView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">My Badges</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Persistent achievements earned from attendance, ranking, event participation, and FUT performance.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Penghargaan Saya</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Pencapaian berkelanjutan yang diperoleh dari kehadiran, peringkat, partisipasi acara, dan performa FUT.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -67,7 +67,7 @@ export function StudentBadgesView() {
               </div>
               <div>
                 <div className="font-semibold text-slate-900 dark:text-white">{badge.title}</div>
-                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{badge.badgeCode} · Tier {badge.tier || 0}</div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{badge.badgeCode} · Tingkat {badge.tier || 0}</div>
               </div>
             </div>
             <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">{badge.description}</p>
@@ -75,14 +75,14 @@ export function StudentBadgesView() {
               <div className="h-2 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500" style={{ width: `${Math.min(((badge.progressPoints || 0) / Math.max(badge.targetPoints || 1, 1)) * 100, 100)}%` }} />
             </div>
             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{badge.progressPoints || 0} / {badge.targetPoints || 0} pts</div>
-            <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">Awarded {new Date(badge.awardedAt).toLocaleDateString('id-ID')}</div>
+            <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">Diberikan {new Date(badge.awardedAt).toLocaleDateString('id-ID')}</div>
           </div>
         )})}
 
         {!loading && badges.length === 0 && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400 md:col-span-2 xl:col-span-3">
             <Trophy className="mx-auto mb-3 h-5 w-5" />
-            No badges earned yet.
+            Belum ada penghargaan yang diperoleh.
           </div>
         )}
       </div>

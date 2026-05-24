@@ -60,12 +60,12 @@ export function CoachSelectionView() {
       date: eventDate,
     });
     if (created) {
-      toast.success('Event created');
+      toast.success('Acara berhasil dibuat');
       setEventName('');
       setEventDate('');
       await refreshData();
     } else {
-      toast.error('Failed to create event');
+      toast.error('Gagal membuat acara');
     }
   };
 
@@ -78,60 +78,60 @@ export function CoachSelectionView() {
       coachName: 'coach-dashboard',
     });
     if (created) {
-      toast.success('Squad created and lineup points awarded');
+      toast.success('Skuad berhasil dibuat dan poin susunan pemain diberikan');
       setSelectedStudentIds([]);
       await refreshData();
     } else {
-      toast.error('Failed to create squad');
+      toast.error('Gagal membuat skuad');
     }
   };
 
   const handleFinalize = async (squadId: string) => {
     const result = await finalizeSquad({ squadId, isFinalized: true, awardedBy: 'coach-dashboard' });
     if (result) {
-      toast.success('Squad finalized and event participation points awarded');
+      toast.success('Skuad berhasil difinalisasi dan poin partisipasi acara diberikan');
       await refreshData();
     } else {
-      toast.error('Failed to finalize squad');
+      toast.error('Gagal memfinalisasi skuad');
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Player Selection</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Create event squads from real workflows and award lineup/event gamification automatically.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Seleksi Pemain</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Buat skuad acara dari alur kerja nyata dan berikan poin susunan pemain/acara secara otomatis.</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[360px,1fr]">
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Create Event</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Buat Acara</h2>
             <form className="mt-4 space-y-4" onSubmit={handleCreateEvent}>
-              <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Event name" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
+              <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Nama acara" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
               <select value={eventType} onChange={(e) => setEventType(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                <option value="TOURNAMENT">Tournament</option>
+                <option value="TOURNAMENT">Turnamen</option>
                 <option value="SPARRING">Sparring</option>
                 <option value="TRYOUT">Tryout</option>
               </select>
               <input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
-              <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">Create Event</button>
+              <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">Buat Acara</button>
             </form>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Build Squad</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Susun Skuad</h2>
             <form className="mt-4 space-y-4" onSubmit={handleCreateSquad}>
               <select value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required>
-                <option value="">Select event</option>
+                <option value="">Pilih acara</option>
                 {events.map((event) => (
                   <option key={event.id} value={event.id}>{event.name}</option>
                 ))}
               </select>
-              <input value={squadName} onChange={(e) => setSquadName(e.target.value)} placeholder="Squad name" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
+              <input value={squadName} onChange={(e) => setSquadName(e.target.value)} placeholder="Nama skuad" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
 
               <select value={selectedAgeClass} onChange={(e) => setSelectedAgeClass(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required>
-                <option value="">Select class</option>
+                <option value="">Pilih kelas</option>
                 {ageClassOptions.map((ageClass) => (
                   <option key={ageClass} value={ageClass}>{ageClass}</option>
                 ))}
@@ -139,7 +139,7 @@ export function CoachSelectionView() {
 
               <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 {!selectedAgeClass && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Select class first to show available students.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Pilih kelas terlebih dahulu untuk menampilkan siswa yang tersedia.</p>
                 )}
                 {selectedAgeClass && filteredStudents.map((student) => (
                   <label key={student.id} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50">
@@ -151,27 +151,27 @@ export function CoachSelectionView() {
                   </label>
                 ))}
                 {selectedAgeClass && filteredStudents.length === 0 && (
-                  <p className="text-sm text-amber-600 dark:text-amber-400">No students found in {selectedAgeClass}.</p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400">Tidak ada siswa yang ditemukan di {selectedAgeClass}.</p>
                 )}
               </div>
 
-              <button type="submit" disabled={loading || !selectedStudentIds.length} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">Create Squad & Award Lineup Points</button>
+              <button type="submit" disabled={loading || !selectedStudentIds.length} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">Buat Skuad & Berikan Poin Susunan Pemain</button>
             </form>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Current Squads</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Skuad Saat Ini</h2>
           <div className="mt-4 space-y-4">
             {squads.map((squad) => (
               <div key={squad.id} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="text-sm font-semibold text-slate-900 dark:text-white">{squad.name}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{squad.event?.name || '-'} · {squad.players?.length || 0} players</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{squad.event?.name || '-'} · {squad.players?.length || 0} pemain</div>
                   </div>
                   <button onClick={() => handleFinalize(squad.id)} disabled={loading || squad.isFinalized} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                    {squad.isFinalized ? 'Finalized' : 'Finalize Squad'}
+                    {squad.isFinalized ? 'Difinalisasi' : 'Finalisasi Skuad'}
                   </button>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -181,7 +181,7 @@ export function CoachSelectionView() {
                 </div>
               </div>
             ))}
-            {squads.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No squads have been created yet.</p>}
+            {squads.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada skuad yang dibuat.</p>}
           </div>
         </div>
       </div>

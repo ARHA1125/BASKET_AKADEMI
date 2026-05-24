@@ -23,7 +23,7 @@ export function StudentPerformanceView() {
         });
 
         if (!res.ok) {
-          throw new Error('Failed to load student performance');
+          throw new Error('Gagal memuat performa siswa');
         }
 
         const json = await res.json();
@@ -57,14 +57,14 @@ export function StudentPerformanceView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">My Performance</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Curriculum-based FUT card with cumulative gamification momentum and weekly leaderboard snapshot.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Performa Saya</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kartu FUT berbasis kurikulum dengan akumulasi momentum gamifikasi dan snapshot papan peringkat mingguan.</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[320px,1fr]">
         <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-yellow-100 via-yellow-50 to-yellow-200 p-6 shadow-sm dark:border-slate-800 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
           {loading ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Loading FUT card...</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Memuat kartu FUT...</p>
           ) : latestAssessment ? (
             <div className="space-y-4">
               <div className="flex items-start justify-between">
@@ -88,51 +88,51 @@ export function StudentPerformanceView() {
               </div>
 
               <div className="rounded-lg bg-white/70 px-4 py-3 text-sm dark:bg-slate-950/40">
-                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Latest competency</div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Kompetensi terbaru</div>
                 <div className="mt-1 font-medium text-slate-900 dark:text-white">{latestAssessment.weekMaterial?.category || '-'}</div>
                 <div className="mt-1 text-slate-600 dark:text-slate-300">{latestAssessment.weekMaterial?.materialDescription || '-'}</div>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No assessment available yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada evaluasi yang tersedia.</p>
           )}
         </div>
 
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Weekly Ranking</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Peringkat Mingguan</h2>
             {loading ? (
-              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Loading leaderboard...</p>
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Memuat papan peringkat...</p>
             ) : currentRank ? (
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Current Rank</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Peringkat Saat Ini</div>
                   <div className="mt-1 text-3xl font-bold text-blue-600 dark:text-blue-400">#{currentRank}</div>
                 </div>
                 <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Cohort</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Kelompok Usia</div>
                   <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{leaderboard?.ageClass || '-'}</div>
                 </div>
                 <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Weekly Points</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Poin Mingguan</div>
                   <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{leaderboard?.weeklyPoints || 0}</div>
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No weekly ranking available yet.</p>
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Belum ada peringkat mingguan yang tersedia.</p>
             )}
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Assessment History</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Riwayat Evaluasi</h2>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
                   <tr>
-                    <th className="px-3 py-2">Competency</th>
-                    <th className="px-3 py-2">Score</th>
-                    <th className="px-3 py-2">Stars</th>
-                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Kompetensi</th>
+                    <th className="px-3 py-2">Skor</th>
+                    <th className="px-3 py-2">Bintang</th>
+                    <th className="px-3 py-2">Tanggal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -160,7 +160,7 @@ export function StudentPerformanceView() {
                   ))}
                   {assessments.length === 0 && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-slate-500" colSpan={4}>No performance history yet.</td>
+                      <td className="px-3 py-6 text-center text-slate-500" colSpan={4}>Belum ada riwayat performa.</td>
                     </tr>
                   )}
                 </tbody>
@@ -169,14 +169,14 @@ export function StudentPerformanceView() {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Aktivitas Terbaru</h2>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
                   <tr>
-                    <th className="px-3 py-2">Activity</th>
-                    <th className="px-3 py-2">Type</th>
-                    <th className="px-3 py-2">Created</th>
+                    <th className="px-3 py-2">Aktivitas</th>
+                    <th className="px-3 py-2">Jenis</th>
+                    <th className="px-3 py-2">Dibuat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -189,7 +189,7 @@ export function StudentPerformanceView() {
                   ))}
                   {recentActivities.length === 0 && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-slate-500" colSpan={3}>No recent activity yet.</td>
+                      <td className="px-3 py-6 text-center text-slate-500" colSpan={3}>Belum ada aktivitas terbaru.</td>
                     </tr>
                   )}
                 </tbody>
