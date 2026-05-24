@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   Res,
+  Request,
 } from '@nestjs/common';
 import { PaymentModuleService } from './payment-module.service';
 import { CreatePaymentModuleDto } from './dto/create-payment-module.dto';
@@ -72,6 +73,20 @@ export class PaymentModuleController {
       filter || 'history',
       month ? parseInt(month) : undefined,
       year ? parseInt(year) : undefined,
+    );
+  }
+
+  @Roles(UserRole.PARENT)
+  @Get('parent/me')
+  findParentInvoices(
+    @Request() req,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
+  ) {
+    return this.paymentModuleService.findInvoicesByParentUserId(
+      req.user.id,
+      month ? parseInt(month, 10) : undefined,
+      year ? parseInt(year, 10) : undefined,
     );
   }
 

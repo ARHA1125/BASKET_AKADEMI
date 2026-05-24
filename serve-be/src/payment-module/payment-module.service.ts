@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 import * as ExcelJS from 'exceljs';
@@ -425,6 +425,65 @@ export class PaymentModuleService {
       .andWhere('invoice.month = :monthKey', { monthKey })
       .orderBy('invoice.createdAt', 'DESC')
       .getMany();
+  }
+
+  async findInvoicesByParentUserId(userId: string, month?: number, year?: number) {
+    const parent = await this.parentRepository.findOne({
+      where: { user: { id: userId } },
+    });
+
+    if (!parent) {
+      throw new HttpException('Parent profile not found', HttpStatus.NOT_FOUND);
+    }
+
+    const whereQuery: any = { parent: { id: parent.id } };
+    if (month && year) {
+      whereQuery.month = this.getMonthKey(month, year);
+    }
+
+    const invoices = await this.invoiceRepository.find({
+      where: whereQuery,
+      relations: [
+        'items',
+        'items.student',
+        'items.student.user',
+        'parent',
+        'parent.user',
+      ],
+      order: { createdAt: 'DESC' },
+    });
+
+    return invoices.map((inv) => {
+      const uniqueStudents = [
+        ...new Set(
+          inv.items.map((i) => i.student?.user?.fullName || 'Unknown'),
+        ),
+      ];
+      const studentName =
+        uniqueStudents.length > 1
+          ? `${uniqueStudents[0]} (+${uniqueStudents.length - 1})`
+          : uniqueStudents[0];
+
+      return {
+        id: inv.id,
+        student: studentName || 'Unknown',
+        category: 'SPP Bulanan',
+        date: new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Jakarta',
+        }).format(inv.createdAt),
+        amount: inv.amount,
+        uniqueCode: inv.uniqueCode,
+        uniqueAmount: inv.uniqueAmount,
+        paymentMethod: inv.paymentMethod,
+        status: inv.status.toLowerCase(),
+        method: '-',
+        photoUrl: inv.photo_url,
+        buktiTimeStamp: inv.buktiTimeStamp,
+        isVerified: inv.isVerified || false,
+        verifiedAt: inv.verifiedAt,
+        verifiedBy: inv.verifiedBy,
+      };
+    });
   }
 
   async getInvoiceCheckItems(): Promise<InvoiceCheckItem[]> {

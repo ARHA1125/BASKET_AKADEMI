@@ -473,4 +473,9 @@ export class AcademicModuleController {
       activeMonthId: body.activeMonthId,
     });
   }
+  @Roles(UserRole.PARENT)
+  @Get('me/children/attendance-summary')
+  getMyChildrenAttendanceSummary(@Request() req) {
+    return this.academicService.getParentChildrenAttendanceSummaryByUserId(req.user.id);
+  }
 }
