@@ -154,7 +154,7 @@ export function ParentReportsView() {
         {/* Report Header */}
         <div className="mb-8 flex items-center justify-between border-b border-slate-200 pb-6 dark:border-slate-800">
           <div>
-            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Wirabhakti Football Academy</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Wirabhakti Basketball Academy</h2>
             <h3 className="mt-1 text-lg font-semibold text-slate-600 dark:text-slate-300">Laporan Kemajuan Siswa</h3>
             <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">
               Dibuat pada: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -340,7 +340,7 @@ export function ParentReportsView() {
           {/* Footer Signature */}
           <div className="col-span-full mt-8 border-t border-slate-200 pt-8 text-center text-xs text-slate-400 dark:border-slate-800 dark:text-slate-500">
             <p>Dokumen ini dibuat oleh komputer dan tidak memerlukan tanda tangan fisik.</p>
-            <p className="mt-1">&copy; {new Date().getFullYear()} Wirabhakti Football Academy. Hak cipta dilindungi undang-undang.</p>
+            <p className="mt-1">&copy; {new Date().getFullYear()} Wirabhakti Basketball Academy. Hak cipta dilindungi undang-undang.</p>
           </div>
         </div>
       </div>
