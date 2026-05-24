@@ -43,13 +43,13 @@ type ParentChildrenResponse = {
 };
 
 const paymentMethodLabels: Record<MarketplacePaymentMethod, string> = {
-  CASH: 'Cash',
+  CASH: 'Tunai',
   TRANSFER: 'Transfer',
 };
 
 export default function StudentStoreView({
-  title = 'Store',
-  subtitle = 'Browse academy products.',
+  title = 'Toko',
+  subtitle = 'Jelajahi produk-produk akademi.',
 }: StoreCatalogProps) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005';
 
@@ -84,7 +84,7 @@ export default function StudentStoreView({
 
   const fetchProfile = async () => {
     const res = await fetch(`${apiUrl}/auth/me`, { headers: authHeaders });
-    if (!res.ok) throw new Error('Failed to load profile');
+    if (!res.ok) throw new Error('Gagal memuat profil');
     return (await res.json()) as User;
   };
 
@@ -119,7 +119,7 @@ export default function StudentStoreView({
     ]);
 
     if (!productsRes.ok || !categoriesRes.ok) {
-      throw new Error('Failed to load marketplace catalog');
+      throw new Error('Gagal memuat katalog toko');
     }
 
     const [productsData, categoriesData] = await Promise.all([
@@ -133,14 +133,14 @@ export default function StudentStoreView({
 
   const fetchOrders = async () => {
     const res = await fetch(`${apiUrl}/marketplace/my-orders`, { headers: authHeaders });
-    if (!res.ok) throw new Error('Failed to load your orders');
+    if (!res.ok) throw new Error('Gagal memuat pesanan Anda');
     const data = (await res.json()) as MarketplaceOrder[];
     setOrders(data);
   };
 
   const loadData = async () => {
     if (!token) {
-      setError('Not authenticated');
+      setError('Belum terotentikasi');
       setLoading(false);
       return;
     }
@@ -164,7 +164,7 @@ export default function StudentStoreView({
       await Promise.all([fetchCatalog(), fetchOrders()]);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Failed to load marketplace');
+      setError(err instanceof Error ? err.message : 'Gagal memuat toko');
     } finally {
       setLoading(false);
     }
@@ -215,7 +215,7 @@ export default function StudentStoreView({
     if (!token || cart.length === 0) return;
 
     if (user?.role === 'PARENT' && !linkedStudentId) {
-      setError('Please select a student before checkout.');
+      setError('Silakan pilih siswa sebelum checkout.');
       return;
     }
 
@@ -251,19 +251,19 @@ export default function StudentStoreView({
 
       if (!res.ok) {
         const responseText = await res.text();
-        throw new Error(responseText || 'Failed to create order');
+        throw new Error(responseText || 'Gagal membuat pesanan');
       }
 
       const order = (await res.json()) as MarketplaceOrder;
       setCheckoutSuccessMessage(
-        `Order created. Your code is ${order.pickupCode || '-'} and payment method is ${paymentMethodLabels[order.paymentMethod]}.`,
+        `Pesanan berhasil dibuat. Kode Anda adalah ${order.pickupCode || '-'} dan metode pembayaran adalah ${paymentMethodLabels[order.paymentMethod]}.`,
       );
       setCart([]);
       setShowCart(false);
       await Promise.all([fetchCatalog(), fetchOrders()]);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Checkout failed');
+      setError(err instanceof Error ? err.message : 'Checkout gagal');
     } finally {
       setCheckoutLoading(false);
     }
@@ -286,14 +286,14 @@ export default function StudentStoreView({
 
       if (!res.ok) {
         const responseText = await res.text();
-        throw new Error(responseText || 'Failed to upload payment proof');
+        throw new Error(responseText || 'Gagal mengunggah bukti pembayaran');
       }
 
       await fetchOrders();
-      setCheckoutSuccessMessage('Payment proof uploaded successfully. Waiting for admin confirmation.');
+      setCheckoutSuccessMessage('Bukti pembayaran berhasil diunggah. Menunggu konfirmasi admin.');
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Failed to upload payment proof');
+      setError(err instanceof Error ? err.message : 'Gagal mengunggah bukti pembayaran');
     } finally {
       setUploadingProofId(null);
     }
@@ -302,7 +302,7 @@ export default function StudentStoreView({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-500 dark:text-slate-400">Loading marketplace...</p>
+        <p className="text-slate-500 dark:text-slate-400">Memuat toko...</p>
       </div>
     );
   }
@@ -322,7 +322,7 @@ export default function StudentStoreView({
 
       {checkoutSuccessMessage && (
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-lg p-4">
-          <h3 className="text-emerald-800 dark:text-emerald-200 font-medium">Marketplace update</h3>
+          <h3 className="text-emerald-800 dark:text-emerald-200 font-medium">Pembaruan Toko</h3>
           <p className="text-emerald-700 dark:text-emerald-300 mt-1">{checkoutSuccessMessage}</p>
         </div>
       )}
@@ -332,14 +332,14 @@ export default function StudentStoreView({
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm dark:shadow-lg p-5 space-y-4 border border-slate-200 dark:border-slate-700">
             <div>
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                Categories
+                Kategori
               </label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Categories</option>
+                <option value="">Semua Kategori</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -350,14 +350,14 @@ export default function StudentStoreView({
 
             <div>
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                Payment Method
+                Metode Pembayaran
               </label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as MarketplacePaymentMethod)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="CASH">Cash</option>
+                <option value="CASH">Tunai</option>
                 <option value="TRANSFER">Transfer</option>
               </select>
             </div>
@@ -365,7 +365,7 @@ export default function StudentStoreView({
             {user?.role === 'PARENT' && parentChildren.length > 0 && (
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                  Student
+                  Siswa
                 </label>
                 <select
                   value={linkedStudentId}
@@ -385,16 +385,16 @@ export default function StudentStoreView({
               onClick={() => setShowCart((prev) => !prev)}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
             >
-              <span>Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})</span>
+              <span>Keranjang ({cart.reduce((sum, item) => sum + item.quantity, 0)})</span>
             </button>
           </div>
 
           {showCart && (
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm dark:shadow-lg p-5 space-y-4 border border-slate-200 dark:border-slate-700">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Shopping Cart</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Keranjang Belanja</h2>
 
               {cart.length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400">Your cart is empty</p>
+                <p className="text-slate-500 dark:text-slate-400">Keranjang belanja Anda kosong</p>
               ) : (
                 <>
                   <div className="space-y-4">
@@ -437,7 +437,7 @@ export default function StudentStoreView({
                             onClick={() => removeFromCart(item.product.id)}
                             className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium"
                           >
-                            Remove
+                            Hapus
                           </button>
                         </div>
                       </div>
@@ -447,8 +447,8 @@ export default function StudentStoreView({
                   <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
                     <div className="text-sm text-slate-600 dark:text-slate-400">
                       {paymentMethod === 'TRANSFER'
-                        ? 'After checkout, upload your transfer proof from the order history below.'
-                        : 'You can pay cash directly to admin using the generated order code.'}
+                        ? 'Setelah checkout, unggah bukti transfer Anda dari riwayat pesanan di bawah.'
+                        : 'Anda dapat membayar tunai langsung ke admin menggunakan kode pesanan yang dibuat.'}
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-baseline justify-between">
@@ -462,7 +462,7 @@ export default function StudentStoreView({
                         disabled={checkoutLoading}
                         className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-medium disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                       >
-                        {checkoutLoading ? 'Processing...' : 'Checkout'}
+                        {checkoutLoading ? 'Memproses...' : 'Checkout'}
                       </button>
                     </div>
                   </div>
@@ -497,11 +497,11 @@ export default function StudentStoreView({
                     </span>
                     {product.stock === 0 ? (
                       <span className="px-2 py-1 text-xs font-medium text-red-700 dark:text-red-200 bg-red-100 dark:bg-red-950/40 rounded-full">
-                        Out of stock
+                        Stok Habis
                       </span>
                     ) : (
                       <span className="px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-950/40 rounded-full">
-                        {product.stock} in stock
+                        {product.stock} tersedia
                       </span>
                     )}
                   </div>
@@ -510,7 +510,7 @@ export default function StudentStoreView({
                     disabled={product.stock === 0}
                     className="mt-3 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white py-2 rounded-lg font-medium disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
                   >
-                    Add to Cart
+                    Tambah ke Keranjang
                   </button>
                 </div>
               </div>
@@ -520,21 +520,21 @@ export default function StudentStoreView({
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm dark:shadow-lg p-6 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between gap-4 mb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Order History</h2>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Riwayat Pesanan</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  View codes, payment status, and upload proof for transfer orders.
+                  Lihat kode, status pembayaran, dan unggah bukti untuk pesanan transfer.
                 </p>
               </div>
               <button
                 onClick={fetchOrders}
                 className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
               >
-                Refresh
+                Segarkan
               </button>
             </div>
 
             {orders.length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400">No orders yet.</p>
+              <p className="text-slate-500 dark:text-slate-400">Belum ada pesanan.</p>
             ) : (
               <div className="space-y-4">
                 {orders.map((order) => (
@@ -545,20 +545,20 @@ export default function StudentStoreView({
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                       <div>
                         <div className="font-semibold text-slate-900 dark:text-slate-50">
-                          Order #{order.id.slice(0, 8)}
+                          Pesanan #{order.id.slice(0, 8)}
                         </div>
                         <div className="text-sm text-slate-600 dark:text-slate-400">
-                          Code: <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                          Kode: <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
                             {order.pickupCode || '-'}
                           </span>
                         </div>
                         <div className="text-sm text-slate-600 dark:text-slate-400">
-                          Payment: {paymentMethodLabels[order.paymentMethod]} · {order.paymentStatus}
+                          Pembayaran: {paymentMethodLabels[order.paymentMethod]} · {order.paymentStatus}
                         </div>
                         <div className="text-sm text-slate-600 dark:text-slate-400">Status: {order.status}</div>
                         {order.linkedStudent?.user?.fullName && (
                           <div className="text-sm text-slate-600 dark:text-slate-400">
-                            Student: {order.linkedStudent.user.fullName}
+                            Siswa: {order.linkedStudent.user.fullName}
                           </div>
                         )}
                       </div>
@@ -592,7 +592,7 @@ export default function StudentStoreView({
 
                     {order.adminNotes && (
                       <div className="text-sm text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2">
-                        Admin note: {order.adminNotes}
+                        Catatan admin: {order.adminNotes}
                       </div>
                     )}
 
@@ -605,18 +605,18 @@ export default function StudentStoreView({
                             rel="noreferrer"
                             className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
                           >
-                            View uploaded payment proof
+                            Lihat bukti pembayaran yang diunggah
                           </a>
                         ) : (
                           <div className="text-sm text-slate-600 dark:text-slate-400">
-                            No payment proof uploaded yet.
+                            Belum ada bukti pembayaran yang diunggah.
                           </div>
                         )}
 
                         {order.paymentStatus !== 'CONFIRMED' && (
                           <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                              Upload transfer proof
+                              Unggah bukti transfer
                             </label>
                             <input
                               type="file"

@@ -34,9 +34,9 @@ export function StudentProgramsView() {
       if (!response.ok) {
         console.error(`API error: ${response.status} ${response.statusText}`);
         if (response.status === 401) {
-          toast.error('Please login again');
+          toast.error('Silakan login kembali');
         } else {
-          toast.error('Failed to load training program');
+          toast.error('Gagal memuat program latihan');
         }
         setTrainingClass(null);
         return;
@@ -45,7 +45,7 @@ export function StudentProgramsView() {
       const text = await response.text();
       if (!text || text.trim() === '') {
         console.error('Empty response from server');
-        toast.error('Empty response from server');
+        toast.error('Respon kosong dari server');
         setTrainingClass(null);
         return;
       }
@@ -56,7 +56,7 @@ export function StudentProgramsView() {
       } catch (jsonError) {
         console.error('JSON parse error:', jsonError);
         console.error('Response text:', text.substring(0, 200));
-        toast.error('Failed to parse response from server');
+        toast.error('Gagal mengurai respon dari server');
         setTrainingClass(null);
         return;
       }
@@ -64,7 +64,7 @@ export function StudentProgramsView() {
       setTrainingClass(data || null);
     } catch (error) {
       console.error('Failed to fetch training class:', error);
-      toast.error('Failed to load training program');
+      toast.error('Gagal memuat program latihan');
     } finally {
       setLoading(false);
     }
@@ -82,13 +82,13 @@ export function StudentProgramsView() {
     return (
       <div className="space-y-6">
         <div>
-          <Title>My Training Program</Title>
-          <Text className="mt-1">View your training program and curriculum</Text>
+          <Title>Program Latihan Saya</Title>
+          <Text className="mt-1">Lihat program latihan dan kurikulum Anda</Text>
         </div>
         <div className="text-center py-12 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
           <BookOpen className="w-12 h-12 mx-auto text-slate-400 mb-3" />
-          <Text>You are not enrolled in any training program</Text>
-          <Text className="text-sm mt-2">Contact your coach to join a training class</Text>
+          <Text>Anda tidak terdaftar dalam program latihan apa pun</Text>
+          <Text className="text-sm mt-2">Hubungi pelatih Anda untuk bergabung dengan kelas latihan</Text>
         </div>
       </div>
     );
@@ -102,8 +102,8 @@ export function StudentProgramsView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Title>My Training Program</Title>
-          <Text className="mt-1">View your training program and curriculum</Text>
+          <Title>Program Latihan Saya</Title>
+          <Text className="mt-1">Lihat program latihan dan kurikulum Anda</Text>
         </div>
         <BookOpen className="w-8 h-8 text-slate-400" />
       </div>
@@ -119,7 +119,7 @@ export function StudentProgramsView() {
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-slate-500" />
                 <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Schedule</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Jadwal</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">{trainingClass.schedule}</p>
                 </div>
               </div>
@@ -129,7 +129,7 @@ export function StudentProgramsView() {
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-slate-500" />
                 <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Coach</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Pelatih</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">{trainingClass.coach.fullName}</p>
                 </div>
               </div>
@@ -140,16 +140,16 @@ export function StudentProgramsView() {
                 <div className="flex items-center gap-3 mb-3">
                   <BookOpen className="w-5 h-5 text-slate-500" />
                   <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Curriculum Level</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Tingkat Kurikulum</p>
                     <p className="text-sm text-slate-600 dark:text-slate-400">{trainingClass.curriculumLevel.name}</p>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Progress</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Kemajuan</span>
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      Month {currentMonth} of {totalMonths}
+                      Bulan {currentMonth} dari {totalMonths}
                     </span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mb-3">
@@ -168,10 +168,10 @@ export function StudentProgramsView() {
                     >
                       <div className="text-left">
                         <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                          Current Month: {trainingClass.activeMonth.title}
+                          Bulan Aktif: {trainingClass.activeMonth.title}
                         </p>
                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                          Month {trainingClass.activeMonth.monthNumber}
+                          Bulan {trainingClass.activeMonth.monthNumber}
                         </p>
                       </div>
                       {expandedMonth ? (
@@ -184,7 +184,7 @@ export function StudentProgramsView() {
                     {expandedMonth && (
                       <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
                         <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-                          View full curriculum details in the Curriculum page
+                          Lihat detail kurikulum lengkap di halaman Kurikulum
                         </p>
                       </div>
                     )}
@@ -199,7 +199,7 @@ export function StudentProgramsView() {
               href="/student/performance"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              View My Performance
+              Lihat Performa Saya
             </a>
           </div>
         </div>

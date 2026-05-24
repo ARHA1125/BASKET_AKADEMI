@@ -44,7 +44,7 @@ export function StudentDashboardOverview() {
         });
 
         if (!res.ok) {
-          throw new Error('Failed to load student dashboard');
+          throw new Error('Gagal memuat dasbor siswa');
         }
 
         setSummary(await res.json());
@@ -77,22 +77,22 @@ export function StudentDashboardOverview() {
   const quickStats = useMemo(() => {
     return [
       {
-        label: 'Weekly Rank',
+        label: 'Peringkat Mingguan',
         value: summary?.leaderboard?.currentRank ? `#${summary.leaderboard.currentRank}` : '-',
         tone: 'text-blue-600 dark:text-blue-400',
       },
       {
-        label: 'Total Points',
+        label: 'Total Poin',
         value: `${gamification?.totalPoints || 0}`,
         tone: 'text-amber-500 dark:text-amber-300',
       },
       {
-        label: 'Recent OVR',
+        label: 'OVR Terbaru',
         value: latest?.overallRating ? String(latest.overallRating) : '-',
         tone: 'text-slate-900 dark:text-white',
       },
       {
-        label: 'Dominant Stat',
+        label: 'Stat Dominan',
         value: dominantStat,
         tone: 'text-violet-600 dark:text-violet-300',
       },
@@ -103,9 +103,9 @@ export function StudentDashboardOverview() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">My Career</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Karir Saya</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {loading ? 'Loading your academy progress...' : `Welcome back, ${student?.user.fullName || 'Player'}.`}
+            {loading ? 'Memuat kemajuan akademi Anda...' : `Selamat datang kembali, ${student?.user.fullName || 'Pemain'}.`}
           </p>
         </div>
       </header>
@@ -114,11 +114,11 @@ export function StudentDashboardOverview() {
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-yellow-100 via-yellow-50 to-yellow-200 p-6 shadow-sm dark:border-slate-800 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
             {loading ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Loading FUT snapshot...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Memuat snapshot FUT...</p>
             ) : latest ? (
               <div className="space-y-4">
                 <PlayerCard
-                  name={student?.user.fullName || 'Player'}
+                  name={student?.user.fullName || 'Pemain'}
                   position={student?.position || 'ATH'}
                   ovr={String(latest.overallRating)}
                   subtitle={`${student?.ageClass || '-'} · ${student?.curriculumProfile || '-'}`}
@@ -135,21 +135,21 @@ export function StudentDashboardOverview() {
                 />
               </div>
             ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400">No FUT card available yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Kartu FUT belum tersedia.</p>
             )}
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Featured Progress</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white">Kemajuan Unggulan</h3>
             <div className={`mt-4 rounded-xl border border-amber-200/60 bg-gradient-to-br ${featuredTheme.bg} p-4 dark:border-amber-500/20`}>
               <div className="flex items-start gap-3">
                 <div className={`rounded-full bg-slate-950/40 p-3 ${featuredTheme.accent}`}>
                   <featuredTheme.icon className={`h-5 w-5 ${featuredTheme.animation}`} />
                 </div>
                 <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Featured Trophy</div>
-                  <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{featuredBadge?.title || 'Keep stacking points'}</div>
-                  <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{featuredBadge?.description || 'Your strongest trophy will appear here once a category reaches Tier 1.'}</div>
+                  <div className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Trofi Unggulan</div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{featuredBadge?.title || 'Terus kumpulkan poin'}</div>
+                  <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{featuredBadge?.description || 'Trofi terkuat Anda akan muncul di sini setelah salah satu kategori mencapai Tingkat 1.'}</div>
                 </div>
               </div>
             </div>
@@ -169,11 +169,11 @@ export function StudentDashboardOverview() {
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h3 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
                 <Calendar className="h-4 w-4 text-blue-600" />
-                Current Competency Focus
+                Fokus Kompetensi Saat Ini
               </h3>
               <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                <div className="text-sm font-medium text-slate-900 dark:text-white">{latest?.weekMaterial?.category || 'No active focus yet'}</div>
-                <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{latest?.weekMaterial?.materialDescription || 'Coach assessments will appear here once recorded.'}</div>
+                <div className="text-sm font-medium text-slate-900 dark:text-white">{latest?.weekMaterial?.category || 'Belum ada fokus aktif'}</div>
+                <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{latest?.weekMaterial?.materialDescription || 'Evaluasi pelatih akan muncul di sini setelah dicatat.'}</div>
               </div>
             </div>
 
@@ -181,9 +181,9 @@ export function StudentDashboardOverview() {
               <div className="flex items-center justify-between gap-3">
                 <h3 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
                   <Activity className="h-4 w-4 text-emerald-600" />
-                  Recent Activity
+                  Aktivitas Terbaru
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Latest 3</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">3 Terbaru</span>
               </div>
               <div className="mt-4 space-y-2">
                 {compactActivities.map((activity) => (
@@ -200,12 +200,12 @@ export function StudentDashboardOverview() {
                   </div>
                 ))}
                 {!compactActivities.length && !loading && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">No activity recorded yet.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada aktivitas yang dicatat.</p>
                 )}
               </div>
               {!!summary?.recentActivities?.length && (
                 <div className="mt-3 flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  Activity history is available in the performance page
+                  Riwayat aktivitas tersedia di halaman performa
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
               )}
@@ -215,7 +215,7 @@ export function StudentDashboardOverview() {
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
               <Trophy className="h-4 w-4 text-amber-500" />
-              Trophy Cabinet
+              Koleksi Trofi
             </h3>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {achievements.map((item) => {
@@ -232,7 +232,7 @@ export function StudentDashboardOverview() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-sm font-medium text-slate-900 dark:text-white">{item.badge.title}</div>
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                            Tier {item.badge.tier || 0}
+                            Tingkat {item.badge.tier || 0}
                           </div>
                         </div>
                         <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.badge.description}</div>
@@ -251,7 +251,7 @@ export function StudentDashboardOverview() {
                 );
               })}
               {!achievements.length && !loading && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No trophy progress available yet.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada kemajuan trofi yang tersedia.</p>
               )}
             </div>
           </div>

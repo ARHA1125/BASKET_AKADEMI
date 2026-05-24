@@ -20,18 +20,18 @@ export function CoachRosterView() {
   const handleFinalize = async (squadId: string) => {
     const result = await finalizeSquad({ squadId, isFinalized: true, awardedBy: 'coach-dashboard' });
     if (result) {
-      toast.success('Roster finalized and event participation points awarded');
+      toast.success('Daftar tim berhasil difinalisasi dan poin partisipasi acara diberikan');
       await refresh();
     } else {
-      toast.error('Failed to finalize roster');
+      toast.error('Gagal memfinalisasi daftar tim');
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Team Roster</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review squad composition and finalize event rosters.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Daftar Tim</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Tinjau komposisi skuad dan finalisasi daftar tim acara.</p>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -40,10 +40,10 @@ export function CoachRosterView() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{squad.name}</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{squad.event?.name || '-'} · Coach: {squad.coachName || '-'} · {squad.status}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{squad.event?.name || '-'} · Pelatih: {squad.coachName || '-'} · {squad.status}</p>
               </div>
               <button onClick={() => handleFinalize(squad.id)} disabled={loading || squad.isFinalized} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                {squad.isFinalized ? 'Finalized' : 'Finalize'}
+                {squad.isFinalized ? 'Difinalisasi' : 'Finalisasi'}
               </button>
             </div>
 
@@ -53,15 +53,15 @@ export function CoachRosterView() {
               ))}
             </div>
             <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              Created {new Date(squad.createdAt).toLocaleString('id-ID')}
-              {squad.finalizedAt ? ` · Finalized ${new Date(squad.finalizedAt).toLocaleString('id-ID')}` : ''}
+              Dibuat {new Date(squad.createdAt).toLocaleString('id-ID')}
+              {squad.finalizedAt ? ` · Difinalisasi ${new Date(squad.finalizedAt).toLocaleString('id-ID')}` : ''}
             </div>
           </div>
         ))}
 
         {!squads.length && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400 xl:col-span-2">
-            No rosters available yet.
+            Belum ada daftar tim yang tersedia.
           </div>
         )}
       </div>

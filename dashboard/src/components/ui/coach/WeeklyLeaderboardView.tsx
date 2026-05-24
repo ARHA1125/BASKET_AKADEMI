@@ -23,12 +23,12 @@ export function WeeklyLeaderboardView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Weekly Top Player</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Track weekly gamification rankings by age class.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Pemain Terbaik Mingguan</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Pantau peringkat gamifikasi mingguan berdasarkan kelas usia.</p>
         </div>
         <select value={ageClass} onChange={(e) => setAgeClass(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
           {AGE_CLASS_OPTIONS.map((option) => (
-            <option key={option} value={option}>{option || 'All age classes'}</option>
+            <option key={option} value={option}>{option || 'Semua kelas usia'}</option>
           ))}
         </select>
       </div>
@@ -39,7 +39,7 @@ export function WeeklyLeaderboardView() {
             {leaderboard.slice(0, 3).map((entry, index) => (
               <div key={entry.studentId} className="space-y-2">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {index === 0 ? 'Top Player' : `Rank #${index + 1}`}
+                  {index === 0 ? 'Pemain Terbaik' : `Peringkat #${index + 1}`}
                 </div>
                 <PlayerCard
                   name={entry.fullName}
@@ -66,11 +66,11 @@ export function WeeklyLeaderboardView() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
               <tr>
-                <th className="px-3 py-2">Rank</th>
-                <th className="px-3 py-2">Student</th>
-                <th className="px-3 py-2">Age Class</th>
-                <th className="px-3 py-2">Weekly Points</th>
-                <th className="px-3 py-2">Highlight</th>
+                <th className="px-3 py-2">Peringkat</th>
+                <th className="px-3 py-2">Siswa</th>
+                <th className="px-3 py-2">Kelas Usia</th>
+                <th className="px-3 py-2">Poin Mingguan</th>
+                <th className="px-3 py-2">Sorotan</th>
               </tr>
             </thead>
             <tbody>
@@ -80,12 +80,12 @@ export function WeeklyLeaderboardView() {
                   <td className="px-3 py-3">{entry.fullName}</td>
                   <td className="px-3 py-3">{entry.ageClass || '-'}</td>
                   <td className="px-3 py-3 font-semibold text-blue-600 dark:text-blue-400">{entry.weeklyPoints}</td>
-                  <td className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">{index === 0 ? 'Top Player' : index < 3 ? 'Top 3' : '-'}</td>
+                  <td className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">{index === 0 ? 'Pemain Terbaik' : index < 3 ? '3 Teratas' : '-'}</td>
                 </tr>
               ))}
               {!loading && leaderboard.length === 0 && (
                 <tr>
-                  <td className="px-3 py-6 text-center text-slate-500" colSpan={5}>No leaderboard entries for this week yet.</td>
+                  <td className="px-3 py-6 text-center text-slate-500" colSpan={5}>Belum ada entri papan peringkat untuk minggu ini.</td>
                 </tr>
               )}
             </tbody>

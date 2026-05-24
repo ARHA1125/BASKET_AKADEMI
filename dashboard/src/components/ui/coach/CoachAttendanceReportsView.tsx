@@ -22,12 +22,12 @@ export function CoachAttendanceReportsView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Attendance Reports</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review attendance rate by student and age class.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Laporan Kehadiran</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Tinjau tingkat kehadiran berdasarkan siswa dan kelas usia.</p>
         </div>
         <select value={ageClass} onChange={(e) => setAgeClass(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
           {AGE_CLASS_OPTIONS.map((option) => (
-            <option key={option} value={option}>{option || 'All age classes'}</option>
+            <option key={option} value={option}>{option || 'Semua kelas usia'}</option>
           ))}
         </select>
       </div>
@@ -37,12 +37,12 @@ export function CoachAttendanceReportsView() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
               <tr>
-                <th className="px-3 py-2">Student</th>
-                <th className="px-3 py-2">Age Class</th>
-                <th className="px-3 py-2">Present</th>
-                <th className="px-3 py-2">Late</th>
-                <th className="px-3 py-2">Absent</th>
-                <th className="px-3 py-2">Rate</th>
+                <th className="px-3 py-2">Siswa</th>
+                <th className="px-3 py-2">Kelas Usia</th>
+                <th className="px-3 py-2">Hadir</th>
+                <th className="px-3 py-2">Terlambat</th>
+                <th className="px-3 py-2">Tidak Hadir</th>
+                <th className="px-3 py-2">Rasio</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +58,7 @@ export function CoachAttendanceReportsView() {
               ))}
               {!loading && summary.length === 0 && (
                 <tr>
-                  <td className="px-3 py-6 text-center text-slate-500" colSpan={6}>No attendance summary available yet.</td>
+                  <td className="px-3 py-6 text-center text-slate-500" colSpan={6}>Belum ada ringkasan kehadiran yang tersedia.</td>
                 </tr>
               )}
             </tbody>

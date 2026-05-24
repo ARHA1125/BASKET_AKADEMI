@@ -1983,4 +1983,55 @@ export class AcademicModuleService {
     });
   }
 
+  async getParentChildrenAttendanceSummaryByUserId(userId: string) {
+    const parent = await this.parentRepo.findOne({
+      where: { user: { id: userId } },
+      relations: ['students', 'students.user'],
+    });
+
+    if (!parent || !parent.students) {
+      return [];
+    }
+
+    const studentIds = parent.students.map((s) => s.id);
+    if (studentIds.length === 0) {
+      return [];
+    }
+
+    const query = this.attendanceRepo
+      .createQueryBuilder('attendance')
+      .leftJoin('attendance.student', 'student')
+      .leftJoin('student.user', 'user')
+      .select('student.id', 'studentId')
+      .addSelect('user.fullName', 'fullName')
+      .addSelect('student.ageClass', 'ageClass')
+      .addSelect("COUNT(attendance.id)", 'totalSessions')
+      .addSelect("COUNT(attendance.id) FILTER (WHERE attendance.status = 'PRESENT')", 'presentCount')
+      .addSelect("COUNT(attendance.id) FILTER (WHERE attendance.status = 'LATE')", 'lateCount')
+      .addSelect("COUNT(attendance.id) FILTER (WHERE attendance.status = 'ABSENT')", 'absentCount')
+      .where('student.id IN (:...studentIds)', { studentIds })
+      .groupBy('student.id')
+      .addGroupBy('user.fullName')
+      .addGroupBy('student.ageClass');
+
+    const rows = await query.getRawMany();
+
+    return rows.map((row) => {
+      const totalSessions = Number(row.totalSessions || 0);
+      const presentCount = Number(row.presentCount || 0);
+      const lateCount = Number(row.lateCount || 0);
+      const absentCount = Number(row.absentCount || 0);
+
+      return {
+        studentId: row.studentId,
+        fullName: row.fullName,
+        ageClass: row.ageClass,
+        totalSessions,
+        presentCount,
+        lateCount,
+        absentCount,
+        attendanceRate: totalSessions > 0 ? ((presentCount + lateCount) / totalSessions) * 100 : 0,
+      };
+    });
+  }
 }

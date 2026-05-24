@@ -61,9 +61,9 @@ export function ParentDashboardOverview() {
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Parent Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Dasbor Orang Tua</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {loading ? 'Loading your children progress...' : 'Monitor FUT progress, attendance-driven momentum, and rankings.'}
+            {loading ? 'Memuat kemajuan anak-anak Anda...' : 'Pantau kemajuan FUT, momentum kehadiran, dan peringkat.'}
           </p>
         </div>
       </header>
@@ -72,11 +72,11 @@ export function ParentDashboardOverview() {
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-yellow-100 via-yellow-50 to-yellow-200 p-6 shadow-sm dark:border-slate-800 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900">
             {loading ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Loading child FUT summary...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Memuat ringkasan FUT anak...</p>
             ) : latest ? (
               <div className="space-y-4">
                 <PlayerCard
-                  name={activeChild?.student.user.fullName || 'Player'}
+                  name={activeChild?.student.user.fullName || 'Pemain'}
                   position={activeChild?.student.position || 'ATH'}
                   ovr={String(latest.overallRating)}
                   rating={latest.overallRating}
@@ -94,21 +94,21 @@ export function ParentDashboardOverview() {
                 />
               </div>
             ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400">No FUT assessment available yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada evaluasi FUT yang tersedia.</p>
             )}
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Quick Actions</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white">Tindakan Cepat</h3>
             <div className="mt-4 space-y-2 text-sm">
               <button className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                <MessageCircle size={16} /> Chat with Coach
+                <MessageCircle size={16} /> Hubungi Pelatih
               </button>
               <button className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                <Calendar size={16} /> Request Leave
+                <Calendar size={16} /> Ajukan Izin
               </button>
               <button className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                <CreditCard size={16} /> Review Payment Status
+                <CreditCard size={16} /> Status Pembayaran
               </button>
             </div>
           </div>
@@ -116,40 +116,40 @@ export function ParentDashboardOverview() {
 
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Progress Snapshot</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white">Kemajuan Singkat</h3>
             <div className="mt-4 grid gap-4 md:grid-cols-3 text-sm">
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Current Rank</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Peringkat Saat Ini</div>
                 <div className="mt-1 text-3xl font-bold text-blue-600 dark:text-blue-400">{activeChild?.leaderboard?.currentRank ? `#${activeChild.leaderboard.currentRank}` : '-'}</div>
               </div>
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Total Points</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Total Poin</div>
                 <div className="mt-1 text-2xl font-bold text-amber-500 dark:text-amber-300">{activeChild?.gamification?.totalPoints || 0}</div>
               </div>
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Cohort</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Kelompok Usia</div>
                 <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{activeChild?.leaderboard?.ageClass || '-'}</div>
               </div>
             </div>
             <div className="mt-4 rounded-xl border border-amber-200/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-white dark:border-amber-500/20">
-              <div className="text-xs uppercase tracking-[0.3em] text-amber-200/70">Featured Trophy</div>
-              <div className="mt-2 text-lg font-semibold">{featuredBadge?.title || 'No featured trophy yet'}</div>
-              <div className="mt-1 text-sm text-slate-300">{featuredBadge?.description || 'Your child will unlock a featured trophy once any category reaches Tier 1.'}</div>
+              <div className="text-xs uppercase tracking-[0.3em] text-amber-200/70">Trofi Unggulan</div>
+              <div className="mt-2 text-lg font-semibold">{featuredBadge?.title || 'Belum ada trofi unggulan'}</div>
+              <div className="mt-1 text-sm text-slate-300">{featuredBadge?.description || 'Anak Anda akan membuka trofi unggulan setelah salah satu kategori mencapai Tingkat 1.'}</div>
             </div>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
-              <Trophy className="h-4 w-4 text-amber-500" /> Assessment History
+              <Trophy className="h-4 w-4 text-amber-500" /> Riwayat Evaluasi
             </h3>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
                   <tr>
-                    <th className="px-3 py-2">Competency</th>
-                    <th className="px-3 py-2">Score</th>
-                    <th className="px-3 py-2">Stars</th>
-                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Kompetensi</th>
+                    <th className="px-3 py-2">Skor</th>
+                    <th className="px-3 py-2">Bintang</th>
+                    <th className="px-3 py-2">Tanggal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -177,7 +177,7 @@ export function ParentDashboardOverview() {
                   ))}
                   {!activeChild?.assessments?.length && !loading && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-slate-500" colSpan={4}>No child assessment history yet.</td>
+                      <td className="px-3 py-6 text-center text-slate-500" colSpan={4}>Belum ada riwayat evaluasi anak.</td>
                     </tr>
                   )}
                 </tbody>
@@ -186,7 +186,7 @@ export function ParentDashboardOverview() {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Trophy Categories</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white">Kategori Trofi</h3>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {achievements.map((item: { badge: StudentBadge }) => {
                 const theme = BADGE_THEME[item.badge.categoryKey || 'team_spirit'] || BADGE_THEME.team_spirit;
@@ -201,7 +201,7 @@ export function ParentDashboardOverview() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-medium text-slate-900 dark:text-white">{item.badge.title}</div>
-                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tier {item.badge.tier || 0}</div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tingkat {item.badge.tier || 0}</div>
                       </div>
                       <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.badge.description}</div>
                       <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
@@ -213,7 +213,7 @@ export function ParentDashboardOverview() {
                 </div>
               )})}
               {!achievements.length && !loading && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No trophy categories visible yet.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada kategori trofi yang terlihat.</p>
               )}
             </div>
           </div>

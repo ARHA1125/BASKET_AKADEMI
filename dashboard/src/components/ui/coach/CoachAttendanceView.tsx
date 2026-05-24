@@ -62,7 +62,7 @@ export function CoachAttendanceView() {
       
       const dateOfMonth = d.getDate();
       const weekNumber = Math.ceil(dateOfMonth / 7);
-      const weekKey = `Week ${weekNumber}`;
+      const weekKey = `Minggu ${weekNumber}`;
 
       if (!monthGroups[monthKey]) {
         monthGroups[monthKey] = {};
@@ -88,7 +88,7 @@ export function CoachAttendanceView() {
       .sort(([a], [b]) => b.localeCompare(a)) // Sort months descending
       .map(([monthKey, weeks]) => {
         const date = new Date(`${monthKey}-01`);
-        const monthLabel = date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        const monthLabel = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
         
         const sortedWeeks = Object.entries(weeks)
           .sort(([a], [b]) => a.localeCompare(b)) // Sort Week 1, Week 2 ascending
@@ -125,11 +125,11 @@ export function CoachAttendanceView() {
     });
 
     if (success) {
-      toast.success('Attendance recorded and gamification updated');
+      toast.success('Kehadiran berhasil dicatat dan gamifikasi diperbarui');
       // Refetch the attendance to ensure it is immediately updated
       fetchAttendance();
     } else {
-      toast.error('Failed to record attendance');
+      toast.error('Gagal mencatat kehadiran');
     }
   };
 
@@ -145,17 +145,17 @@ export function CoachAttendanceView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manage Attendance</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Recording attendance here also feeds weekly points and activity history automatically.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Kelola Kehadiran</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Pencatatan kehadiran di sini juga akan memperbarui poin mingguan dan riwayat aktivitas secara otomatis.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[360px,1fr]">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Class / KU</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Kelas / KU</label>
               <select value={selectedAgeClass} onChange={(e) => setSelectedAgeClass(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required>
-                <option value="">Select class</option>
+                <option value="">Pilih kelas</option>
                 {ageClassOptions.map((ageClass) => (
                   <option key={ageClass} value={ageClass}>{ageClass}</option>
                 ))}
@@ -163,38 +163,39 @@ export function CoachAttendanceView() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Siswa</label>
               <select value={studentId} onChange={(e) => setStudentId(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900" disabled={!selectedAgeClass} required>
-                <option value="">{selectedAgeClass ? 'Select student' : 'Select class first'}</option>
+                <option value="">{selectedAgeClass ? 'Pilih siswa' : 'Pilih kelas terlebih dahulu'}</option>
                 {filteredStudents.map((student) => (
                   <option key={student.id} value={student.id}>{student.user?.fullName} · {student.ageClass || '-'}</option>
                 ))}
               </select>
               {selectedAgeClass && filteredStudents.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">No students found in {selectedAgeClass}.</p>
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Siswa tidak ditemukan di {selectedAgeClass}.</p>
               )}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
               <select value={status} onChange={(e) => setStatus(e.target.value as (typeof ATTENDANCE_STATUSES)[number])} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                {ATTENDANCE_STATUSES.map((value) => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
+                <option value="PRESENT">Hadir</option>
+                <option value="LATE">Terlambat</option>
+                <option value="ABSENT">Absen</option>
+                <option value="EXCUSED">Izin</option>
               </select>
             </div>
 
             <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-              {loading ? 'Saving...' : 'Record Attendance'}
+              {loading ? 'Menyimpan...' : 'Catat Kehadiran'}
             </button>
           </form>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Weekly Attendance</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Kehadiran Mingguan</h2>
           <div className="mt-4 flex flex-col gap-3 md:flex-row">
             <select value={attendanceAgeClassFilter} onChange={(e) => setAttendanceAgeClassFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:w-44 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-              <option value="">Select class...</option>
+              <option value="">Pilih kelas...</option>
               {ageClassOptions.map((ageClass) => (
                 <option key={ageClass} value={ageClass}>{ageClass}</option>
               ))}
@@ -203,7 +204,7 @@ export function CoachAttendanceView() {
               type="search"
               value={attendanceSearch}
               onChange={(e) => setAttendanceSearch(e.target.value)}
-              placeholder="Search student name"
+              placeholder="Cari nama siswa"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:flex-1 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               disabled={!attendanceAgeClassFilter}
             />
@@ -212,11 +213,11 @@ export function CoachAttendanceView() {
           <div className="mt-6 space-y-4">
             {!groupedAttendance ? (
               <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Please select a class category to view weekly attendance.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Silakan pilih kategori kelas untuk melihat kehadiran mingguan.</p>
               </div>
             ) : groupedAttendance.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
-                <p className="text-sm text-slate-500 dark:text-slate-400">No attendance records found for this class.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada data kehadiran yang ditemukan untuk kelas ini.</p>
               </div>
             ) : (
               groupedAttendance.map((monthGroup) => (
@@ -244,7 +245,7 @@ export function CoachAttendanceView() {
                               <div className="text-left">
                                 <p className="font-medium text-slate-900 dark:text-white">{weekGroup.weekKey}</p>
                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                  Total Students: {weekGroup.totalStudents} | Present: {weekGroup.stats.present} | Absent: {weekGroup.stats.absent} | Excused: {weekGroup.stats.excused} | Late: {weekGroup.stats.late}
+                                  Total Siswa: {weekGroup.totalStudents} | Hadir: {weekGroup.stats.present} | Terlambat: {weekGroup.stats.late} | Absen: {weekGroup.stats.absent} | Izin: {weekGroup.stats.excused}
                                 </p>
                               </div>
                               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${expandedWeeks[weekStateKey] ? 'rotate-180' : ''}`} />
@@ -255,15 +256,15 @@ export function CoachAttendanceView() {
                                 <table className="w-full text-left text-sm">
                                   <thead className="bg-slate-50/80 text-slate-500 dark:bg-slate-800/80 dark:text-slate-400">
                                     <tr>
-                                      <th className="px-4 py-2 font-medium">Student</th>
+                                      <th className="px-4 py-2 font-medium">Siswa</th>
                                       <th className="px-4 py-2 font-medium">Status</th>
-                                      <th className="px-4 py-2 font-medium">Date Recorded</th>
+                                      <th className="px-4 py-2 font-medium">Tanggal Dicatat</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {weekGroup.records.map((entry) => (
                                       <tr key={entry.id} className="border-t border-slate-100 dark:border-slate-800/50">
-                                        <td className="px-4 py-2">{entry.student?.user?.fullName || 'Unknown Student'}</td>
+                                        <td className="px-4 py-2">{entry.student?.user?.fullName || 'Siswa Tidak Dikenal'}</td>
                                         <td className="px-4 py-2">
                                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                                             entry.status === 'PRESENT' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' :
@@ -271,7 +272,7 @@ export function CoachAttendanceView() {
                                             entry.status === 'ABSENT' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
                                             'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400'
                                           }`}>
-                                            {entry.status}
+                                            {entry.status === 'PRESENT' ? 'Hadir' : entry.status === 'LATE' ? 'Terlambat' : entry.status === 'ABSENT' ? 'Absen' : 'Izin'}
                                           </span>
                                         </td>
                                         <td className="px-4 py-2 text-slate-500 dark:text-slate-400">{new Date(entry.date).toLocaleString('id-ID')}</td>

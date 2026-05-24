@@ -172,7 +172,7 @@ export function CoachEvaluationsView() {
         if (!monthMap.has(value)) {
           monthMap.set(value, {
             value,
-            label: `Month ${month.monthNumber}`,
+            label: `Bulan ${month.monthNumber}`,
           });
         }
       });
@@ -257,11 +257,11 @@ export function CoachEvaluationsView() {
     });
 
     if (success) {
-      toast.success('Assessment saved');
+      toast.success('Evaluasi berhasil disimpan');
       setCoachNote('');
       setScore(3);
     } else {
-      toast.error('Failed to save assessment');
+      toast.error('Gagal menyimpan evaluasi');
     }
   };
 
@@ -279,10 +279,10 @@ export function CoachEvaluationsView() {
       coachNote: editCoachNote,
     });
     if (success) {
-      toast.success('Assessment updated');
+      toast.success('Evaluasi berhasil diperbarui');
       setEditTarget(null);
     } else {
-      toast.error('Failed to update assessment');
+      toast.error('Gagal memperbarui evaluasi');
     }
   };
 
@@ -290,10 +290,10 @@ export function CoachEvaluationsView() {
     if (!deleteTarget) return;
     const success = await deleteAssessment(deleteTarget.id);
     if (success) {
-      toast.success('Assessment deleted');
+      toast.success('Evaluasi berhasil dihapus');
       setDeleteTarget(null);
     } else {
-      toast.error('Failed to delete assessment');
+      toast.error('Gagal menghapus evaluasi');
     }
   };
 
@@ -316,9 +316,9 @@ export function CoachEvaluationsView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Student Evaluations</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Evaluasi Siswa</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Assess students against curriculum competencies and derive FUT outputs automatically.
+          Evaluasi siswa berdasarkan kompetensi kurikulum dan hasilkan output FUT secara otomatis.
         </p>
       </div>
 
@@ -326,9 +326,9 @@ export function CoachEvaluationsView() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Class / KU</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Kelas / KU</label>
               <select value={selectedAgeClass} onChange={(e) => setSelectedAgeClass(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" required>
-                <option value="">Select class</option>
+                <option value="">Pilih kelas</option>
                 {ageClassOptions.map((ageClass) => (
                   <option key={ageClass} value={ageClass}>{ageClass}</option>
                 ))}
@@ -336,29 +336,29 @@ export function CoachEvaluationsView() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Student</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Siswa</label>
               <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900" disabled={!selectedAgeClass} required>
-                <option value="">{selectedAgeClass ? 'Select student' : 'Select class first'}</option>
+                <option value="">{selectedAgeClass ? 'Pilih siswa' : 'Pilih kelas terlebih dahulu'}</option>
                 {filteredStudents.map((student) => (
                   <option key={student.id} value={student.id}>
-                    {student?.user?.fullName || 'Unknown'} · {student.ageClass || '-'} · {student.curriculumProfile || '-'}
+                    {student?.user?.fullName || 'Tidak Diketahui'} · {student.ageClass || '-'} · {student.curriculumProfile || '-'}
                   </option>
                 ))}
               </select>
               {selectedAgeClass && filteredStudents.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">No students found in {selectedAgeClass}.</p>
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Tidak ada siswa yang ditemukan di {selectedAgeClass}.</p>
               )}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Curriculum Material</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Materi Kurikulum</label>
               <button
                 type="button"
                 onClick={() => setIsMaterialPickerOpen(true)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900"
                 disabled={!selectedAgeClass || filteredWeekMaterials.length === 0}
               >
-                {selectedWeekMaterialSummary || (selectedAgeClass ? 'Choose month and week' : 'Select class first')}
+                {selectedWeekMaterialSummary || (selectedAgeClass ? 'Pilih bulan dan minggu' : 'Pilih kelas terlebih dahulu')}
               </button>
               {selectedWeekMaterialSummary && (
                 <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -374,38 +374,38 @@ export function CoachEvaluationsView() {
               )}
               <input type="hidden" value={selectedWeekMaterialId} required />
               {selectedAgeClass && filteredWeekMaterials.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">No curriculum materials are mapped to {selectedAgeClass} yet.</p>
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Belum ada materi kurikulum yang dipetakan ke {selectedAgeClass}.</p>
               )}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Coach Score (1-5)</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nilai Pelatih (1-5)</label>
               <input type="range" min={1} max={5} value={score} onChange={(e) => setScore(Number(e.target.value))} className="w-full" />
-              <p className="text-xs text-slate-500 dark:text-slate-400">Selected score: {score}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Nilai terpilih: {score}</p>
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Coach Note</label>
-              <textarea value={coachNote} onChange={(e) => setCoachNote(e.target.value)} className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Add notes about execution, discipline, or consistency" />
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Catatan Pelatih</label>
+              <textarea value={coachNote} onChange={(e) => setCoachNote(e.target.value)} className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Tambahkan catatan tentang pelaksanaan, disiplin, atau konsistensi" />
             </div>
 
             <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-              {loading ? 'Saving...' : 'Save Assessment'}
+              {loading ? 'Menyimpan...' : 'Simpan Evaluasi'}
             </button>
           </form>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent FUT Assessments</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Evaluasi FUT Terbaru</h2>
           <div className="mt-4 flex flex-col gap-3 md:flex-row">
             <select value={assessmentAgeClassFilter} onChange={(e) => setAssessmentAgeClassFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:w-44 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-              <option value="">All classes</option>
+              <option value="">Semua kelas</option>
               {ageClassOptions.map((ageClass) => (
                 <option key={ageClass} value={ageClass}>{ageClass}</option>
               ))}
             </select>
             <select value={assessmentMonthFilter} onChange={(e) => setAssessmentMonthFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:w-40 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-              <option value="">All months</option>
+              <option value="">Semua bulan</option>
               {assessmentMonthOptions.map((month) => (
                 <option key={month.value} value={month.value}>{month.label}</option>
               ))}
@@ -414,7 +414,7 @@ export function CoachEvaluationsView() {
               type="search"
               value={assessmentSearch}
               onChange={(e) => setAssessmentSearch(e.target.value)}
-              placeholder="Search student name"
+              placeholder="Cari nama siswa"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm md:flex-1 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
@@ -422,18 +422,18 @@ export function CoachEvaluationsView() {
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <tr>
-                  <th className="px-3 py-2">Student</th>
-                  <th className="px-3 py-2">Curriculum</th>
-                  <th className="px-3 py-2">Competency</th>
-                  <th className="px-3 py-2">Score</th>
-                  <th className="px-3 py-2">Stars</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <th className="px-3 py-2">Siswa</th>
+                  <th className="px-3 py-2">Kurikulum</th>
+                  <th className="px-3 py-2">Kompetensi</th>
+                  <th className="px-3 py-2">Nilai</th>
+                  <th className="px-3 py-2">Bintang</th>
+                  <th className="px-3 py-2">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAssessments.slice(0, 12).map((assessment) => (
                   <tr key={assessment.id} className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="px-3 py-2">{assessment.student?.user?.fullName || 'Unknown'}</td>
+                    <td className="px-3 py-2">{assessment.student?.user?.fullName || 'Tidak Diketahui'}</td>
                     <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
                       {assessment.weekMaterial?.id ? (weekMaterialMap.get(assessment.weekMaterial.id) || '-') : '-'}
                     </td>
@@ -459,14 +459,14 @@ export function CoachEvaluationsView() {
                         <button
                           onClick={() => openEdit(assessment)}
                           className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400"
-                          title="Edit assessment"
+                          title="Edit evaluasi"
                         >
                           <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(assessment)}
                           className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-red-400"
-                          title="Delete assessment"
+                          title="Hapus evaluasi"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -476,7 +476,7 @@ export function CoachEvaluationsView() {
                 ))}
                 {filteredAssessments.length === 0 && (
                   <tr>
-                    <td className="px-3 py-6 text-center text-slate-500" colSpan={7}>No assessments match the current filters.</td>
+                    <td className="px-3 py-6 text-center text-slate-500" colSpan={7}>Tidak ada evaluasi yang cocok dengan filter saat ini.</td>
                   </tr>
                 )}
               </tbody>
@@ -489,35 +489,35 @@ export function CoachEvaluationsView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900 dark:text-white">Edit Assessment</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Edit Evaluasi</h3>
               <button onClick={() => setEditTarget(null)} className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                 <X size={16} />
               </button>
             </div>
 
             <div className="mb-3 rounded-lg bg-slate-50 px-4 py-3 text-sm dark:bg-slate-800">
-              <div className="font-medium text-slate-900 dark:text-white">{editTarget.student?.user?.fullName || 'Unknown'}</div>
+              <div className="font-medium text-slate-900 dark:text-white">{editTarget.student?.user?.fullName || 'Tidak Diketahui'}</div>
               <div className="text-slate-500 dark:text-slate-400">{editTarget.weekMaterial?.category || '-'} · OVR {editTarget.overallRating ?? '-'} · {formatDominantStat(editTarget)}</div>
             </div>
 
             <form className="space-y-4" onSubmit={handleEditSubmit}>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Coach Score (1-5)</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nilai Pelatih (1-5)</label>
                 <input type="range" min={1} max={5} value={editScore} onChange={(e) => setEditScore(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-slate-500 dark:text-slate-400">Selected score: {editScore}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Nilai terpilih: {editScore}</p>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Coach Note</label>
-                <textarea value={editCoachNote} onChange={(e) => setEditCoachNote(e.target.value)} className="min-h-24 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Update coach notes..." />
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Catatan Pelatih</label>
+                <textarea value={editCoachNote} onChange={(e) => setEditCoachNote(e.target.value)} className="min-h-24 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Perbarui catatan pelatih..." />
               </div>
 
               <div className="flex gap-3">
                 <button type="button" onClick={() => setEditTarget(null)} className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
-                  Cancel
+                  Batal
                 </button>
                 <button type="submit" disabled={loading} className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                  {loading ? 'Saving...' : 'Save Changes'}
+                  {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>
@@ -530,9 +530,9 @@ export function CoachEvaluationsView() {
           <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Choose Curriculum Material</h3>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Pilih Materi Kurikulum</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Pick a month, then a week, then select the material for {selectedAgeClass}.
+                  Pilih bulan, lalu minggu, kemudian pilih materi untuk {selectedAgeClass}.
                 </p>
               </div>
               <button onClick={() => setIsMaterialPickerOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -542,7 +542,7 @@ export function CoachEvaluationsView() {
 
             <div className="grid items-start gap-4 lg:grid-cols-3">
               <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">1. Select Month</div>
+                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">1. Pilih Bulan</div>
                 <div className="grid max-h-[50vh] grid-cols-2 content-start gap-2 overflow-y-auto pr-1">
                   {availableMonths.map((month) => (
                     <button
@@ -553,7 +553,7 @@ export function CoachEvaluationsView() {
                         ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}
                     >
-                      <div className="font-medium">Month {month.monthNumber}</div>
+                      <div className="font-medium">Bulan {month.monthNumber}</div>
                       <div className="text-xs opacity-80">{month.levelName}</div>
                     </button>
                   ))}
@@ -561,9 +561,9 @@ export function CoachEvaluationsView() {
               </div>
 
               <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">2. Select Week</div>
+                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">2. Pilih Minggu</div>
                 {!selectedMonthData ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Select a month first.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Pilih bulan terlebih dahulu.</p>
                 ) : (
                   <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
                     {selectedMonthData.weekGroups.map((weekGroup) => (
@@ -575,8 +575,8 @@ export function CoachEvaluationsView() {
                           ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}
                       >
-                        <div className="font-medium">Week {weekGroup.weekNumber}</div>
-                        <div className="text-xs opacity-80">{weekGroup.materials.length} material(s)</div>
+                        <div className="font-medium">Minggu {weekGroup.weekNumber}</div>
+                        <div className="text-xs opacity-80">{weekGroup.materials.length} materi</div>
                       </button>
                     ))}
                   </div>
@@ -584,9 +584,9 @@ export function CoachEvaluationsView() {
               </div>
 
               <div className="flex min-h-0 flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">3. Select Material</div>
+                <div className="mb-3 text-sm font-medium text-slate-900 dark:text-white">3. Pilih Materi</div>
                 {!selectedWeekGroup ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Select a week first.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Pilih minggu terlebih dahulu.</p>
                 ) : (
                   <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
                     {selectedWeekGroup.materials.map((material) => (
@@ -609,7 +609,7 @@ export function CoachEvaluationsView() {
 
             <div className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3 text-sm dark:bg-slate-800">
               <div className="text-slate-600 dark:text-slate-300">
-                {selectedWeekMaterialSummary || 'No material selected yet.'}
+                {selectedWeekMaterialSummary || 'Belum ada materi yang dipilih.'}
               </div>
               <div className="flex gap-2">
                 <button
@@ -624,7 +624,7 @@ export function CoachEvaluationsView() {
                   onClick={() => setIsMaterialPickerOpen(false)}
                   className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                 >
-                  Done
+                  Selesai
                 </button>
               </div>
             </div>
@@ -634,13 +634,15 @@ export function CoachEvaluationsView() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Delete Assessment"
-        description={`Are you sure you want to delete the assessment for ${deleteTarget?.student?.user?.fullName || 'this student'}? This action cannot be undone.`}
+        title="Hapus Evaluasi"
+        description={`Apakah Anda yakin ingin menghapus evaluasi untuk ${deleteTarget?.student?.user?.fullName || 'siswa ini'}? Tindakan ini tidak dapat dibatalkan.`}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
         onConfirm={handleDelete}
         loading={loading}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
       />
     </div>
   );

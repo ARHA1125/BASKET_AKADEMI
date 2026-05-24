@@ -20,7 +20,7 @@ export function SchedulePicker({ isOpen, onClose, onSave, initialSchedule }: Sch
   const currentYear = today.getFullYear();
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const startDay = new Date(currentYear, currentMonth, 1).getDay();
-  const monthName = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = today.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
 
   useEffect(() => {
     if (initialSchedule) {
@@ -44,7 +44,7 @@ export function SchedulePicker({ isOpen, onClose, onSave, initialSchedule }: Sch
       return;
     }
     
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     const scheduleDays = selectedDays.map(day => {
       const date = new Date(currentYear, currentMonth, day);
       return dayNames[date.getDay()];
@@ -61,7 +61,7 @@ export function SchedulePicker({ isOpen, onClose, onSave, initialSchedule }: Sch
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="animate-in zoom-in-95 w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-xl duration-200 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between">
-          <Title>Select Training Schedule</Title>
+          <Title>Pilih Jadwal Latihan</Title>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none"
@@ -85,11 +85,11 @@ export function SchedulePicker({ isOpen, onClose, onSave, initialSchedule }: Sch
 
         <div className="space-y-4">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Select training days (you can select multiple days)
+            Pilih hari latihan (Anda dapat memilih beberapa hari)
           </p>
 
           <div className="mb-2 grid grid-cols-7 gap-1 text-center">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+            {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
               <span
                 key={d}
                 className="text-[10px] font-bold uppercase text-slate-400"
@@ -129,11 +129,11 @@ export function SchedulePicker({ isOpen, onClose, onSave, initialSchedule }: Sch
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <span className="block h-2 w-2 rounded-full bg-blue-600"></span>
-              <span>Selected</span>
+              <span>Dipilih</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="block h-2 w-2 rounded-full border border-blue-500 bg-blue-100 dark:bg-blue-900/50"></span>
-              <span>Today</span>
+              <span>Hari Ini</span>
             </div>
           </div>
 
@@ -142,7 +142,7 @@ export function SchedulePicker({ isOpen, onClose, onSave, initialSchedule }: Sch
             disabled={selectedDays.length === 0}
             className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Schedule
+            Simpan Jadwal
           </button>
         </div>
       </div>

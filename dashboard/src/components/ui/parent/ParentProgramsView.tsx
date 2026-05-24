@@ -30,7 +30,7 @@ export function ParentProgramsView() {
       }
     } catch (error) {
       console.error('Failed to fetch children classes:', error);
-      toast.error('Failed to load training programs');
+      toast.error('Gagal memuat program latihan');
     } finally {
       setLoading(false);
     }
@@ -48,8 +48,8 @@ export function ParentProgramsView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Title>Children&apos;s Training Programs</Title>
-          <Text className="mt-1">View your children&apos;s training programs and progress</Text>
+          <Title>Program Latihan Anak</Title>
+          <Text className="mt-1">Lihat program latihan dan kemajuan anak Anda</Text>
         </div>
         <Users className="w-8 h-8 text-slate-400" />
       </div>
@@ -57,7 +57,7 @@ export function ParentProgramsView() {
       {childrenClasses.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
           <Users className="w-12 h-12 mx-auto text-slate-400 mb-3" />
-          <Text>No children found</Text>
+          <Text>Anak tidak ditemukan</Text>
         </div>
       ) : (
         <div className="space-y-6">
@@ -79,7 +79,7 @@ export function ParentProgramsView() {
                       </h3>
                       {item.student.ageClass && (
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                          Age Class: {item.student.ageClass}
+                          Kelas Usia: {item.student.ageClass}
                         </p>
                       )}
                     </div>
@@ -91,7 +91,7 @@ export function ParentProgramsView() {
                     <div className="text-center py-8">
                       <BookOpen className="w-10 h-10 mx-auto text-slate-400 mb-2" />
                       <Text className="text-slate-600 dark:text-slate-400">
-                        Not enrolled in any training program
+                        Tidak terdaftar dalam program latihan apa pun
                       </Text>
                     </div>
                   ) : (
@@ -106,7 +106,7 @@ export function ParentProgramsView() {
                         <div className="flex items-center gap-3">
                           <Calendar className="w-5 h-5 text-slate-500" />
                           <div>
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Schedule</p>
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Jadwal</p>
                             <p className="text-sm text-slate-600 dark:text-slate-400">
                               {item.trainingClass.schedule}
                             </p>
@@ -118,7 +118,7 @@ export function ParentProgramsView() {
                         <div className="flex items-center gap-3">
                           <User className="w-5 h-5 text-slate-500" />
                           <div>
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Coach</p>
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Pelatih</p>
                             <p className="text-sm text-slate-600 dark:text-slate-400">
                               {item.trainingClass.coach.fullName}
                             </p>
@@ -132,7 +132,7 @@ export function ParentProgramsView() {
                             <BookOpen className="w-5 h-5 text-slate-500" />
                             <div>
                               <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                Curriculum Level
+                                Tingkat Kurikulum
                               </p>
                               <p className="text-sm text-slate-600 dark:text-slate-400">
                                 {item.trainingClass.curriculumLevel.name}
@@ -143,10 +143,10 @@ export function ParentProgramsView() {
                           <div className="mt-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                Progress
+                                Kemajuan
                               </span>
                               <span className="text-sm text-slate-600 dark:text-slate-400">
-                                Month {currentMonth} of {totalMonths}
+                                Bulan {currentMonth} dari {totalMonths}
                               </span>
                             </div>
                             <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mb-3">
@@ -160,10 +160,10 @@ export function ParentProgramsView() {
                           {item.trainingClass.activeMonth && (
                             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
                               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                                Current Month: {item.trainingClass.activeMonth.title}
+                                Bulan Aktif: {item.trainingClass.activeMonth.title}
                               </p>
                               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                Month {item.trainingClass.activeMonth.monthNumber}
+                                Bulan {item.trainingClass.activeMonth.monthNumber}
                               </p>
                             </div>
                           )}

@@ -23,13 +23,13 @@ import { UserProfile } from "./UserProfile"
 
 const navigation = [
   {
-    name: "Home",
+    name: "Beranda",
     href: "/coach",
     icon: House,
     notifications: false,
   },
   {
-    name: "Store",
+    name: "Toko",
     href: "/coach/store",
     icon: ShoppingBag,
     notifications: false,
@@ -43,49 +43,49 @@ const navigation2 = [
     icon: BookText,
     children: [
       {
-        name: "Manage Curriculum",
+        name: "Kelola Kurikulum",
         href: "/coach/curriculum",
       },
       {
-        name: "Training Programs",
+        name: "Program Latihan",
         href: "/coach/programs",
       },
     ],
   },
   {
-    name: "Students",
+    name: "Siswa",
     href: "#",
     icon: Users,
     children: [
       {
-        name: "My Students",
+        name: "Siswa Saya",
         href: "/coach/students",
       },
       {
-        name: "Student Evaluations",
+        name: "Evaluasi Siswa",
         href: "/coach/evaluations",
       },
       {
-        name: "Weekly Leaderboard",
+        name: "Papan Peringkat Mingguan",
         href: "/coach/leaderboard",
       },
       {
-        name: "Gamification Actions",
+        name: "Aksi Gamifikasi",
         href: "/coach/gamification",
       },
     ],
   },
   {
-    name: "Attendance",
+    name: "Kehadiran",
     href: "#",
     icon: ClipboardCheck,
     children: [
       {
-        name: "Manage Absence",
+        name: "Kelola Kehadiran",
         href: "/coach/attendance",
       },
       {
-        name: "Attendance Reports",
+        name: "Laporan Kehadiran",
         href: "/coach/attendance/reports",
       },
     ],
@@ -126,15 +126,15 @@ const navigation2 = [
     icon: UserCheck,
     children: [
       {
-        name: "Player Selection",
+        name: "Seleksi Pemain",
         href: "/coach/selection",
       },
       {
-        name: "Team Roster",
+        name: "Daftar Tim",
         href: "/coach/roster",
       },
       {
-        name: "Draft History",
+        name: "Riwayat Draft",
         href: "/coach/draft-history",
       },
     ],
@@ -186,7 +186,7 @@ export function CoachSidebar({
           <SidebarGroupContent>
             <Input
               type="search"
-              placeholder="Search items..."
+              placeholder="Cari..."
               className="[&>input]:sm:py-1.5"
             />
           </SidebarGroupContent>

@@ -16,32 +16,32 @@ import { SidebarHeader } from "./SidebarHeader"
 
 const navigation = [
   {
-    name: "Dashboard",
+    name: "Beranda",
     href: "/student",
     icon: LayoutDashboard,
   },
   {
-    name: "My Training",
+    name: "Latihan Saya",
     href: "/student/training",
     icon: BookOpen,
   },
   {
-    name: "Schedule",
+    name: "Jadwal",
     href: "/student/schedule",
     icon: Calendar,
   },
   {
-    name: "Performance",
+    name: "Performa",
     href: "/student/performance",
     icon: BarChart3,
   },
   {
-    name: "Badges",
+    name: "Penghargaan",
     href: "/student/badges",
     icon: Award,
   },
   {
-    name: "Store",
+    name: "Toko",
     href: "/student/store",
     icon: ShoppingBag,
   },
@@ -60,12 +60,12 @@ export function StudentSidebar({ ...props }: React.ComponentProps<typeof Sidebar
     <Sidebar {...props} className="bg-gray-50 dark:bg-gray-925">
       <SidebarHeader 
         title="Wirabhakti" 
-        subtitle="Student Portal" 
+        subtitle="Portal Siswa" 
         logoColor="text-blue-500" 
       />
       <SidebarContent>
         <SidebarGroup>
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2 mt-2">LMS & Training</div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2 mt-2">LMS & Latihan</div>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {navigation.map((item) => (

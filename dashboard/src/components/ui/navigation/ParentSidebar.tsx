@@ -17,32 +17,32 @@ import { SidebarHeader } from "./SidebarHeader"
 
 const navigation = [
   {
-    name: "Overview",
+    name: "Ringkasan",
     href: "/parent",
     icon: LayoutDashboard,
   },
   {
-    name: "Financials / Bills",
+    name: "Keuangan / Tagihan",
     href: "/parent/financials",
     icon: Wallet,
   },
   {
-    name: "Academic Reports",
+    name: "Laporan Akademik",
     href: "/parent/reports",
     icon: GraduationCap,
   },
   {
-    name: "Child Badges",
+    name: "Penghargaan Anak",
     href: "/parent/badges",
     icon: Award,
   },
   {
-    name: "Messages",
+    name: "Pesan",
     href: "/parent/messages",
     icon: MessageCircle,
   },
   {
-    name: "Store",
+    name: "Toko",
     href: "/parent/store",
     icon: ShoppingBag,
   },
@@ -61,11 +61,11 @@ export function ParentSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
     <Sidebar {...props} className="bg-gray-50 dark:bg-gray-925">
       <SidebarHeader 
         title="Wirabhakti" 
-        subtitle="Parent Portal" 
+        subtitle="Portal Orang Tua" 
         logoColor="text-blue-500" 
       />
       <SidebarContent>
-         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2 mt-2">Portal Menu</div>
+         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2 mt-2">Menu Portal</div>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">

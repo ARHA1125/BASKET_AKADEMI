@@ -18,21 +18,21 @@ interface EventWithSquad {
 const EVENT_TYPE_CONFIG = {
   [EventType.TOURNAMENT]: {
     icon: Trophy,
-    label: 'Tournament',
+    label: 'Turnamen',
     color: 'text-amber-600 dark:text-amber-400',
     bg: 'bg-amber-50 dark:bg-amber-950',
     border: 'border-amber-200 dark:border-amber-800',
   },
   [EventType.SPARRING]: {
     icon: Swords,
-    label: 'Sparring',
+    label: 'Latih Tanding',
     color: 'text-blue-600 dark:text-blue-400',
     bg: 'bg-blue-50 dark:bg-blue-950',
     border: 'border-blue-200 dark:border-blue-800',
   },
   [EventType.TRYOUT]: {
     icon: UserCheck,
-    label: 'Tryout',
+    label: 'Uji Coba',
     color: 'text-green-600 dark:text-green-400',
     bg: 'bg-green-50 dark:bg-green-950',
     border: 'border-green-200 dark:border-green-800',
@@ -60,7 +60,7 @@ export function StudentScheduleView() {
       ]);
 
       if (!eventsRes.ok || !squadsRes.ok || !profileRes.ok) {
-        toast.error('Failed to load schedule');
+        toast.error('Gagal memuat jadwal');
         setLoading(false);
         return;
       }
@@ -85,7 +85,7 @@ export function StudentScheduleView() {
       setEvents(myEvents);
     } catch (error) {
       console.error('Failed to fetch schedule:', error);
-      toast.error('Failed to load schedule');
+      toast.error('Gagal memuat jadwal');
     } finally {
       setLoading(false);
     }
@@ -131,7 +131,7 @@ export function StudentScheduleView() {
 
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('id-ID', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -156,8 +156,8 @@ export function StudentScheduleView() {
   return (
     <div className="space-y-6">
       <div>
-        <Title>My Schedule</Title>
-        <Text className="mt-1">View upcoming events and your roster status</Text>
+        <Title>Jadwal Saya</Title>
+        <Text className="mt-1">Lihat acara mendatang dan status daftar tim Anda</Text>
       </div>
 
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
@@ -169,7 +169,7 @@ export function StudentScheduleView() {
               : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          All Events
+          Semua Acara
         </button>
         <button
           onClick={() => setTimeFilter('upcoming')}
@@ -179,7 +179,7 @@ export function StudentScheduleView() {
               : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Upcoming
+          Mendatang
         </button>
         <button
           onClick={() => setTimeFilter('past')}
@@ -189,7 +189,7 @@ export function StudentScheduleView() {
               : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Past
+          Selesai
         </button>
       </div>
 
@@ -197,14 +197,14 @@ export function StudentScheduleView() {
         <div className="flex flex-col items-center justify-center h-96 text-center">
           <Calendar className="w-16 h-16 text-slate-300 dark:text-slate-700 mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-            No events found
+            Acara tidak ditemukan
           </h3>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             {timeFilter === 'upcoming'
-              ? "You don't have any upcoming events."
+              ? "Anda tidak memiliki acara mendatang."
               : timeFilter === 'past'
-              ? "You don't have any past events."
-              : "You're not in any event rosters yet."}
+              ? "Anda tidak memiliki acara masa lalu."
+              : "Anda belum masuk dalam daftar tim acara apa pun."}
           </p>
         </div>
       ) : (
@@ -232,7 +232,7 @@ export function StudentScheduleView() {
                     </div>
                     {isUpcoming(event.date) && (
                       <span className="px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 rounded-md">
-                        Upcoming
+                        Mendatang
                       </span>
                     )}
                   </div>
@@ -275,18 +275,18 @@ export function StudentScheduleView() {
                         </div>
                         {squad.status === SquadStatus.DRAFT ? (
                           <span className="px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 rounded-md animate-pulse">
-                            Roster Draft
+                            Draft Roster
                           </span>
                         ) : (
                           <span className="px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 rounded-md">
-                            ✓ Roster Confirmed
+                            ✓ Roster Dikonfirmasi
                           </span>
                         )}
                       </div>
 
                       {squad.coachName && (
                         <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Coach: {squad.coachName}
+                          Pelatih: {squad.coachName}
                         </p>
                       )}
 
@@ -295,7 +295,7 @@ export function StudentScheduleView() {
                           onClick={() => toggleEventExpand(squad.id)}
                           className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                         >
-                          <span>Roster ({squad.players.length} players)</span>
+                          <span>Roster ({squad.players.length} pemain)</span>
                           {expandedEvents.has(squad.id) ? (
                             <ChevronUp className="w-4 h-4" />
                           ) : (
@@ -322,7 +322,7 @@ export function StudentScheduleView() {
                                 >
                                   {isCurrentUser && <span className="text-amber-500">⭐</span>}
                                   <span>{player.user.fullName}</span>
-                                  {isCurrentUser && <span className="text-xs">(You)</span>}
+                                  {isCurrentUser && <span className="text-xs">(Anda)</span>}
                                 </li>
                               );
                             })}

@@ -64,7 +64,7 @@ export function CoachProgramsView() {
       }
     } catch (error) {
       console.error('Failed to fetch classes:', error);
-      toast.error('Failed to load training classes');
+      toast.error('Gagal memuat kelas latihan');
     } finally {
       setLoading(false);
     }
@@ -115,15 +115,15 @@ export function CoachProgramsView() {
         body: JSON.stringify(newClass),
       });
       if (response.ok) {
-        toast.success('Training class created');
+        toast.success('Kelas latihan berhasil dibuat');
         setIsCreateDialogOpen(false);
         setNewClass({ name: '', schedule: '', ageClass: '', curriculumLevelId: '' });
         fetchClasses();
       } else {
-        toast.error('Failed to create class');
+        toast.error('Gagal membuat kelas');
       }
     } catch (error) {
-      toast.error('Failed to create class');
+      toast.error('Gagal membuat kelas');
     } finally {
       setSubmitting(false);
     }
@@ -149,15 +149,15 @@ export function CoachProgramsView() {
         }),
       });
       if (response.ok) {
-        toast.success('Training class updated');
+        toast.success('Kelas latihan berhasil diperbarui');
         setIsEditDialogOpen(false);
         setEditingClass(null);
         fetchClasses();
       } else {
-        toast.error('Failed to update class');
+        toast.error('Gagal memperbarui kelas');
       }
     } catch (error) {
-      toast.error('Failed to update class');
+      toast.error('Gagal memperbarui kelas');
     } finally {
       setSubmitting(false);
     }
@@ -172,14 +172,14 @@ export function CoachProgramsView() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
-        toast.success('Training class deleted');
+        toast.success('Kelas latihan berhasil dihapus');
         setDeleteDialogClass(null);
         fetchClasses();
       } else {
-        toast.error('Failed to delete class');
+        toast.error('Gagal menghapus kelas');
       }
     } catch (error) {
-      toast.error('Failed to delete class');
+      toast.error('Gagal menghapus kelas');
     }
   };
 
@@ -195,21 +195,21 @@ export function CoachProgramsView() {
         body: JSON.stringify({ trainingClassId: classId }),
       });
       if (response.ok) {
-        toast.success('Student assigned');
+        toast.success('Siswa berhasil ditetapkan');
         fetchClasses();
         fetchStudents();
       } else {
-        toast.error('Failed to assign student');
+        toast.error('Gagal menetapkan siswa');
       }
     } catch (error) {
-      toast.error('Failed to assign student');
+      toast.error('Gagal menetapkan siswa');
     }
   };
 
   const bulkAssignFromClass = async (sourceClassId: string, targetClassId: string) => {
     const sourceClass = classes.find(c => c.id === sourceClassId);
     if (!sourceClass || !sourceClass.students || sourceClass.students.length === 0) {
-      toast.error('No students in selected class');
+      toast.error('Tidak ada siswa di kelas terpilih');
       return;
     }
 
@@ -229,11 +229,11 @@ export function CoachProgramsView() {
         if (response.ok) successCount++;
       }
 
-      toast.success(`Assigned ${successCount} students from ${sourceClass.name}`);
+      toast.success(`Berhasil menetapkan ${successCount} siswa dari ${sourceClass.name}`);
       fetchClasses();
       fetchStudents();
     } catch (error) {
-      toast.error('Failed to bulk assign students');
+      toast.error('Gagal menetapkan siswa secara massal');
     }
   };
 
@@ -249,21 +249,21 @@ export function CoachProgramsView() {
         body: JSON.stringify({ trainingClassId: null }),
       });
       if (response.ok) {
-        toast.success('Student removed');
+        toast.success('Siswa berhasil dihapus');
         fetchClasses();
         fetchStudents();
       } else {
-        toast.error('Failed to remove student');
+        toast.error('Gagal menghapus siswa');
       }
     } catch (error) {
-      toast.error('Failed to remove student');
+      toast.error('Gagal menghapus siswa');
     }
   };
 
   const advanceMonth = async (classId: string, currentMonthNumber: number, months: any[]) => {
     const nextMonth = months.find(m => m.monthNumber === currentMonthNumber + 1);
     if (!nextMonth) {
-      toast.error('Already at the last month');
+      toast.error('Sudah berada di bulan terakhir');
       return;
     }
 
@@ -279,13 +279,13 @@ export function CoachProgramsView() {
       });
 
       if (response.ok) {
-        toast.success(`Advanced to Month ${nextMonth.monthNumber}`);
+        toast.success(`Berhasil maju ke Bulan ${nextMonth.monthNumber}`);
         fetchClasses();
       } else {
-        toast.error('Failed to advance month');
+        toast.error('Gagal memajukan bulan');
       }
     } catch (error) {
-      toast.error('Failed to advance month');
+      toast.error('Gagal memajukan bulan');
     }
   };
 
@@ -301,27 +301,27 @@ export function CoachProgramsView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Title>Training Programs</Title>
-          <Text className="mt-1">Manage training classes, assign students, and track curriculum progress</Text>
+          <Title>Program Latihan</Title>
+          <Text className="mt-1">Kelola kelas latihan, tetapkan siswa, dan pantau kemajuan kurikulum</Text>
         </div>
         <button
           onClick={() => setIsCreateDialogOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Create Class
+          Buat Kelas
         </button>
       </div>
 
       {classes.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
           <Users className="w-12 h-12 mx-auto text-slate-400 mb-3" />
-          <Text>No training classes yet</Text>
+          <Text>Belum ada kelas latihan</Text>
           <button
             onClick={() => setIsCreateDialogOpen(true)}
             className="mt-4 text-blue-600 hover:underline text-sm font-medium"
           >
-            Create your first class
+            Buat kelas pertama Anda
           </button>
         </div>
       ) : (
@@ -351,7 +351,7 @@ export function CoachProgramsView() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                        {cls.students?.length || 0} students
+                        {cls.students?.length || 0} siswa
                       </span>
                       <button
                         onClick={() => {
@@ -359,14 +359,14 @@ export function CoachProgramsView() {
                           setIsEditDialogOpen(true);
                         }}
                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors"
-                        title="Edit class"
+                        title="Edit kelas"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteDialogClass(cls)}
                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
-                        title="Delete class"
+                        title="Hapus kelas"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -383,7 +383,7 @@ export function CoachProgramsView() {
                           </span>
                         </div>
                         <span className="text-sm text-slate-600 dark:text-slate-400">
-                          Month {currentMonth} of {totalMonths}
+                          Bulan {currentMonth} dari {totalMonths}
                         </span>
                       </div>
                       <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mb-2">
@@ -395,7 +395,7 @@ export function CoachProgramsView() {
                       {cls.activeMonth && (
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-slate-600 dark:text-slate-400">
-                            Current: {cls.activeMonth.title}
+                            Saat ini: {cls.activeMonth.title}
                           </p>
                           {currentMonth < totalMonths && (
                             <button
@@ -403,13 +403,13 @@ export function CoachProgramsView() {
                               className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
                             >
                               <ChevronRight className="w-3 h-3" />
-                              Advance to Month {currentMonth + 1}
+                              Maju ke Bulan {currentMonth + 1}
                             </button>
                           )}
                           {currentMonth === totalMonths && (
                             <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 rounded-lg">
                               <CheckCircle2 className="w-3 h-3" />
-                              Completed
+                              Selesai
                             </span>
                           )}
                         </div>
@@ -426,14 +426,14 @@ export function CoachProgramsView() {
                       className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                     >
                       <UserPlus className="w-4 h-4" />
-                      Manage Students
+                      Kelola Siswa
                     </button>
                     <a
                       href="/coach/curriculum"
                       className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
                     >
                       <BookOpen className="w-4 h-4" />
-                      View Curriculum
+                      Lihat Kurikulum
                     </a>
                   </div>
                 </div>
@@ -447,32 +447,32 @@ export function CoachProgramsView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <Title>Create Training Class</Title>
+              <Title>Buat Kelas Latihan</Title>
               <button onClick={() => setIsCreateDialogOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={createClass} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Class Name</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Kelas</label>
                 <input
                   required
                   type="text"
                   value={newClass.name}
                   onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. U-12 Rookie"
+                  placeholder="misal: U-12 Rookie"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Schedule</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jadwal</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newClass.schedule}
                     readOnly
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Click calendar to select..."
+                    placeholder="Klik kalender untuk memilih..."
                   />
                   <button
                     type="button"
@@ -484,13 +484,13 @@ export function CoachProgramsView() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Age Class (KU)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kelas Usia (KU)</label>
                 <select
                   value={newClass.ageClass || ''}
                   onChange={(e) => setNewClass({ ...newClass, ageClass: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select age class...</option>
+                  <option value="">Pilih kelas usia...</option>
                   <option value="KU-10">KU-10</option>
                   <option value="KU-12">KU-12</option>
                   <option value="KU-14">KU-14</option>
@@ -498,14 +498,14 @@ export function CoachProgramsView() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Curriculum Level</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tingkat Kurikulum</label>
                 <select
                   required
                   value={newClass.curriculumLevelId}
                   onChange={(e) => setNewClass({ ...newClass, curriculumLevelId: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select level...</option>
+                  <option value="">Pilih tingkat...</option>
                   {curriculumLevels.map((level) => (
                     <option key={level.id} value={level.id}>
                       {level.name}
@@ -519,14 +519,14 @@ export function CoachProgramsView() {
                   onClick={() => setIsCreateDialogOpen(false)}
                   className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center min-w-[100px]"
                 >
-                  {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Create'}
+                  {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Buat'}
                 </button>
               </div>
             </form>
@@ -538,14 +538,14 @@ export function CoachProgramsView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <Title>Edit Training Class</Title>
+              <Title>Edit Kelas Latihan</Title>
               <button onClick={() => setIsEditDialogOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={updateClass} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Class Name</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Kelas</label>
                 <input
                   required
                   type="text"
@@ -555,14 +555,14 @@ export function CoachProgramsView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Schedule</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jadwal</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={editingClass.schedule || ''}
                     readOnly
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Click calendar to select..."
+                    placeholder="Klik kalender untuk memilih..."
                   />
                   <button
                     type="button"
@@ -574,13 +574,13 @@ export function CoachProgramsView() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Age Class (KU)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kelas Usia (KU)</label>
                 <select
                   value={editingClass.ageClass || ''}
                   onChange={(e) => setEditingClass({ ...editingClass, ageClass: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select age class...</option>
+                  <option value="">Pilih kelas usia...</option>
                   <option value="KU-10">KU-10</option>
                   <option value="KU-12">KU-12</option>
                   <option value="KU-14">KU-14</option>
@@ -588,7 +588,7 @@ export function CoachProgramsView() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Curriculum Level</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tingkat Kurikulum</label>
                 <select
                   required
                   value={editingClass.curriculumLevel?.id || ''}
@@ -598,7 +598,7 @@ export function CoachProgramsView() {
                   }}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select level...</option>
+                  <option value="">Pilih tingkat...</option>
                   {curriculumLevels.map((level) => (
                     <option key={level.id} value={level.id}>
                       {level.name}
@@ -612,14 +612,14 @@ export function CoachProgramsView() {
                   onClick={() => setIsEditDialogOpen(false)}
                   className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center min-w-[100px]"
                 >
-                  {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Save'}
+                  {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Simpan'}
                 </button>
               </div>
             </form>
@@ -631,7 +631,7 @@ export function CoachProgramsView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl p-6 border border-slate-200 dark:border-slate-800 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <Title>Manage Students - {managingClass.name}</Title>
+              <Title>Kelola Siswa - {managingClass.name}</Title>
               <button onClick={() => setIsManageStudentsOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
@@ -640,12 +640,12 @@ export function CoachProgramsView() {
             <div className="space-y-4">
               <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-slate-700 dark:text-slate-300">
-                  <span className="font-semibold">{managingClass.students?.length || 0}</span> students currently enrolled
+                  <span className="font-semibold">{managingClass.students?.length || 0}</span> siswa terdaftar saat ini
                 </p>
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Select Class to Move Students From</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Pilih Kelas Asal Siswa yang Akan Dipindahkan</h4>
                 
                 <div className="space-y-3">
                   {classes
@@ -660,7 +660,7 @@ export function CoachProgramsView() {
                             {cls.name}
                           </p>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {cls.students?.length || 0} students • {cls.schedule || 'No schedule'}
+                            {cls.students?.length || 0} siswa • {cls.schedule || 'Tidak ada jadwal'}
                           </p>
                         </div>
                         <button
@@ -669,14 +669,14 @@ export function CoachProgramsView() {
                           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <UserPlus className="w-4 h-4" />
-                          Move All Students
+                          Pindahkan Semua Siswa
                         </button>
                       </div>
                     ))}
                   
                   {classes.filter((c) => c.id !== managingClass.id).length === 0 && (
                     <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
-                      No other classes available
+                      Tidak ada kelas lain yang tersedia
                     </p>
                   )}
                 </div>
@@ -688,15 +688,15 @@ export function CoachProgramsView() {
 
       <ConfirmDialog
         open={Boolean(deleteDialogClass)}
-        title="Delete Training Class"
-        description={`Are you sure you want to delete "${deleteDialogClass?.name}"? Students will be unassigned from this class. This action cannot be undone.`}
+        title="Hapus Kelas Latihan"
+        description={`Apakah Anda yakin ingin menghapus "${deleteDialogClass?.name}"? Siswa akan dihapus dari kelas ini. Tindakan ini tidak dapat dibatalkan.`}
         onOpenChange={(open) => {
           if (!open) setDeleteDialogClass(null);
         }}
         onConfirm={deleteClass}
         loading={loading}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
       />
 
       <SchedulePicker

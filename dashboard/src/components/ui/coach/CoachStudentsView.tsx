@@ -37,14 +37,14 @@ export function CoachStudentsView() {
         curriculumProfile 
       });
       if (success) {
-        toast.success(`Student categorized to ${newAgeClass}${curriculumProfile ? ` (${curriculumProfile})` : ''}`);
+        toast.success(`Siswa berhasil dikategorikan ke ${newAgeClass}${curriculumProfile ? ` (${curriculumProfile})` : ''}`);
         // Refresh data to ensure UI is in sync
         fetchStudents(1, searchTerm, 200);
       } else {
-        toast.error('Failed to update categorization');
+        toast.error('Gagal memperbarui kategorisasi');
       }
     } catch (error) {
-      toast.error('An error occurred while updating');
+      toast.error('Terjadi kesalahan saat memperbarui');
     } finally {
       setUpdatingId(null);
     }
@@ -69,9 +69,9 @@ export function CoachStudentsView() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Students</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Siswa Saya</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Manage student age categories (KU) to align with training curriculum.
+            Kelola kategori usia siswa (KU) untuk menyelaraskan dengan kurikulum latihan.
           </p>
         </div>
         
@@ -79,7 +79,7 @@ export function CoachStudentsView() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search students..."
+            placeholder="Cari siswa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm outline-none transition-shadow focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -92,10 +92,10 @@ export function CoachStudentsView() {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-400">
               <tr>
-                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Student Name</th>
-                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Class Info</th>
-                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Age Class (KU)</th>
+                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Nama Siswa</th>
+                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Kontak</th>
+                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Info Kelas</th>
+                <th className="px-6 py-4 font-semibold uppercase tracking-wider">Kelas Usia (KU)</th>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider">Status</th>
               </tr>
             </thead>
@@ -109,10 +109,10 @@ export function CoachStudentsView() {
                       </div>
                       <div>
                         <span className="block font-medium text-slate-900 dark:text-white">
-                          {student.user?.fullName || 'Unknown'}
+                          {student.user?.fullName || 'Tidak Diketahui'}
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {student.position || 'No Position'}
+                          {student.position || 'Tanpa Posisi'}
                         </span>
                       </div>
                     </div>
@@ -123,10 +123,10 @@ export function CoachStudentsView() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-slate-600 dark:text-slate-300 block">
-                      H: {student.height}cm · W: {student.weight}kg
+                      T: {student.height}cm · B: {student.weight}kg
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      DOB: {student.birthDate ? new Date(student.birthDate).toLocaleDateString() : '-'}
+                      Tgl Lahir: {student.birthDate ? new Date(student.birthDate).toLocaleDateString('id-ID') : '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -137,11 +137,11 @@ export function CoachStudentsView() {
                         onChange={(e) => handleAgeClassChange(student.id, e.target.value)}
                         className={`rounded-lg border-0 px-2 py-1 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer transition-colors ${getKUColor(student.ageClass)}`}
                       >
-                        <option value="" className="text-slate-900 bg-white">Unassigned</option>
+                        <option value="" className="text-slate-900 bg-white">Belum Ditentukan</option>
                         <option value="KU-10" className="text-slate-900 bg-white text-base">KU-10 (Fundamental)</option>
-                        <option value="KU-12" className="text-slate-900 bg-white text-base">KU-12 (Fundamental Full)</option>
-                        <option value="KU-14" className="text-slate-900 bg-white text-base">KU-14 (Intermediate)</option>
-                        <option value="KU-17" className="text-slate-900 bg-white text-base">KU-17 (Advanced)</option>
+                        <option value="KU-12" className="text-slate-900 bg-white text-base">KU-12 (Fundamental Penuh)</option>
+                        <option value="KU-14" className="text-slate-900 bg-white text-base">KU-14 (Menengah)</option>
+                        <option value="KU-17" className="text-slate-900 bg-white text-base">KU-17 (Lanjutan)</option>
                       </select>
                       {updatingId === student.id && (
                         <div className="size-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
@@ -156,7 +156,7 @@ export function CoachStudentsView() {
                         <AlertCircle className="size-4 text-amber-500" />
                       )}
                       <span className={`text-xs font-medium ${student.user?.status === 'Active' ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
-                        {student.user?.status || 'Unknown'}
+                        {student.user?.status === 'Active' ? 'Aktif' : student.user?.status || 'Tidak Diketahui'}
                       </span>
                     </div>
                   </td>
@@ -165,7 +165,7 @@ export function CoachStudentsView() {
               {filteredStudents.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    {loading ? 'Loading students...' : 'No students found.'}
+                    {loading ? 'Memuat siswa...' : 'Siswa tidak ditemukan.'}
                   </td>
                 </tr>
               )}
@@ -178,12 +178,12 @@ export function CoachStudentsView() {
         <div className="flex gap-3">
           <Info className="size-5 text-blue-600 shrink-0" />
           <div className="text-sm text-blue-800 dark:text-blue-300">
-            <p className="font-semibold">Categorization Guide</p>
+            <p className="font-semibold">Panduan Kategorisasi</p>
             <ul className="mt-1 list-disc list-inside space-y-1">
-              <li>Assign <strong>KU-10</strong> for kids aged 7-10 years (Fundamentals).</li>
-              <li>Assign <strong>KU-12</strong> for kids aged 11-12 years (Fundamental Full).</li>
-              <li>Assign <strong>KU-14</strong> for teens aged 13-14 years (Intermediate).</li>
-              <li>Assign <strong>KU-17</strong> for teens aged 15-17 years (Advanced).</li>
+              <li>Tentukan <strong>KU-10</strong> untuk anak usia 7-10 tahun (Fundamental).</li>
+              <li>Tentukan <strong>KU-12</strong> untuk anak usia 11-12 tahun (Fundamental Penuh).</li>
+              <li>Tentukan <strong>KU-14</strong> untuk remaja usia 13-14 tahun (Menengah).</li>
+              <li>Tentukan <strong>KU-17</strong> untuk remaja usia 15-17 tahun (Lanjutan).</li>
             </ul>
           </div>
         </div>
