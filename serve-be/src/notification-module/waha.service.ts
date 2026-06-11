@@ -34,9 +34,9 @@ export class WahaService implements OnModuleInit {
     try {
       const status = await this.getSessionStatus('default');
 
-      if (status.status === 'STOPPED') {
+      if (status.status === 'STOPPED' || status.status === 'NOT_FOUND') {
         this.logger.log(
-          'Session stopped. Auto-starting "default" session with Webhook...',
+          'Session stopped or not found. Auto-starting "default" session with Webhook...',
         );
         await this.startSession('default');
         this.logger.log(
@@ -140,7 +140,7 @@ export class WahaService implements OnModuleInit {
     } catch (error) {
       const err = error as any;
       if (err.response?.status === 404) {
-        return { status: 'STOPPED' };
+        return { status: 'NOT_FOUND' };
       }
       this.logger.error(
         `Failed to get session status from ${this.wahaUrl}`,
@@ -249,6 +249,25 @@ export class WahaService implements OnModuleInit {
       return { status: 'WORKING' };
     }
 
+    if (currentStatus.status === 'NOT_FOUND') {
+      try {
+        await firstValueFrom(
+          this.httpService.post(`${this.wahaUrl}/api/sessions`, config, {
+            headers: this.getHeaders(),
+          }),
+        );
+        this.logger.log(`Session '${session}' created and started`);
+        return { status: 'STARTED' };
+      } catch (error) {
+        const err = error as any;
+        this.logger.error(
+          `Failed to create session '${session}': ${err.response?.data?.message || err.message}`,
+          err.stack,
+        );
+        throw error;
+      }
+    }
+
     if (currentStatus.status !== 'STOPPED') {
       this.logger.log(
         `Session '${session}' is in state '${currentStatus.status}', stopping before restart`,
@@ -268,18 +287,36 @@ export class WahaService implements OnModuleInit {
 
     try {
       await firstValueFrom(
-        this.httpService.post(
-          `${this.wahaUrl}/api/sessions/start`,
+        this.httpService.put(
+          `${this.wahaUrl}/api/sessions/${session}`,
           config,
           { headers: this.getHeaders() },
         ),
       );
-      this.logger.log(`Session '${session}' configured and started successfully`);
+      this.logger.log(`Session '${session}' config updated`);
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(
+        `Failed to update session config: ${err.response?.data?.message || err.message}`,
+        err.stack,
+      );
+      throw error;
+    }
+
+    try {
+      await firstValueFrom(
+        this.httpService.post(
+          `${this.wahaUrl}/api/sessions/${session}/start`,
+          {},
+          { headers: this.getHeaders() },
+        ),
+      );
+      this.logger.log(`Session '${session}' started`);
       return { status: 'STARTED' };
     } catch (error) {
       const err = error as any;
       this.logger.error(
-        `Failed to start session '${session}': ${err.response?.data?.message || err.message}`,
+        `Failed to start session: ${err.response?.data?.message || err.message}`,
         err.stack,
       );
       throw error;
