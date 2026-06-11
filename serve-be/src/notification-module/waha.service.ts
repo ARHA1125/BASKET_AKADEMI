@@ -275,6 +275,7 @@ export class WahaService implements OnModuleInit {
     );
 
     this.logger.log(`Session '${session}' started`);
+    return { status: 'STARTED' };
   }
 
   async onModuleInit() {
