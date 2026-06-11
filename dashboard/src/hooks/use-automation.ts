@@ -118,8 +118,8 @@ export function useWahaStatus(pollInterval = 5000) {
   const connect = async () => {
     console.log("useWahaStatus: connect() clicked and executing...");
     try {
-        console.log("useWahaStatus: calling deleteWahaSession()...");
-        await deleteWahaSession();
+        console.log("useWahaStatus: calling stopWahaSession() first to clear active states...");
+        await stopWahaSession();
         console.log("useWahaStatus: calling startWahaSession()...");
         await startWahaSession();
         console.log("useWahaStatus: calling fetchStatus()...");
@@ -144,8 +144,8 @@ export function useWahaStatus(pollInterval = 5000) {
   const reset = async () => {
     console.log("useWahaStatus: reset() clicked and executing...");
     try {
-        console.log("useWahaStatus: calling deleteWahaSession()...");
-        await deleteWahaSession();
+        console.log("useWahaStatus: calling stopWahaSession() to log out and clear credentials...");
+        await stopWahaSession();
         console.log("useWahaStatus: calling fetchStatus()...");
         fetchStatus();
         toast.success("Session reset successfully");

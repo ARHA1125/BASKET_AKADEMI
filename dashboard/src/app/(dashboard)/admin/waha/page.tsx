@@ -43,6 +43,8 @@ export default function WahaPage() {
               return <Badge variant="success">Active</Badge>;
           case 'SCAN_QR_CODE':
               return <Badge variant="warning">Scan QR</Badge>;
+          case 'STARTING':
+              return <Badge variant="info">Starting</Badge>;
           default:
               return <Badge variant="error">Disconnected</Badge>;
       }
@@ -254,8 +256,17 @@ export default function WahaPage() {
                           </div>
                       </div>
                   </div>
+              ) : status === 'STARTING' ? (
+                  <div className="text-center py-12">
+                      <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Loader2 className="animate-spin text-indigo-600 dark:text-indigo-400" size={40} />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-2">Starting Session</h3>
+                      <p className="text-gray-500 max-w-md mx-auto">
+                          The WhatsApp gateway is starting up. This may take up to 30 seconds. Please wait...
+                      </p>
+                  </div>
               ) : (
-                
                   <div className="text-center py-12">
                       <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
                           <QrCode size={40} className="text-gray-400" />
