@@ -44,7 +44,7 @@ export default function WahaPage() {
           case 'SCAN_QR_CODE':
               return <Badge variant="warning">Scan QR</Badge>;
           case 'STARTING':
-              return <Badge variant="info">Starting</Badge>;
+              return <Badge variant="blue">Starting</Badge>;
           default:
               return <Badge variant="error">Disconnected</Badge>;
       }
