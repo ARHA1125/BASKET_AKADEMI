@@ -268,38 +268,22 @@ export class WahaService implements OnModuleInit {
 
     try {
       await firstValueFrom(
-        this.httpService.post(`${this.wahaUrl}/api/sessions`, config, {
-          headers: this.getHeaders(),
-        }),
+        this.httpService.post(
+          `${this.wahaUrl}/api/sessions/start`,
+          config,
+          { headers: this.getHeaders() },
+        ),
       );
-      this.logger.log(`Session '${session}' created`);
+      this.logger.log(`Session '${session}' configured and started successfully`);
+      return { status: 'STARTED' };
     } catch (error) {
       const err = error as any;
-      if (err.response?.status === 409 || err.response?.status === 422) {
-        this.logger.log(`Session '${session}' exists, updating config`);
-
-        await firstValueFrom(
-          this.httpService.put(
-            `${this.wahaUrl}/api/sessions/${session}`,
-            config,
-            { headers: this.getHeaders() },
-          ),
-        );
-      } else {
-        throw error;
-      }
+      this.logger.error(
+        `Failed to start session '${session}': ${err.response?.data?.message || err.message}`,
+        err.stack,
+      );
+      throw error;
     }
-
-    await firstValueFrom(
-      this.httpService.post(
-        `${this.wahaUrl}/api/sessions/${session}/start`,
-        {},
-        { headers: this.getHeaders() },
-      ),
-    );
-
-    this.logger.log(`Session '${session}' started`);
-    return { status: 'STARTED' };
   }
 
   async onModuleInit() {
