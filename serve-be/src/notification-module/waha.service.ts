@@ -46,7 +46,7 @@ export class WahaService implements OnModuleInit {
         this.logger.log(`Session is already running. Status: ${status.status}`);
       }
     } catch (error) {
-      this.logger.error('Failed to auto-start session.', error.message);
+      this.logger.error('Failed to auto-start session.', (error as Error).message);
     }
   }
 
@@ -89,10 +89,11 @@ export class WahaService implements OnModuleInit {
       );
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
+      const err = error as any;
+      const errorMessage = err.response?.data?.message || err.message;
       this.logger.error(
         `Failed to send message to ${chatId}`,
-        error.response?.data || error.message,
+        err.response?.data || err.message,
       );
 
       if (errorMessage && errorMessage.includes('No LID')) {
@@ -124,7 +125,7 @@ export class WahaService implements OnModuleInit {
         ),
       );
     } catch (error) {
-      this.logger.error(`Failed to send image to ${chatId}`, error.message);
+      this.logger.error(`Failed to send image to ${chatId}`, (error as Error).message);
     }
   }
 
@@ -137,14 +138,15 @@ export class WahaService implements OnModuleInit {
       );
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404) {
+      const err = error as any;
+      if (err.response?.status === 404) {
         return { status: 'STOPPED' };
       }
       this.logger.error(
         `Failed to get session status from ${this.wahaUrl}`,
-        error.stack,
+        err.stack,
       );
-      return { status: 'DISCONNECTED', error: error.message };
+      return { status: 'DISCONNECTED', error: err.message };
     }
   }
 
@@ -158,23 +160,35 @@ export class WahaService implements OnModuleInit {
       );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to get QR code`, error.message);
+      this.logger.error(`Failed to get QR code`, (error as Error).message);
       throw error;
     }
   }
 
   async stopSession(session: string = 'default') {
     try {
-      const response = await firstValueFrom(
+      await firstValueFrom(
         this.httpService.post(
           `${this.wahaUrl}/api/sessions/${session}/logout`,
           {},
           { headers: this.getHeaders() },
         ),
       );
+    } catch (error) {
+      this.logger.warn(`Logout failed (may already be logged out): ${(error as Error).message}`);
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.wahaUrl}/api/sessions/${session}/stop`,
+          {},
+          { headers: this.getHeaders() },
+        ),
+      );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to stop session`, error.message);
+      this.logger.error(`Failed to stop session`, (error as Error).message);
       return { status: 'STOPPED' };
     }
   }
@@ -200,6 +214,34 @@ export class WahaService implements OnModuleInit {
       },
     };
 
+    const currentStatus = await this.getSessionStatus(session);
+    this.logger.log(`Session '${session}' current status: ${currentStatus.status}`);
+
+    if (currentStatus.status === 'WORKING') {
+      this.logger.log(`Session '${session}' already WORKING, skipping start`);
+      return { status: 'WORKING' };
+    }
+
+    if (
+      currentStatus.status !== 'STOPPED' &&
+      currentStatus.status !== 'DISCONNECTED'
+    ) {
+      this.logger.log(
+        `Session '${session}' is in state '${currentStatus.status}', stopping before restart`,
+      );
+      try {
+        await firstValueFrom(
+          this.httpService.post(
+            `${this.wahaUrl}/api/sessions/${session}/stop`,
+            {},
+            { headers: this.getHeaders() },
+          ),
+        );
+      } catch (e) {
+        this.logger.warn(`Pre-start stop failed (continuing): ${(e as Error).message}`);
+      }
+    }
+
     try {
       await firstValueFrom(
         this.httpService.post(`${this.wahaUrl}/api/sessions`, config, {
@@ -208,7 +250,8 @@ export class WahaService implements OnModuleInit {
       );
       this.logger.log(`Session '${session}' created`);
     } catch (error) {
-      if (error.response?.status === 409 || error.response?.status === 422) {
+      const err = error as any;
+      if (err.response?.status === 409 || err.response?.status === 422) {
         this.logger.log(`Session '${session}' exists, updating config`);
 
         await firstValueFrom(
@@ -222,6 +265,7 @@ export class WahaService implements OnModuleInit {
         throw error;
       }
     }
+
     await firstValueFrom(
       this.httpService.post(
         `${this.wahaUrl}/api/sessions/${session}/start`,
