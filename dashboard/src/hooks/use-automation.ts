@@ -116,33 +116,41 @@ export function useWahaStatus(pollInterval = 5000) {
   }, [pollInterval, fetchStatus]); 
 
   const connect = async () => {
+    console.log("useWahaStatus: connect() clicked and executing...");
     try {
+        console.log("useWahaStatus: calling deleteWahaSession()...");
         await deleteWahaSession();
+        console.log("useWahaStatus: calling startWahaSession()...");
         await startWahaSession();
+        console.log("useWahaStatus: calling fetchStatus()...");
         fetchStatus();
     } catch (e) {
-        console.error(e);
+        console.error("useWahaStatus: connect() failed with error:", e);
         toast.error("Failed to start session cleanly");
     }
   };
 
   const disconnect = async () => {
     try {
+        console.log("useWahaStatus: calling stopWahaSession()...");
         await stopWahaSession();
         fetchStatus();
     } catch (e) {
-        console.error(e);
+        console.error("useWahaStatus: disconnect() failed with error:", e);
         toast.error("Failed to stop session");
     }
   };
 
   const reset = async () => {
+    console.log("useWahaStatus: reset() clicked and executing...");
     try {
+        console.log("useWahaStatus: calling deleteWahaSession()...");
         await deleteWahaSession();
+        console.log("useWahaStatus: calling fetchStatus()...");
         fetchStatus();
         toast.success("Session reset successfully");
     } catch (e) {
-        console.error(e);
+        console.error("useWahaStatus: reset() failed with error:", e);
         toast.error("Failed to reset session");
     }
   };
