@@ -75,28 +75,7 @@ export function useWahaStatus(pollInterval = 5000) {
   const [session, setSession] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      const sessionData = await getWahaStatus();
-      setSession(sessionData);
-      const currentStatus = sessionData.status || "UNKNOWN";
-      setStatus(currentStatus);
-
-      if (currentStatus === "SCAN_QR_CODE") {
-           fetchQR();
-      } else {
-          if (qrCodeUrl) {
-            URL.revokeObjectURL(qrCodeUrl);
-            setQrCodeUrl(null);
-          }
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("ERROR");
-    }
-  }, [qrCodeUrl]);
-
-  const fetchQR = async () => {
+  const fetchQR = useCallback(async () => {
       try {
           const blob = await getWahaQR();
           const url = URL.createObjectURL(blob);
@@ -107,7 +86,28 @@ export function useWahaStatus(pollInterval = 5000) {
       } catch (e) {
           console.error("Failed to fetch QR", e);
       }
-  };
+  }, []);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const sessionData = await getWahaStatus();
+      setSession(sessionData);
+      const currentStatus = sessionData.status || "UNKNOWN";
+      setStatus(currentStatus);
+
+      if (currentStatus === "SCAN_QR_CODE") {
+           fetchQR();
+      } else {
+          setQrCodeUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("ERROR");
+    }
+  }, [fetchQR]);
 
   useEffect(() => {
     fetchStatus();
