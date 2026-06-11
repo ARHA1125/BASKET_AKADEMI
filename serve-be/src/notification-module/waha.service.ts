@@ -211,6 +211,10 @@ export class WahaService implements OnModuleInit {
       return response.data;
     } catch (error) {
       const err = error as any;
+      if (err.response?.status === 404) {
+        this.logger.log(`Session '${session}' not found during delete (already cleared), continuing`);
+        return { status: 'STOPPED' };
+      }
       this.logger.error(`Failed to delete session '${session}'`, err.response?.data || err.message);
       throw error;
     }
@@ -245,10 +249,7 @@ export class WahaService implements OnModuleInit {
       return { status: 'WORKING' };
     }
 
-    if (
-      currentStatus.status !== 'STOPPED' &&
-      currentStatus.status !== 'DISCONNECTED'
-    ) {
+    if (currentStatus.status !== 'STOPPED') {
       this.logger.log(
         `Session '${session}' is in state '${currentStatus.status}', stopping before restart`,
       );

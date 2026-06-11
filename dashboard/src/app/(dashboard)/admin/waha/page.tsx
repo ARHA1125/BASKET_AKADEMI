@@ -27,7 +27,7 @@ import { useState } from "react";
 
 
 export default function WahaPage() {
-  const { status, session, qrCodeUrl, connect, disconnect, sendMessage } = useWahaStatus();
+  const { status, session, qrCodeUrl, connect, disconnect, reset, sendMessage } = useWahaStatus();
   
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -262,12 +262,17 @@ export default function WahaPage() {
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-2">Session Disconnected</h3>
                       <p className="text-gray-500 max-w-md mx-auto mb-8">
-                          Start a new session to reactivate your WhatsApp Gateway and resume automated messaging.
+                          Start a new session to reactivate your WhatsApp Gateway, or reset session data if you need to scan a new QR code.
                       </p>
-                      <Button onClick={handleConnect} className="px-8 py-3 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-                          <QrCode size={20} className="mr-2" /> 
-                          Start New Session
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                          <Button onClick={handleConnect} className="flex-1 py-3 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                              <QrCode size={20} className="mr-2" /> 
+                              Start New Session
+                          </Button>
+                          <Button onClick={reset} variant="outline" className="flex-1 py-3 text-lg border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-950/20">
+                              Reset Session Data
+                          </Button>
+                      </div>
                   </div>
               )}
           </div>

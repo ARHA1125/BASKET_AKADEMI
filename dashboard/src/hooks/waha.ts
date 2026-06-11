@@ -39,9 +39,11 @@ export async function startWahaSession(): Promise<any> {
     headers: getHeaders(),
   });
   if (!response.ok) {
-    throw new Error("Failed to start session");
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || "Failed to start session");
   }
-  return response.json();
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
 }
 
 export async function stopWahaSession(): Promise<any> {
@@ -53,6 +55,18 @@ export async function stopWahaSession(): Promise<any> {
     throw new Error("Failed to stop session");
   }
   return response.json();
+}
+
+export async function deleteWahaSession(): Promise<any> {
+  const response = await fetch(`${API_URL}/notifications/waha/delete`, {
+    method: "POST",
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete session");
+  }
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
 }
 
 export async function sendWahaMessage(chatId: string, message: string): Promise<any> {

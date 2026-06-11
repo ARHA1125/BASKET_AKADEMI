@@ -4,7 +4,7 @@ import { AutomationRule } from "@/types/rules";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createRule, deleteRule, getRules, updateRule } from "./rules";
-import { getWahaQR, getWahaStatus, sendWahaMessage, startWahaSession, stopWahaSession } from "./waha";
+import { deleteWahaSession, getWahaQR, getWahaStatus, sendWahaMessage, startWahaSession, stopWahaSession } from "./waha";
 
 
 export function useAutomationRules() {
@@ -117,11 +117,12 @@ export function useWahaStatus(pollInterval = 5000) {
 
   const connect = async () => {
     try {
+        await deleteWahaSession();
         await startWahaSession();
         fetchStatus();
     } catch (e) {
         console.error(e);
-        toast.error("Failed to start session");
+        toast.error("Failed to start session cleanly");
     }
   };
 
@@ -132,6 +133,17 @@ export function useWahaStatus(pollInterval = 5000) {
     } catch (e) {
         console.error(e);
         toast.error("Failed to stop session");
+    }
+  };
+
+  const reset = async () => {
+    try {
+        await deleteWahaSession();
+        fetchStatus();
+        toast.success("Session reset successfully");
+    } catch (e) {
+        console.error(e);
+        toast.error("Failed to reset session");
     }
   };
 
@@ -154,6 +166,7 @@ export function useWahaStatus(pollInterval = 5000) {
     qrCodeUrl,
     connect,
     disconnect,
+    reset,
     sendMessage,
     refreshStatus: fetchStatus
   };
