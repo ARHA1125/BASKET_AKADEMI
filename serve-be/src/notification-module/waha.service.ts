@@ -131,6 +131,13 @@ export class WahaService implements OnModuleInit {
 
   async getSessionStatus(session: string = 'default') {
     try {
+      const listResponse = await firstValueFrom(
+        this.httpService.get(`${this.wahaUrl}/api/sessions`, {
+          headers: this.getHeaders(),
+        }),
+      );
+      this.logger.log(`All sessions in WAHA: ${JSON.stringify(listResponse.data)}`);
+
       const response = await firstValueFrom(
         this.httpService.get(`${this.wahaUrl}/api/sessions/${session}`, {
           headers: this.getHeaders(),
@@ -251,12 +258,12 @@ export class WahaService implements OnModuleInit {
 
     if (currentStatus.status === 'NOT_FOUND') {
       try {
-        await firstValueFrom(
+        const response = await firstValueFrom(
           this.httpService.post(`${this.wahaUrl}/api/sessions`, config, {
             headers: this.getHeaders(),
           }),
         );
-        this.logger.log(`Session '${session}' created and started`);
+        this.logger.log(`Session '${session}' created and started. WAHA Response: ${JSON.stringify(response.data)}`);
         return { status: 'STARTED' };
       } catch (error) {
         const err = error as any;
