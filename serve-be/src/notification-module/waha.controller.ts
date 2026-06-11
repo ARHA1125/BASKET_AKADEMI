@@ -65,6 +65,17 @@ export class WahaController {
     }
   }
 
+  @Post('delete')
+  async deleteSession(@Body('session') session: string = 'default') {
+    try {
+      return await this.wahaService.deleteSession(session);
+    } catch (error) {
+      const err = error as any;
+      const message = err.response?.data?.message || err.message || 'Failed to delete WAHA session';
+      throw new HttpException({ message }, err.response?.status || HttpStatus.BAD_GATEWAY);
+    }
+  }
+
   @Post('send-text')
   async sendText(
     @Body() body: { chatId: string; message: string; session?: string },

@@ -193,6 +193,29 @@ export class WahaService implements OnModuleInit {
     }
   }
 
+  async deleteSession(session: string = 'default') {
+    try {
+      await this.stopSession(session);
+    } catch (e) {
+      this.logger.warn(`Pre-delete stop failed (continuing): ${(e as Error).message}`);
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(
+          `${this.wahaUrl}/api/sessions/${session}`,
+          { headers: this.getHeaders() },
+        ),
+      );
+      this.logger.log(`Session '${session}' deleted successfully`);
+      return response.data;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(`Failed to delete session '${session}'`, err.response?.data || err.message);
+      throw error;
+    }
+  }
+
   async startSession(session: string = 'default') {
     const config = {
       name: session,
