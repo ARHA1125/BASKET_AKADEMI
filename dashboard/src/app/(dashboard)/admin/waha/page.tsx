@@ -27,7 +27,7 @@ import { useState } from "react";
 
 
 export default function WahaPage() {
-  const { status, session, qrCodeUrl, connect, disconnect, sendMessage } = useWahaStatus();
+  const { status, session, qrCodeUrl, connect, disconnect, reset, sendMessage } = useWahaStatus();
   
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -43,6 +43,8 @@ export default function WahaPage() {
               return <Badge variant="success">Active</Badge>;
           case 'SCAN_QR_CODE':
               return <Badge variant="warning">Scan QR</Badge>;
+          case 'STARTING':
+              return <Badge variant="blue">Starting</Badge>;
           default:
               return <Badge variant="error">Disconnected</Badge>;
       }
@@ -254,20 +256,34 @@ export default function WahaPage() {
                           </div>
                       </div>
                   </div>
+              ) : status === 'STARTING' ? (
+                  <div className="text-center py-12">
+                      <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Loader2 className="animate-spin text-indigo-600 dark:text-indigo-400" size={40} />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-2">Starting Session</h3>
+                      <p className="text-gray-500 max-w-md mx-auto">
+                          The WhatsApp gateway is starting up. This may take up to 30 seconds. Please wait...
+                      </p>
+                  </div>
               ) : (
-                
                   <div className="text-center py-12">
                       <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
                           <QrCode size={40} className="text-gray-400" />
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-2">Session Disconnected</h3>
                       <p className="text-gray-500 max-w-md mx-auto mb-8">
-                          Start a new session to reactivate your WhatsApp Gateway and resume automated messaging.
+                          Start a new session to reactivate your WhatsApp Gateway, or reset session data if you need to scan a new QR code.
                       </p>
-                      <Button onClick={handleConnect} className="px-8 py-3 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-                          <QrCode size={20} className="mr-2" /> 
-                          Start New Session
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                          <Button onClick={handleConnect} className="flex-1 py-3 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                              <QrCode size={20} className="mr-2" /> 
+                              Start New Session
+                          </Button>
+                          <Button onClick={reset} variant="outline" className="flex-1 py-3 text-lg border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-950/20">
+                              Reset Session Data
+                          </Button>
+                      </div>
                   </div>
               )}
           </div>

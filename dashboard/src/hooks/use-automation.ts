@@ -4,7 +4,7 @@ import { AutomationRule } from "@/types/rules";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createRule, deleteRule, getRules, updateRule } from "./rules";
-import { getWahaQR, getWahaStatus, sendWahaMessage, startWahaSession, stopWahaSession } from "./waha";
+import { deleteWahaSession, getWahaQR, getWahaStatus, sendWahaMessage, startWahaSession, stopWahaSession } from "./waha";
 
 
 export function useAutomationRules() {
@@ -75,28 +75,7 @@ export function useWahaStatus(pollInterval = 5000) {
   const [session, setSession] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      const sessionData = await getWahaStatus();
-      setSession(sessionData);
-      const currentStatus = sessionData.status || "UNKNOWN";
-      setStatus(currentStatus);
-
-      if (currentStatus === "SCAN_QR_CODE") {
-           fetchQR();
-      } else {
-          if (qrCodeUrl) {
-            URL.revokeObjectURL(qrCodeUrl);
-            setQrCodeUrl(null);
-          }
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("ERROR");
-    }
-  }, [qrCodeUrl]);
-
-  const fetchQR = async () => {
+  const fetchQR = useCallback(async () => {
       try {
           const blob = await getWahaQR();
           const url = URL.createObjectURL(blob);
@@ -107,7 +86,28 @@ export function useWahaStatus(pollInterval = 5000) {
       } catch (e) {
           console.error("Failed to fetch QR", e);
       }
-  };
+  }, []);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const sessionData = await getWahaStatus();
+      setSession(sessionData);
+      const currentStatus = sessionData.status || "UNKNOWN";
+      setStatus(currentStatus);
+
+      if (currentStatus === "SCAN_QR_CODE") {
+           fetchQR();
+      } else {
+          setQrCodeUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("ERROR");
+    }
+  }, [fetchQR]);
 
   useEffect(() => {
     fetchStatus();
@@ -116,22 +116,42 @@ export function useWahaStatus(pollInterval = 5000) {
   }, [pollInterval, fetchStatus]); 
 
   const connect = async () => {
+    console.log("useWahaStatus: connect() clicked and executing...");
     try {
+        console.log("useWahaStatus: calling stopWahaSession() first to clear active states...");
+        await stopWahaSession();
+        console.log("useWahaStatus: calling startWahaSession()...");
         await startWahaSession();
+        console.log("useWahaStatus: calling fetchStatus()...");
         fetchStatus();
     } catch (e) {
-        console.error(e);
-        toast.error("Failed to start session");
+        console.error("useWahaStatus: connect() failed with error:", e);
+        toast.error("Failed to start session cleanly");
     }
   };
 
   const disconnect = async () => {
     try {
+        console.log("useWahaStatus: calling stopWahaSession()...");
         await stopWahaSession();
         fetchStatus();
     } catch (e) {
-        console.error(e);
+        console.error("useWahaStatus: disconnect() failed with error:", e);
         toast.error("Failed to stop session");
+    }
+  };
+
+  const reset = async () => {
+    console.log("useWahaStatus: reset() clicked and executing...");
+    try {
+        console.log("useWahaStatus: calling stopWahaSession() to log out and clear credentials...");
+        await stopWahaSession();
+        console.log("useWahaStatus: calling fetchStatus()...");
+        fetchStatus();
+        toast.success("Session reset successfully");
+    } catch (e) {
+        console.error("useWahaStatus: reset() failed with error:", e);
+        toast.error("Failed to reset session");
     }
   };
 
@@ -154,6 +174,7 @@ export function useWahaStatus(pollInterval = 5000) {
     qrCodeUrl,
     connect,
     disconnect,
+    reset,
     sendMessage,
     refreshStatus: fetchStatus
   };

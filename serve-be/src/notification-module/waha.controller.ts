@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Controller, Get, Post, Res, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Res, Body, Query, Param, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WahaService } from './waha.service';
@@ -45,12 +45,35 @@ export class WahaController {
 
   @Post('start')
   async startSession(@Body('session') session: string = 'default') {
-    return this.wahaService.startSession(session);
+    try {
+      return await this.wahaService.startSession(session);
+    } catch (error) {
+      const err = error as any;
+      const message = err.response?.data?.message || err.message || 'Failed to start WAHA session';
+      throw new HttpException({ message }, err.response?.status || HttpStatus.BAD_GATEWAY);
+    }
   }
 
   @Post('stop')
   async stopSession(@Body('session') session: string = 'default') {
-    return this.wahaService.stopSession(session);
+    try {
+      return await this.wahaService.stopSession(session);
+    } catch (error) {
+      const err = error as any;
+      const message = err.response?.data?.message || err.message || 'Failed to stop WAHA session';
+      throw new HttpException({ message }, err.response?.status || HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  @Post('delete')
+  async deleteSession(@Body('session') session: string = 'default') {
+    try {
+      return await this.wahaService.deleteSession(session);
+    } catch (error) {
+      const err = error as any;
+      const message = err.response?.data?.message || err.message || 'Failed to delete WAHA session';
+      throw new HttpException({ message }, err.response?.status || HttpStatus.BAD_GATEWAY);
+    }
   }
 
   @Post('send-text')
