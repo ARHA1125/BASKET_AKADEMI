@@ -105,7 +105,7 @@ export function StudentDashboardOverview() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Karir Saya</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {loading ? 'Memuat kemajuan akademi Anda...' : `Selamat datang kembali, ${student?.user.fullName || 'Pemain'}.`}
+            {loading ? 'Memuat kemajuan akademi Anda...' : `Selamat datang kembali, ${student?.user?.fullName || 'Pemain'}.`}
           </p>
         </div>
       </header>
@@ -118,11 +118,11 @@ export function StudentDashboardOverview() {
             ) : latest ? (
               <div className="space-y-4">
                 <PlayerCard
-                  name={student?.user.fullName || 'Pemain'}
+                  name={student?.user?.fullName || 'Pemain'}
                   position={student?.position || 'ATH'}
                   ovr={String(latest.overallRating)}
                   subtitle={`${student?.ageClass || '-'} · ${student?.curriculumProfile || '-'}`}
-                  image={student?.user.photo_url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}${student.user.photo_url}` : undefined}
+                  image={student?.user?.photo_url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}${student.user?.photo_url}` : undefined}
                   stats={{
                     spd: latest.speedScore,
                     sho: latest.shootingScore,
