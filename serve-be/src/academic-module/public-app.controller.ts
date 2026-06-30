@@ -21,4 +21,10 @@ export class PublicAppController {
   ) {
     return this.publicAppService.checkDuplicate(email, phone);
   }
+
+  @Public()
+  @Get('stats')
+  async getStats() {
+    return this.publicAppService.getPublicStats();
+  }
 }

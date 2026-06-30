@@ -18,6 +18,17 @@ export class PublicAppService {
     private parentRepo: Repository<Parent>,
   ) {}
 
+  async getPublicStats() {
+    const totalStudents = await this.studentRepo.count();
+    const totalCoaches = await this.userRepo.count({
+      where: { role: UserRole.COACH },
+    });
+    return {
+      totalStudents,
+      totalCoaches,
+    };
+  }
+
   async checkDuplicate(email?: string, phone?: string) {
     const result = { emailExists: false, phoneExists: false };
 
