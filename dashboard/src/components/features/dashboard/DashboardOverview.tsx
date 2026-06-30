@@ -38,7 +38,7 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
   const { user, loading: userLoading } = useUser();
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Resolve role: prioritaskan propRole, jika kosong gunakan user.role
+  // Resolve role: prioritize propRole, default to user.role
   const resolvedRole = (propRole || user?.role || 'ADMIN').toLowerCase();
   
   const [loading, setLoading] = useState(true);
@@ -47,9 +47,25 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
   // States for Admin dashboard
   const [adminMetrics, setAdminMetrics] = useState<any[]>([]);
   const [adminTasks, setAdminTasks] = useState<any[]>([]);
-  const [adminTransactions, setAdminTransactions] = useState<any[]>([]);
   const [adminEvents, setAdminEvents] = useState<any[]>([]);
   const [adminInventory, setAdminInventory] = useState<any[]>([]);
+  
+  // States for 6 Admin Modules Summary
+  const [adminSummary, setAdminSummary] = useState<any>({
+    sponsorsCount: 0,
+    eventsCount: 0,
+    newsCount: 0,
+    galleryCount: 0,
+    curriculumLevelsCount: 0,
+    assessmentsCount: 0,
+    recentAssessments: [],
+    wahaConnectionStatus: 'DISCONNECTED',
+    totalStudentsCount: 0,
+    totalParentsCount: 0,
+    totalCoachesCount: 0,
+    unpaidInvoicesCount: 0,
+    agingARAmount: 0
+  });
   
   // States for Coach dashboard
   const [coachClasses, setCoachClasses] = useState<any[]>([]);
@@ -83,6 +99,47 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
     );
   }, { dependencies: [loading], scope: containerRef });
 
+  // Attendance Submission handler for Coach
+  const handleSaveAttendance = async () => {
+    const token = getToken();
+    if (!token) {
+      toast.error("Token tidak ditemukan. Silakan login kembali.");
+      return;
+    }
+    const headers = { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    };
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3005";
+
+    try {
+      const promises = coachAttendance.map(student => {
+        return fetch(`${apiBase}/academic/attendance`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            studentId: student.id,
+            status: student.status,
+            date: new Date()
+          })
+        });
+      });
+      
+      const responses = await Promise.all(promises);
+      if (responses.every(res => res.ok)) {
+        toast.success("Laporan kehadiran berhasil disimpan ke database!");
+        // Refresh dashboard coach tasks
+        const updatedTasks = coachTasks.filter(t => t.id !== 'c-attendance');
+        setCoachTasks(updatedTasks);
+      } else {
+        toast.error("Sebagian absensi gagal disimpan. Pastikan data benar.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal menghubungkan ke server untuk menyimpan absensi.");
+    }
+  };
+
   // Data Fetching
   useEffect(() => {
     async function loadDashboardData() {
@@ -101,23 +158,28 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
           // ==========================================
           // ADMIN DATA FETCHING (DYNAMIC BACKEND INTEGRATION)
           // ==========================================
-          let totalRevenue = 145200000;
-          let revenueGrowth = 12.5;
-          let recentTransactions: any[] = [];
-          let activeStudents = 342;
-          let avgAttendance = 88.4;
-          let lowStockCount = 4;
+          let totalRevenue = 0;
+          let revenueGrowth = -100.0;
+          let activeStudents = 0;
+          let avgAttendance = 100.0;
+          let lowStockCount = 0;
           
-          let smartInventory = [
-            { id: '1', name: 'Jersey Home (M)', stock: 2, statusText: 'Sisa 2 Pcs • Habis dlm 3 hari', low: true },
-            { id: '2', name: 'Sleeve Pad (Black)', stock: 15, statusText: 'Sisa 15 Pcs • Aman', low: false }
-          ];
+          let sponsorsCount = 0;
+          let eventsCount = 0;
+          let newsCount = 0;
+          let galleryCount = 0;
+          let curriculumLevelsCount = 0;
+          let assessmentsCount = 0;
+          let recentAssessments: any[] = [];
+          let wahaConnectionStatus = 'DISCONNECTED';
+          let totalStudentsCount = 0;
+          let totalParentsCount = 0;
+          let totalCoachesCount = 0;
+          let unpaidInvoicesCount = 0;
+          let agingARAmount = 0;
           
-          let pendingTasks = [
-            { id: 't1', type: 'Finance', title: 'Verifikasi 5 Pembayaran Manual', time: '10 min ago', urgent: true },
-            { id: 't2', type: 'Inventory', title: 'Restock Jersey Size M (Sisa 2)', time: '1 hour ago', urgent: true },
-            { id: 't3', type: 'Academic', title: 'Approve Rencana Latihan Coach Budi', time: '3 hours ago', urgent: false }
-          ];
+          let smartInventory: any[] = [];
+          const tasks: any[] = [];
 
           // 1. Fetch Invoicing/Revenue Overview
           try {
@@ -126,26 +188,58 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
               const overview = await res.json();
               totalRevenue = overview.totalRevenue || 0;
               revenueGrowth = overview.revenueGrowth || 0;
-              if (overview.recentTransactions && overview.recentTransactions.length > 0) {
-                recentTransactions = overview.recentTransactions;
-              }
             }
           } catch (e) {
             console.error("Failed to fetch payment overview", e);
           }
 
-          // 2. Fetch Active Student Counts
+          // 2. Fetch Active Student Counts & Pending Registrations
           try {
-            const res = await fetch(`${apiBase}/academic/students?limit=1`, { headers });
+            const res = await fetch(`${apiBase}/academic/students`, { headers });
             if (res.ok) {
               const studentRes = await res.json();
-              activeStudents = studentRes.stats?.active ?? studentRes.total ?? activeStudents;
+              const list = studentRes.data || studentRes || [];
+              totalStudentsCount = studentRes.total ?? list.length ?? 0;
+              activeStudents = studentRes.stats?.active ?? list.filter((s: any) => s.user?.status === 'Active').length ?? 0;
+              
+              const pendingCount = studentRes.stats?.pending ?? list.filter((s: any) => s.user?.status === 'Pending' || s.status === 'Pending').length ?? 0;
+              if (pendingCount > 0) {
+                tasks.push({
+                  id: 'approve-students',
+                  type: 'Academic',
+                  title: `Persetujuan Pendaftaran: ${pendingCount} Siswa Baru`,
+                  time: 'Just now',
+                  urgent: false
+                });
+              }
             }
           } catch (e) {
-            console.error("Failed to fetch active students count", e);
+            console.error("Failed to fetch students", e);
           }
 
-          // 3. Fetch Attendance Summary & Calculate Overall Attendance Rate
+          // 3. Fetch Parents Count
+          try {
+            const res = await fetch(`${apiBase}/academic/parents?limit=1`, { headers });
+            if (res.ok) {
+              const parentRes = await res.json();
+              totalParentsCount = parentRes.total ?? 0;
+            }
+          } catch (e) {
+            console.error("Failed to fetch parents", e);
+          }
+
+          // 4. Fetch Coaches Count
+          try {
+            const res = await fetch(`${apiBase}/academic/coaches?limit=1`, { headers });
+            if (res.ok) {
+              const coachRes = await res.json();
+              totalCoachesCount = coachRes.total ?? 0;
+            }
+          } catch (e) {
+            console.error("Failed to fetch coaches", e);
+          }
+
+          // 5. Fetch Attendance Summary & Calculate Overall Attendance Rate
           try {
             const res = await fetch(`${apiBase}/academic/attendance/reports/summary`, { headers });
             if (res.ok) {
@@ -159,13 +253,14 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
             console.error("Failed to fetch attendance summary", e);
           }
 
-          // 4. Fetch Products for Smart Inventory
+          // 6. Fetch Products for Smart Inventory & Stock alerts
           try {
             const res = await fetch(`${apiBase}/marketplace/products`, { headers });
             if (res.ok) {
               const products = await res.json();
               const lowStockProducts = products.filter((p: any) => Number(p.stock) <= 5);
               lowStockCount = lowStockProducts.length;
+              
               smartInventory = products.map((p: any) => ({
                 id: p.id,
                 name: p.name,
@@ -173,40 +268,125 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
                 statusText: p.stock <= 5 ? `Sisa ${p.stock} Pcs • Segera Restock` : `Sisa ${p.stock} Pcs • Aman`,
                 low: p.stock <= 5
               }));
+
+              if (lowStockCount > 0) {
+                tasks.push({
+                  id: 'restock-products',
+                  type: 'Inventory',
+                  title: `Restock ${lowStockCount} Produk Menipis`,
+                  time: '1 hour ago',
+                  urgent: true
+                });
+              }
             }
           } catch (e) {
             console.error("Failed to fetch products", e);
           }
 
-          // 5. Fetch Pending Payments (Action Required)
+          // 7. Fetch Pending Payments (Action Required) & Aging AR
           try {
             const res = await fetch(`${apiBase}/payment-module/invoices?filter=current`, { headers });
             if (res.ok) {
               const invoices = await res.json();
-              const pendingVerification = invoices.filter((inv: any) => inv.status === 'unpaid' && inv.photoUrl);
+              const unpaidInvoices = invoices.filter((inv: any) => inv.status === 'unpaid');
+              unpaidInvoicesCount = unpaidInvoices.length;
+              agingARAmount = unpaidInvoices.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+
+              const pendingVerification = unpaidInvoices.filter((inv: any) => inv.photoUrl);
               if (pendingVerification.length > 0) {
-                pendingTasks = [
-                  { 
-                    id: 'verify-payments', 
-                    type: 'Finance', 
-                    title: `Verifikasi ${pendingVerification.length} Pembayaran Manual`, 
-                    time: 'Just now', 
-                    urgent: true 
-                  },
-                  ...pendingTasks.filter(t => t.type !== 'Finance')
-                ];
+                tasks.push({ 
+                  id: 'verify-payments', 
+                  type: 'Finance', 
+                  title: `Verifikasi ${pendingVerification.length} Pembayaran Manual`, 
+                  time: 'Just now', 
+                  urgent: true 
+                });
               }
             }
           } catch (e) {
             console.error("Failed to fetch pending invoices", e);
           }
 
-          // 6. Fetch Upcoming Events
+          // 8. Fetch Sponsors
+          try {
+            const res = await fetch(`${apiBase}/administration/sponsors`, { headers });
+            if (res.ok) {
+              const sponsors = await res.json();
+              sponsorsCount = sponsors.length;
+            }
+          } catch (e) {
+            console.error("Failed to fetch sponsors", e);
+          }
+
+          // 9. Fetch News
+          try {
+            const res = await fetch(`${apiBase}/administration/news`, { headers });
+            if (res.ok) {
+              const news = await res.json();
+              newsCount = news.length;
+            }
+          } catch (e) {
+            console.error("Failed to fetch news", e);
+          }
+
+          // 10. Fetch Gallery
+          try {
+            const res = await fetch(`${apiBase}/administration/gallery`, { headers });
+            if (res.ok) {
+              const gallery = await res.json();
+              galleryCount = gallery.length;
+            }
+          } catch (e) {
+            console.error("Failed to fetch gallery", e);
+          }
+
+          // 11. Fetch Curriculum Levels
+          try {
+            const res = await fetch(`${apiBase}/academic/curriculum-levels`, { headers });
+            if (res.ok) {
+              const levels = await res.json();
+              curriculumLevelsCount = levels.length;
+            }
+          } catch (e) {
+            console.error("Failed to fetch curriculum levels", e);
+          }
+
+          // 12. Fetch Assessments (FUT Cards)
+          try {
+            const res = await fetch(`${apiBase}/academic/assessments`, { headers });
+            if (res.ok) {
+              const assessments = await res.json();
+              assessmentsCount = assessments.length;
+              recentAssessments = assessments.slice(0, 3).map((a: any) => ({
+                id: a.id,
+                playerName: a.student?.user?.fullName || 'Atlet',
+                assessor: a.coach?.user?.fullName || 'Coach',
+                ovr: a.overallRating || 0,
+                date: new Date(a.assessedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
+              }));
+            }
+          } catch (e) {
+            console.error("Failed to fetch assessments", e);
+          }
+
+          // 13. Fetch WAHA session connection status
+          try {
+            const res = await fetch(`${apiBase}/notifications/waha/status?session=default`, { headers });
+            if (res.ok) {
+              const wahaStatus = await res.json();
+              wahaConnectionStatus = wahaStatus.status || 'DISCONNECTED';
+            }
+          } catch (e) {
+            console.error("Failed to fetch waha status", e);
+          }
+
+          // 14. Fetch Upcoming Events
           let upcomingEvents = [];
           try {
             const res = await fetch(`${apiBase}/community-module/events`, { headers });
             if (res.ok) {
               const events = await res.json();
+              eventsCount = events.length;
               upcomingEvents = events.slice(0, 2).map((ev: any) => ({
                 id: ev.id,
                 name: ev.name,
@@ -221,16 +401,32 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
             console.error("Failed to fetch events", e);
           }
 
+          // Set states
           setAdminMetrics([
             { title: 'Total Revenue (Bulanan)', value: `Rp ${Math.round(totalRevenue).toLocaleString('id-ID')}`, change: `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth.toFixed(1)}%`, trend: revenueGrowth >= 0 ? 'up' : 'down', icon: Wallet, color: 'emerald' },
             { title: 'Siswa Aktif', value: String(activeStudents), change: '+8 Siswa', trend: 'up', icon: Users, color: 'blue' },
             { title: 'Rata-rata Kehadiran', value: `${avgAttendance.toFixed(1)}%`, change: '-2.1%', trend: 'down', icon: Activity, color: 'blue' },
             { title: 'Stok Menipis', value: `${lowStockCount} SKU`, change: 'Segera Restock', trend: 'neutral', icon: ShoppingBag, color: 'red' },
           ]);
-          setAdminTasks(pendingTasks);
-          setAdminTransactions(recentTransactions.slice(0, 5));
+          
+          setAdminTasks(tasks);
           setAdminEvents(upcomingEvents);
           setAdminInventory(smartInventory.slice(0, 3));
+          setAdminSummary({
+            sponsorsCount,
+            eventsCount,
+            newsCount,
+            galleryCount,
+            curriculumLevelsCount,
+            assessmentsCount,
+            recentAssessments,
+            wahaConnectionStatus,
+            totalStudentsCount,
+            totalParentsCount,
+            totalCoachesCount,
+            unpaidInvoicesCount,
+            agingARAmount
+          });
 
         } else {
           // ==========================================
@@ -348,11 +544,56 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
 
           // 4. Map roster and attendance
           const activeRoster = activeClass?.students || [];
-          const attendanceList = activeRoster.slice(0, 4).map((s: any, idx: number) => ({
+          const attendanceList = activeRoster.map((s: any) => ({
             id: s.id,
             name: s.user?.fullName || 'Unknown Student',
-            status: idx === 3 ? 'Absent' : 'Present'
+            status: 'PRESENT'
           }));
+
+          // 5. Compile Coach Action Required tasks dynamically
+          const coachPendingTasks: any[] = [];
+          
+          // A. Search for unassessed students in this class
+          try {
+            const res = await fetch(`${apiBase}/academic/assessments`, { headers });
+            if (res.ok) {
+              const assessments = await res.json();
+              const assessedStudentIds = new Set(assessments.map((a: any) => a.student?.id));
+              
+              const unassessed = activeRoster.filter((s: any) => !assessedStudentIds.has(s.id));
+              if (unassessed.length > 0) {
+                coachPendingTasks.push({
+                  id: 'input-fut-card',
+                  type: 'Penilaian',
+                  title: `Input Nilai FUT Card: ${unassessed[0].user?.fullName || 'Siswa'}`,
+                  time: '1 hour ago',
+                  urgent: true
+                });
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch assessments for coach tasks", e);
+          }
+
+          // B. Add curriculum review task if available
+          if (activeClass?.curriculumLevel) {
+            coachPendingTasks.push({
+              id: 'review-syllabus',
+              type: 'Silabus',
+              title: `Pelajari Silabus Level ${activeClass.curriculumLevel.name}`,
+              time: 'Just now',
+              urgent: false
+            });
+          }
+
+          // C. Add attendance entry task
+          coachPendingTasks.unshift({
+            id: 'c-attendance',
+            type: 'Absensi',
+            title: `Input Absensi Sesi Hari ini: Kelas ${activeClass?.name || 'KU-16'}`,
+            time: 'Just now',
+            urgent: true
+          });
 
           setCoachMetrics([
             { title: 'Kelas Diampu', value: `${classes.length} Kelas`, change: classes.map((c: any) => c.name).join(', ') || 'KU-10, KU-12, KU-16', trend: 'neutral', icon: Calendar, color: 'blue' },
@@ -361,12 +602,7 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
             { title: 'Sesi Pekan Ini', value: '8 Sesi', change: '4 Selesai • 4 Jadwal', trend: 'neutral', icon: Calendar, color: 'blue' },
           ]);
 
-          setCoachTasks([
-            { id: 'c1', type: 'Absensi', title: `Verifikasi Absensi Kelas ${activeClass?.name || 'KU-16'}`, time: '10 min ago', urgent: true },
-            { id: 'c2', type: 'Penilaian', title: 'Input Nilai FUT Card Dimas Anggara', time: '2 hours ago', urgent: true },
-            { id: 'c3', type: 'Silabus', title: 'Review Silabus Latihan Pekan 5', time: '1 day ago', urgent: false }
-          ]);
-
+          setCoachTasks(coachPendingTasks);
           setCoachAttendance(attendanceList);
           setCoachEvents(coachUpcomingEvents);
           setCoachLeaderboard(leaderboardData);
@@ -467,6 +703,7 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
 
         {/* Grid Split */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column (Col Span 2) */}
           <div className="lg:col-span-2 space-y-8">
             
             {/* Action Required */}
@@ -497,150 +734,161 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
                     </button>
                   </div>
                 ))}
+                {adminTasks.length === 0 && (
+                  <div className="p-6 text-center text-sm text-gray-400 dark:text-gray-500">
+                    🎉 Semua pekerjaan selesai! Tidak ada aksi yang memerlukan perhatian saat ini.
+                  </div>
+                )}
               </div>
             </Card>
 
-            {/* Split row for AI Insight and Player of the Month */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* AI Retention */}
-              <Card className="gsap-dashboard-card p-5 border-l-4 border-l-red-500 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
-                      <BrainCircuit size={18} className="text-purple-600" />
-                      AI Retention Insight
-                    </h3>
-                    <Badge variant="error">Critical</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Sistem AI mendeteksi <span className="font-bold text-gray-900 dark:text-gray-50">2 siswa</span> berisiko tinggi berhenti latihan berdasarkan pola kehadiran dan pembayaran.
-                  </p>
-                  <div className="space-y-3">
-                    <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-3 border border-red-100 dark:border-red-900/30 flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-gray-50">Dimas Anggara</p>
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">Absen 3 sesi berturut-turut</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="block text-xs font-bold text-gray-500">Churn Prob.</span>
-                        <span className="text-sm font-bold text-red-700 dark:text-red-400">85%</span>
-                      </div>
-                    </div>
-                    <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-3 border border-red-100 dark:border-red-900/30 flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-gray-50">Kevin Sanjaya</p>
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">SPP Overdue / 1 bln</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="block text-xs font-bold text-gray-500">Churn Prob.</span>
-                        <span className="text-sm font-bold text-red-700 dark:text-red-400">60%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <button className="w-full mt-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-                  Lihat Detail Analisis
-                </button>
-              </Card>
-
-              {/* FUT Player of the Month */}
-              <Card className="gsap-dashboard-card p-5 bg-slate-900 text-white overflow-hidden relative border-0">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                   <Trophy size={120} />
-                </div>
-                <div className="relative z-10">
-                  <h3 className="font-bold text-lg mb-1 text-blue-400">Player of the Month</h3>
-                  <p className="text-xs text-slate-300 mb-4">Performa terbaik berdasarkan kenaikan XP</p>
-                  
-                  <div className="flex items-center justify-center">
-                    <div className="transform scale-90">
-                      <PlayerCard 
-                        name="Raka Aditama"
-                        position="PG"
-                        ovr="88"
-                        stats={{
-                          spd: 92, sho: 84, pas: 90,
-                          dri: 88, def: 65, phy: 74
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 text-center">
-                     <p className="text-sm font-medium">Class: U-18 Elite</p>
-                     <p className="text-xs text-blue-400 font-bold">+240 XP Week ini</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Recent Transactions */}
-            <Card className="gsap-dashboard-card overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 dark:text-gray-50">Transaksi Terakhir</h3>
-                <button className="text-sm text-blue-600 font-medium hover:underline">Lihat Laporan</button>
+            {/* Bento Widget 1: Administrasi & Konten Utama */}
+            <Card className="gsap-dashboard-card p-5">
+              <div className="border-b border-gray-100 dark:border-gray-800 pb-4 mb-4 flex justify-between items-center">
+                <h3 className="font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
+                  <ShoppingBag size={18} className="text-emerald-500" />
+                  Administrasi &amp; Konten Utama
+                </h3>
+                <span className="text-xs text-gray-400 font-medium">Modul Publik</span>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                      <th className="px-5 py-3">Invoice / Item</th>
-                      <th className="px-5 py-3">Tanggal</th>
-                      <th className="px-5 py-3 text-right">Jumlah</th>
-                      <th className="px-5 py-3 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {adminTransactions.map((tx: any, idx: number) => (
-                      <tr key={tx.id || idx}>
-                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-50">{tx.title || `SPP Bulanan - Atlet #${idx + 1}`}</td>
-                        <td className="px-5 py-3 text-gray-500">{tx.date || 'Baru-baru ini'}</td>
-                        <td className="px-5 py-3 font-semibold text-gray-900 dark:text-gray-50 text-right">Rp {Math.round(tx.amount || 0).toLocaleString('id-ID')}</td>
-                        <td className="px-5 py-3 text-center">
-                          <Badge variant="success">Paid</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                    {adminTransactions.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="px-5 py-4 text-center text-gray-400">Belum ada transaksi pembayaran bulan ini.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-900/20 text-center">
+                  <span className="block text-2xl font-black text-gray-900 dark:text-gray-50">{adminSummary.sponsorsCount}</span>
+                  <span className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1">Sponsor Aktif</span>
+                </div>
+                
+                <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-900/20 text-center">
+                  <span className="block text-2xl font-black text-gray-900 dark:text-gray-50">{adminSummary.eventsCount}</span>
+                  <span className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1">Agenda Event</span>
+                </div>
+                
+                <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-900/20 text-center">
+                  <span className="block text-2xl font-black text-gray-900 dark:text-gray-50">{adminSummary.newsCount}</span>
+                  <span className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1">Berita/Artikel</span>
+                </div>
+                
+                <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-900/20 text-center">
+                  <span className="block text-2xl font-black text-gray-900 dark:text-gray-50">{adminSummary.galleryCount}</span>
+                  <span className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1">Galeri Foto</span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Bento Widget 2: Kurikulum & Audit FUT Card */}
+            <Card className="gsap-dashboard-card p-5">
+              <div className="border-b border-gray-100 dark:border-gray-800 pb-4 mb-4 flex justify-between items-center">
+                <h3 className="font-bold text-gray-900 dark:text-gray-50 flex items-center gap-2">
+                  <Trophy size={18} className="text-yellow-500" />
+                  Kurikulum &amp; Audit FUT Card
+                </h3>
+                <Badge variant="blue">{adminSummary.curriculumLevelsCount} Level Master</Badge>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center text-xs bg-yellow-50 dark:bg-yellow-950/20 border border-dashed border-yellow-200 dark:border-yellow-900 p-3 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="text-yellow-600" size={16} />
+                    <span className="font-bold text-gray-900 dark:text-gray-50">Total Penilaian FUT (Assessments):</span>
+                  </div>
+                  <strong className="text-sm font-black text-yellow-700 dark:text-yellow-400">{adminSummary.assessmentsCount} Lembar</strong>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Penilaian Terkini (FUT Audit)</h4>
+                  {adminSummary.recentAssessments.map((a: any) => (
+                    <div key={a.id} className="flex justify-between items-center p-2.5 border border-gray-100 dark:border-gray-800 rounded bg-white dark:bg-gray-900/50">
+                      <div>
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-50">{a.playerName}</span>
+                        <span className="text-xs text-gray-400 block mt-0.5">Penilai: {a.assessor} • {a.date}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500">OVR</span>
+                        <strong className="text-sm font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded">{a.ovr}</strong>
+                      </div>
+                    </div>
+                  ))}
+                  {adminSummary.recentAssessments.length === 0 && (
+                    <div className="text-sm text-gray-400 py-2 text-center">Belum ada penilaian FUT terdaftar.</div>
+                  )}
+                </div>
               </div>
             </Card>
 
           </div>
 
+          {/* Right Column (Col Span 1) */}
           <div className="space-y-8">
             
-            {/* Upcoming Events */}
+            {/* Bento Widget 3: WhatsApp Server Gateway Status */}
             <Card className="gsap-dashboard-card p-5">
               <h3 className="font-bold text-gray-900 dark:text-gray-50 mb-4 flex items-center gap-2">
-                <Calendar size={18} className="text-blue-500" />
-                Upcoming Events
+                <Zap size={18} className="text-emerald-500" />
+                WhatsApp Server Status
               </h3>
-              <div className="space-y-4">
-                {adminEvents.map((ev, idx) => (
-                  <div key={ev.id || idx} className="relative pl-4 border-l-2 border-blue-200 dark:border-blue-900">
-                    <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white dark:border-gray-900"></div>
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-0.5">{ev.date}</p>
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-50">{ev.name}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{ev.location}</p>
-                    <div className="mt-2 flex gap-2">
-                      <Badge variant="blue">{ev.draftingStatus}</Badge>
-                      <span className="text-xs text-gray-400 flex items-center">{ev.rosterCount}</span>
-                    </div>
-                  </div>
-                ))}
-                {adminEvents.length === 0 && (
-                  <div className="text-sm text-gray-400 py-2">Belum ada kegiatan yang terdaftar dalam kalender terdekat.</div>
-                )}
+              
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 mb-4">
+                <div className={`w-3 h-3 rounded-full ${adminSummary.wahaConnectionStatus === 'CONNECTED' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <div className="flex-1">
+                  <span className="block text-xs font-bold text-gray-500">WAHA Session:</span>
+                  <span className="block text-sm font-black text-gray-900 dark:text-gray-50 uppercase">{adminSummary.wahaConnectionStatus}</span>
+                </div>
               </div>
-              <button className="w-full mt-5 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800">
-                Buka Kalender Full
+
+              <div className="space-y-2">
+                <button 
+                  onClick={() => toast.info("Membuka modul WhatsApp Server QR...")}
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm transition-all"
+                >
+                  Scan QR / Manage Device
+                </button>
+              </div>
+            </Card>
+
+            {/* Bento Widget 4: Data User Rill */}
+            <Card className="gsap-dashboard-card p-5">
+              <h3 className="font-bold text-gray-900 dark:text-gray-50 mb-4 flex items-center gap-2">
+                <Users size={18} className="text-blue-500" />
+                Data User Rill
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm pb-2 border-b border-dashed border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-500">Siswa Terdaftar</span>
+                  <strong className="text-gray-900 dark:text-gray-50">{adminSummary.totalStudentsCount} Siswa</strong>
+                </div>
+                
+                <div className="flex justify-between items-center text-sm pb-2 border-b border-dashed border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-500">Orang Tua Terdaftar</span>
+                  <strong className="text-gray-900 dark:text-gray-50">{adminSummary.totalParentsCount} Wali</strong>
+                </div>
+
+                <div className="flex justify-between items-center text-sm pb-2 border-b border-dashed border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-500">Pelatih Terdaftar</span>
+                  <strong className="text-gray-900 dark:text-gray-50">{adminSummary.totalCoachesCount} Coach</strong>
+                </div>
+              </div>
+              <button 
+                onClick={() => toast.info("Mengalihkan ke modul Data User...")}
+                className="w-full mt-4 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 py-1.5 rounded border border-gray-200 dark:border-gray-800 text-xs font-semibold hover:bg-gray-100"
+              >
+                Ke Manajemen Data User →
               </button>
+            </Card>
+
+            {/* Bento Widget 5: Billing & Invoices (Aging AR) */}
+            <Card className="gsap-dashboard-card p-5">
+              <h3 className="font-bold text-gray-900 dark:text-gray-50 mb-4 flex items-center gap-2">
+                <Wallet size={18} className="text-blue-500" />
+                Billing &amp; Aging AR
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-dashed border-red-200 dark:border-red-900 rounded-lg">
+                  <span className="block text-xs font-bold text-red-600 dark:text-red-400">Total Piutang Berjalan (Aging AR):</span>
+                  <strong className="text-lg font-black text-red-700 dark:text-red-400">Rp {adminSummary.agingARAmount.toLocaleString('id-ID')}</strong>
+                  <span className="block text-[10px] text-gray-400 mt-0.5">Dari {adminSummary.unpaidInvoicesCount} invoice belum lunas</span>
+                </div>
+              </div>
             </Card>
 
             {/* Smart Inventory */}
@@ -666,38 +914,47 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
                     </button>
                   </div>
                 ))}
+                {adminInventory.length === 0 && (
+                  <div className="text-sm text-gray-400 text-center py-2">Belum ada data inventaris.</div>
+                )}
               </div>
-              <button className="w-full mt-4 text-xs font-medium text-blue-600 hover:text-blue-700 text-center">
+              <button 
+                onClick={() => toast.info("Mengalihkan ke modul Marketplace...")}
+                className="w-full mt-4 text-xs font-medium text-blue-600 hover:text-blue-700 text-center"
+              >
                 Ke Manajemen Stok →
               </button>
             </Card>
 
-            {/* System Health */}
-            <Card className="gsap-dashboard-card p-5 bg-slate-900 text-white border-0">
-              <h3 className="font-bold text-sm mb-4 text-slate-300">System Health</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="flex items-center gap-2 text-slate-400">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                    WhatsApp Gateway
-                  </span>
-                  <span className="text-emerald-400 font-mono text-xs">Connected</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="flex items-center gap-2 text-slate-400">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    Midtrans Payment
-                  </span>
-                  <span className="text-emerald-400 font-mono text-xs">Active</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="flex items-center gap-2 text-slate-400">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    Face ID AI Node
-                  </span>
-                  <span className="text-blue-400 font-mono text-xs">Ready</span>
-                </div>
+            {/* Upcoming Events */}
+            <Card className="gsap-dashboard-card p-5">
+              <h3 className="font-bold text-gray-900 dark:text-gray-50 mb-4 flex items-center gap-2">
+                <Calendar size={18} className="text-blue-500" />
+                Upcoming Events
+              </h3>
+              <div className="space-y-4">
+                {adminEvents.map((ev, idx) => (
+                  <div key={ev.id || idx} className="relative pl-4 border-l-2 border-blue-200 dark:border-blue-900">
+                    <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white dark:border-gray-900"></div>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-0.5">{ev.date}</p>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-50">{ev.name}</h4>
+                    <p className="text-xs text-gray-500 mt-1">{ev.location}</p>
+                    <div className="mt-2 flex gap-2">
+                      <Badge variant="blue">{ev.draftingStatus}</Badge>
+                      <span className="text-xs text-gray-400 flex items-center">{ev.rosterCount}</span>
+                    </div>
+                  </div>
+                ))}
+                {adminEvents.length === 0 && (
+                  <div className="text-sm text-gray-400 py-2">Belum ada kegiatan terdaftar dalam kalender terdekat.</div>
+                )}
               </div>
+              <button 
+                onClick={() => toast.info("Mengalihkan ke modul Events...")}
+                className="w-full mt-5 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800"
+              >
+                Buka Kalender Full
+              </button>
             </Card>
 
           </div>
@@ -797,6 +1054,11 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
                   </button>
                 </div>
               ))}
+              {coachTasks.length === 0 && (
+                <div className="p-6 text-center text-sm text-gray-400 dark:text-gray-500">
+                  🎉 Semua tugas selesai! Roster latihan kelas Anda hari ini aman.
+                </div>
+              )}
             </div>
           </Card>
 
@@ -814,17 +1076,17 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
                 <div key={student.id} className="flex justify-between items-center p-3 border border-dashed border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-gray-900/50">
                   <span className="text-sm font-semibold text-gray-900 dark:text-gray-50">{student.name}</span>
                   <div className="flex items-center gap-3">
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${student.status === 'Present' ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' : 'text-red-600 bg-red-50 dark:bg-red-950/20'}`}>
-                      {student.status === 'Present' ? 'Hadir' : 'Absen'}
+                    <span className={`text-xs font-bold px-2 py-1 rounded ${student.status === 'PRESENT' ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' : 'text-red-600 bg-red-50 dark:bg-red-950/20'}`}>
+                      {student.status === 'PRESENT' ? 'Hadir' : 'Absen'}
                     </span>
                     <button 
                       onClick={() => {
-                        setCoachAttendance(prev => prev.map(s => s.id === student.id ? { ...s, status: s.status === 'Present' ? 'Absent' : 'Present' } : s));
+                        setCoachAttendance(prev => prev.map(s => s.id === student.id ? { ...s, status: s.status === 'PRESENT' ? 'ABSENT' : 'PRESENT' } : s));
                         toast.info(`Status ${student.name} diubah`);
                       }}
-                      className={`w-8 h-4 rounded-full relative transition-colors ${student.status === 'Present' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                      className={`w-8 h-4 rounded-full relative transition-colors ${student.status === 'PRESENT' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
                     >
-                      <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${student.status === 'Present' ? 'right-0.5' : 'left-0.5'}`}></div>
+                      <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${student.status === 'PRESENT' ? 'right-0.5' : 'left-0.5'}`}></div>
                     </button>
                   </div>
                 </div>
@@ -833,12 +1095,14 @@ export function DashboardOverview({ role: propRole }: DashboardOverviewProps) {
                 <div className="text-sm text-gray-400 text-center py-2 col-span-2">Roster kelas tidak terdeteksi atau kosong.</div>
               )}
             </div>
-            <button 
-              onClick={() => toast.success("Laporan kehadiran berhasil dikirim ke Admin")}
-              className="w-full mt-5 bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm hover:shadow transition-all"
-            >
-              Simpan & Kirim Laporan Kehadiran
-            </button>
+            {coachAttendance.length > 0 && (
+              <button 
+                onClick={handleSaveAttendance}
+                className="w-full mt-5 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm hover:shadow transition-all"
+              >
+                Simpan &amp; Kirim Laporan Kehadiran
+              </button>
+            )}
           </Card>
 
         </div>
