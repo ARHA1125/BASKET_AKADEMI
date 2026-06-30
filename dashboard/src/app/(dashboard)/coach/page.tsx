@@ -3,5 +3,5 @@
 import { DashboardOverview } from "@/components/features/dashboard/DashboardOverview";
 
 export default function CoachDashboardPage() {
-  return <DashboardOverview />;
+  return <DashboardOverview role="coach" />;
 }
