@@ -131,7 +131,7 @@ export default function StudentFeedbackPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
+    <div className="space-y-6">
       <div>
         <Title className="text-2xl font-bold text-slate-900 dark:text-white">Saran & Masukan Siswa</Title>
         <Text className="text-slate-500 dark:text-slate-400 mt-1">
