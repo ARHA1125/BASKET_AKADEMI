@@ -653,8 +653,10 @@ export default function TestimonialsView() {
 
       {/* Delete Confirmation */}
       <ConfirmDialog
-        isOpen={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
         onConfirm={handleDeleteTestimonial}
         title="Delete Testimonial"
         description={`Are you sure you want to delete the testimonial from "${deleteTarget?.parent?.user?.fullName}"? This action cannot be undone.`}
