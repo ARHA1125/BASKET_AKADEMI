@@ -371,7 +371,7 @@ export default function TestimonialsView() {
                     </td>
                     <td className="p-4 max-w-md">
                       <p className="text-slate-600 dark:text-slate-400 line-clamp-2 italic">
-                        "{t.content}"
+                        &ldquo;{t.content}&rdquo;
                       </p>
                     </td>
                     <td className="p-4 text-center">

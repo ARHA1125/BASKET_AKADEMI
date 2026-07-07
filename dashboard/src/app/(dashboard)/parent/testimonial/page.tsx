@@ -150,7 +150,7 @@ export default function ParentTestimonialPage() {
             <div className="relative">
               <Quote className="absolute -top-3 -left-3 text-slate-100 dark:text-slate-800/50 -z-0" size={48} />
               <p className="text-slate-700 dark:text-slate-300 font-montserrat leading-relaxed italic text-lg z-10 relative pl-4">
-                "{testimonial.content}"
+                &ldquo;{testimonial.content}&rdquo;
               </p>
             </div>
 
