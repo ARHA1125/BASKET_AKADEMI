@@ -6,7 +6,8 @@ import SponsorsView from '@/components/ui/administrasi/SponsorsView';
 import NewsView from '@/components/ui/administrasi/NewsView';
 import GalleryView from '@/components/ui/administrasi/GalleryView';
 import MarketplaceView from '@/components/ui/administrasi/MarketplaceView';
-import { Calendar, FileText, Megaphone, Image as ImageIcon, Store } from 'lucide-react';
+import TestimonialsView from '@/components/ui/administrasi/TestimonialsView';
+import { Calendar, FileText, Megaphone, Image as ImageIcon, Store, Quote } from 'lucide-react';
 
 export default function AdministrasiPage() {
   const [activeTab, setActiveTab] = useState('sponsors');
@@ -17,13 +18,14 @@ export default function AdministrasiPage() {
     { id: 'marketplace', label: 'Marketplace', icon: <Store size={16}/> },
     { id: 'news', label: 'News', icon: <FileText size={16}/> },
     { id: 'gallery', label: 'Gallery', icon: <ImageIcon size={16}/> },
+    { id: 'testimonials', label: 'Testimonials', icon: <Quote size={16}/> },
   ];
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
       <div>
         <Title className="text-2xl font-bold text-slate-900 dark:text-white">Administration</Title>
-        <Text className="text-slate-500 dark:text-slate-400 mt-1">Manage academy sponsors, events, marketplace, news, and gallery.</Text>
+        <Text className="text-slate-500 dark:text-slate-400 mt-1">Manage academy sponsors, events, marketplace, news, gallery, and testimonials.</Text>
       </div>
 
       <TabList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
@@ -40,6 +42,7 @@ export default function AdministrasiPage() {
         {activeTab === 'marketplace' && <MarketplaceView />}
         {activeTab === 'news' && <NewsView />}
         {activeTab === 'gallery' && <GalleryView />}
+        {activeTab === 'testimonials' && <TestimonialsView />}
       </div>
     </div>
   );

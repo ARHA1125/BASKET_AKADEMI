@@ -53,3 +53,23 @@ export interface GalleryAlbum {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Testimonial {
+  id: string;
+  content: string;
+  rating: number;
+  status: 'pending' | 'approved' | 'rejected';
+  parentId: string;
+  parent?: {
+    id: string;
+    phoneNumber?: string;
+    user: {
+      id: string;
+      email: string;
+      fullName: string;
+      photo_url?: string;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
