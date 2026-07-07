@@ -12,7 +12,7 @@ import { MarketplaceModuleModule } from './marketplace-module/marketplace-module
 import { PaymentModuleModule } from './payment-module/payment-module.module';
 import { CommunityModuleModule } from './community-module/community-module.module';
 import { ChatModuleModule } from './chat-module/chat-module.module';
-import { AiModuleModule } from './ai-module/ai-module.module';
+// import { AiModuleModule } from './ai-module/ai-module.module';
 import { AcademicModuleModule } from './academic-module/academic-module.module';
 import { NotificationModuleModule } from './notification-module/notification-module.module';
 import { AdministrationModuleModule } from './administration-module/administration-module.module';
