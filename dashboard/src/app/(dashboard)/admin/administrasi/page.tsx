@@ -7,7 +7,8 @@ import NewsView from '@/components/ui/administrasi/NewsView';
 import GalleryView from '@/components/ui/administrasi/GalleryView';
 import MarketplaceView from '@/components/ui/administrasi/MarketplaceView';
 import TestimonialsView from '@/components/ui/administrasi/TestimonialsView';
-import { Calendar, FileText, Megaphone, Image as ImageIcon, Store, Quote } from 'lucide-react';
+import FeedbackView from '@/components/ui/administrasi/FeedbackView';
+import { Calendar, FileText, Megaphone, Image as ImageIcon, Store, Quote, MessageSquare } from 'lucide-react';
 
 export default function AdministrasiPage() {
   const [activeTab, setActiveTab] = useState('sponsors');
@@ -19,6 +20,7 @@ export default function AdministrasiPage() {
     { id: 'news', label: 'News', icon: <FileText size={16}/> },
     { id: 'gallery', label: 'Gallery', icon: <ImageIcon size={16}/> },
     { id: 'testimonials', label: 'Testimonials', icon: <Quote size={16}/> },
+    { id: 'feedback', label: 'Feedbacks', icon: <MessageSquare size={16}/> },
   ];
 
   return (
@@ -43,6 +45,7 @@ export default function AdministrasiPage() {
         {activeTab === 'news' && <NewsView />}
         {activeTab === 'gallery' && <GalleryView />}
         {activeTab === 'testimonials' && <TestimonialsView />}
+        {activeTab === 'feedback' && <FeedbackView />}
       </div>
     </div>
   );
